@@ -1,4 +1,5 @@
-<?php
+﻿<?php
+// test cicd
 require __DIR__.'/lib/bootstrap.php'; require __DIR__.'/lib/layout.php';
 try{$groupContext=hyg_context();}catch(Throwable $e){hyg_error_page($e);}
 $cats=db()->query('SELECT c.*, COUNT(p.id) product_count FROM categories c LEFT JOIN products p ON p.category_id=c.id AND p.active=1 WHERE c.active=1 GROUP BY c.id HAVING product_count>0 ORDER BY c.sort_order,c.id')->fetchAll();
@@ -60,3 +61,4 @@ front_header(); ?>
 </section>
 <?php endif;?>
 <?php front_footer(); ?>
+
