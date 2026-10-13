@@ -1,0 +1,65 @@
+/* v19.14.3: shared backend rhythm. Frontend and print layouts are deliberately excluded. */
+@media screen{
+.admin-shell,.admin-mobile{--ui-space-1:4px;--ui-space-2:8px;--ui-space-3:12px;--ui-space-4:16px;--ui-space-6:24px;--ui-space-8:32px;--ui-radius:16px;--ui-field-radius:10px;--ui-border:#e4e7ec;--ui-surface:#fff;--ui-soft:#f8fafc;--ui-muted:#667085;--ui-accent:#bc1e2c;--ui-control-height:44px;font-size:14px;line-height:1.55}
+.admin-shell .admin-container{display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:24px;padding:24px;min-width:0}
+.admin-shell .admin-container>*{min-width:0;margin-top:0;margin-bottom:0}
+.admin-shell .admin-container>[hidden],.admin-shell .admin-account-list [hidden]{display:none!important}
+.admin-shell .page-title{padding:24px;gap:16px;border-radius:16px;min-width:0}
+.admin-shell .page-title h1{font-size:24px;line-height:1.35;margin:4px 0 0;font-weight:750}
+.admin-shell .page-kicker{font-size:12px;line-height:1.5}
+.admin-shell .view-store-link{font-size:13px;line-height:1.5;padding:8px 0;flex:none}
+.admin-shell .admin-shell-top{padding:16px 24px;gap:16px;min-height:80px}
+.admin-shell .admin-shell-context strong{font-size:14px}.admin-shell .admin-shell-context small{font-size:12px}.admin-shell .admin-role-pill{font-size:12px;padding:4px 10px}
+.admin-shell .admin-menu-button,.admin-shell .admin-push-button,.admin-shell .admin-sound-button{min-height:40px;min-width:40px;border-radius:10px}
+.admin-shell .admin-push-button,.admin-shell .admin-sound-button{font-size:12px;padding:8px 12px}
+.admin-shell .admin-langs .lang-pill{min-height:36px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;padding:8px 12px}
+.admin-shell .admin-shell-nav{padding:16px 12px 24px}.admin-shell .admin-nav-group{margin-bottom:24px}.admin-shell .admin-nav-group h2{font-size:12px;margin-bottom:8px}
+.admin-shell .admin-nav-grid{gap:8px}.admin-shell .admin-tile{border-radius:12px;padding:12px 4px;gap:4px;min-height:88px}.admin-shell .admin-tile strong{font-size:13px;line-height:1.4}.admin-shell .admin-sidebar-user{padding:16px;gap:12px}
+.admin-shell .admin-container :is(.panel,.card,.hds-panel,.admin-account-audit){border:1px solid var(--ui-border);border-radius:16px;background:#fff;box-shadow:0 4px 18px rgba(16,24,40,.035);padding:24px;min-width:0}
+.admin-shell .admin-container .panel.narrow{width:100%;max-width:960px}
+.admin-shell .admin-container :is(.panel,.hds-panel)>h2{font-size:18px;line-height:1.4;margin:0 0 16px}
+.admin-shell .admin-container .card>h2,.admin-shell .admin-account-audit h2{font-size:18px;line-height:1.4;margin:0 0 16px}
+.admin-shell .admin-container :is(.form-grid,.hds-form,.admin-account-form){gap:16px}
+.admin-shell .admin-container :is(.multilang-grid,.size-price-grid,.hds-field-grid,.profile-grid,.admin-grid,.admin-account-list,.hds-store-grid,.bank-admin-list,.admin-account-stats,.stats){gap:16px;min-width:0}
+.admin-shell .admin-container :is(.multilang-box,.pricing-box,.recommended-admin-box,.settings-block){padding:16px;border:1px solid var(--ui-border);border-radius:12px;background:var(--ui-soft);gap:16px}
+.admin-shell .admin-container .settings-block h2{font-size:18px;line-height:1.4;margin:0}
+.admin-shell .admin-container :is(.form-grid,.hds-form,.admin-account-form,.bank-admin-form) label:not(.check-row):not(.check-chip):not(.toggle-row):not(.hds-check):not(.choice):not(.theme-option):not(.sound-source-card):not(.mini-toggle){font-size:14px;line-height:1.5;gap:8px;font-weight:600}
+.admin-shell .admin-container :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]),select,textarea){border:1px solid #d0d5dd;border-radius:10px;background:#fff;color:#24272c;font-size:14px;line-height:1.5;min-height:44px;padding:10px 12px;max-width:100%;min-width:0;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+.admin-shell .admin-container textarea{min-height:104px;resize:vertical}
+.admin-shell .admin-container input[type=file]{height:auto;white-space:normal}
+.admin-shell .admin-container input[type=file]::file-selector-button{border:0;border-radius:6px;padding:5px 8px;margin-right:8px;background:#f2f4f7;color:#344054;font-size:12px}
+.admin-shell .admin-container :is(input,select,textarea):focus-visible{outline:3px solid #f8dce0;outline-offset:1px;border-color:#bc1e2c}
+.admin-shell .admin-container :is(.field-hint,.hds-help,.table-note,.muted,.admin-account-intro){font-size:13px;line-height:1.65;color:var(--ui-muted);overflow-wrap:anywhere}
+.admin-shell .admin-container :is(.toggle-row,.hds-check){padding:8px 0;min-height:44px}
+.admin-shell .admin-container :is(input[type=checkbox],input[type=radio]){accent-color:var(--ui-accent);flex:none}
+.admin-shell .admin-container :is(.btn,.hds-btn){display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 16px;border-radius:10px;font-size:14px;line-height:1.5;font-weight:650;text-align:center;white-space:normal;max-width:100%;text-decoration:none;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+.admin-shell .admin-container :is(.btn,.hds-btn).primary{color:#fff;background:var(--ui-accent);border-color:var(--ui-accent)}
+.admin-shell .admin-container :is(.btn,.hds-btn).small{min-height:36px;font-size:13px;padding:6px 12px}
+.admin-shell .admin-container :is(.btn,.hds-btn):focus-visible{outline:3px solid #efb3bd;outline-offset:2px}
+.admin-shell .admin-container :is(button,input,select,textarea):disabled{opacity:.55;cursor:not-allowed}
+.admin-shell .admin-container :is(.toolbar,.editor-actions,.hds-page-actions,.admin-account-tools,.member-admin-tools,.sound-actions){display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-width:0}
+.admin-shell .admin-container .toolbar{justify-content:flex-end}
+.admin-shell .admin-container .stats>a,.admin-shell .admin-account-stat{padding:20px;border:1px solid var(--ui-border);border-radius:16px;background:#fff;min-width:0}
+.admin-shell .admin-container .stats b,.admin-shell .admin-account-stat strong{font-size:28px;line-height:1.2;flex:none}
+.admin-shell .admin-container .stats span,.admin-shell .admin-account-stat span{font-size:13px;line-height:1.5;min-width:0;overflow-wrap:anywhere}
+.admin-shell .admin-account-card,.admin-shell .admin-container .hds-store-card,.admin-shell .admin-container .bank-admin-card{padding:20px;border-radius:16px;min-width:0}
+.admin-shell .admin-account-card-head{gap:12px}.admin-shell .admin-account-card-meta>strong{font-size:16px;line-height:1.5}.admin-shell .admin-account-card-meta small,.admin-shell .admin-account-role{font-size:12px;line-height:1.5}.admin-shell .admin-account-card details{margin-top:16px;padding-top:16px}.admin-shell .admin-account-card summary{font-size:14px;min-height:32px;display:flex;align-items:center}.admin-shell .admin-account-audit li,.admin-shell .admin-account-guard{font-size:13px;line-height:1.6}
+.admin-shell .admin-account-search{height:44px;max-width:560px!important}.admin-shell .admin-account-delete button{min-height:36px;border-radius:10px;padding:6px 12px;font-size:13px}
+.admin-shell .admin-container .table-wrap{border:1px solid var(--ui-border);border-radius:16px;background:#fff;min-width:0;max-width:100%;overflow:auto}
+.admin-shell .admin-container table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.5}
+.admin-shell .admin-container :is(th,td){padding:14px 16px;vertical-align:middle;border-bottom:1px solid #eaecf0}
+.admin-shell .admin-container th{font-size:12px;font-weight:700;color:#667085;background:#f8fafc;text-align:left}
+.admin-shell .admin-container tbody tr:last-child td{border-bottom:0}.admin-shell .admin-container tbody tr:hover{background:#fafbfc}
+.admin-shell .admin-container td{overflow-wrap:anywhere}.admin-shell .admin-container .thumb{width:48px;height:48px;object-fit:cover;border-radius:10px}
+.admin-shell .admin-container :is(.status,.hds-status){font-size:12px;line-height:1.4;padding:5px 10px;border-radius:999px}
+.admin-shell .admin-container :is(.alert,.hds-notice){padding:16px 20px;border-radius:12px;font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+.admin-shell .admin-container .meta{gap:12px 16px;margin:0 0 16px}.admin-shell .admin-container .meta :is(dt,dd){margin:0;min-width:0;overflow-wrap:anywhere}
+.admin-shell .admin-container .order-total-breakdown{padding-top:16px;margin-top:16px;border-top:1px solid var(--ui-border)}
+.admin-shell .hds-field-grid .full{grid-column:1/-1}
+.admin-mobile .ma-main{padding:24px 16px;display:grid;grid-template-columns:minmax(0,1fr);align-content:start;gap:16px}.admin-mobile .ma-main>*{margin-top:0;margin-bottom:0;min-width:0}.admin-mobile .ma-toolbar{padding:12px 16px;gap:8px;flex-wrap:wrap}.admin-mobile :is(.ma-btn,.ma-tool,.ma-refresh){min-height:44px;padding:10px 14px;border-radius:10px;font-size:14px;line-height:1.5}.admin-mobile :is(.ma-order-card,.ma-panel,.hds-panel){border-radius:16px;padding:16px;margin:0}.admin-mobile .ma-order-list{display:grid;gap:16px}.admin-mobile :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]),select,textarea){font-size:16px;border-radius:10px;min-height:44px;max-width:100%}.admin-mobile .ma-main :is(.hds-notice,.alert){border-radius:12px;padding:16px}.admin-mobile .ma-status-tabs{gap:8px}.admin-mobile .ma-status-tabs a{padding:12px 8px;border-radius:12px}.admin-mobile .ma-footer{padding:16px 0;font-size:12px;overflow-wrap:anywhere}
+@media(min-width:1600px){.admin-shell .admin-container{padding:32px}.admin-shell .admin-shell-top{padding-inline:32px}}
+@media(max-width:1100px){.admin-shell .admin-container{padding:20px}.admin-shell .admin-shell-top{padding:16px 20px}}
+@media(max-width:850px){.admin-shell .admin-container{padding:16px;gap:16px}.admin-shell .page-title{padding:20px;align-items:flex-start}.admin-shell .page-title h1{font-size:22px}.admin-shell .admin-shell-top{padding:12px 16px}.admin-shell .admin-container :is(.panel,.card,.hds-panel,.admin-account-audit){padding:20px}.admin-shell .admin-grid.two{grid-template-columns:1fr}.admin-shell .admin-container :is(.form-grid,.hds-form,.admin-account-form){gap:16px}.admin-shell .admin-account-stat{padding:16px}.admin-shell .admin-account-stats{gap:12px}.admin-shell .admin-account-card{padding:16px}.admin-shell .admin-langs .lang-pill{padding:6px 8px}.admin-shell .admin-container :is(.btn,.hds-btn).small{min-height:40px}}
+@media(max-width:640px){.admin-shell .admin-container .stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-shell .admin-container :is(.multilang-grid,.size-price-grid,.hds-field-grid,.profile-grid,.bank-admin-list){grid-template-columns:minmax(0,1fr)}.admin-shell .admin-container .hds-field-grid .full{grid-column:auto}.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) table{display:table;min-width:600px}.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) thead{display:table-header-group}.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) tbody{display:table-row-group}.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) tr{display:table-row;margin:0;border:0}.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) :is(th,td){display:table-cell}.admin-shell .admin-container .table-wrap:has(td[data-label]){border:0;background:transparent;overflow:visible}.admin-shell .admin-container .table-wrap:has(td[data-label]) tr{border:1px solid var(--ui-border);border-radius:16px;margin-bottom:16px;background:#fff;overflow:hidden}.admin-shell .admin-container .table-wrap:has(td[data-label]) td{padding:12px 16px}.admin-shell .admin-container .table-wrap:has(td[data-label]) td:last-child{border:0}.admin-shell .admin-container :is(.email-recipient-head,.email-recipient-row,.sound-current-row){flex-wrap:wrap;gap:12px}.admin-shell .admin-container .email-recipient-row input{flex:1 1 180px}}
+@media(max-width:360px){.admin-shell .page-title{padding:16px;gap:12px}.admin-shell .page-title h1{font-size:20px}.admin-shell .view-store-link{font-size:12px}.admin-shell .admin-container :is(.panel,.card,.hds-panel,.admin-account-audit){padding:16px}.admin-shell .admin-role-pill{font-size:11px;padding:4px 8px}}
+}

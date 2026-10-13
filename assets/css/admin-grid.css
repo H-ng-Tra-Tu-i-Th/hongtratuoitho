@@ -1,0 +1,71 @@
+/* v19.14.4: backend-only proportional grid; measured by available content width. */
+@media screen{
+.admin-shell .admin-container{container:admin-content/inline-size;grid-template-columns:repeat(12,minmax(0,1fr));align-items:start}
+.admin-shell .admin-container>*{grid-column:1/-1;max-width:100%}
+.admin-shell .admin-container .panel.narrow{max-width:none}
+.admin-shell .admin-container :where(.ui-grid,.ui-form-grid,.ui-language-grid,.admin-grid.two,.profile-grid,.hds-store-grid,.bank-admin-list,.multilang-grid,.size-price-grid,.recommended-admin-grid,.admin-account-form,.admin-account-list,.admin-account-stats,.stats){display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0;align-items:stretch}
+.admin-shell .admin-container :where(.ui-grid,.ui-form-grid,.ui-language-grid,.admin-grid.two,.profile-grid,.hds-store-grid,.bank-admin-list,.multilang-grid,.size-price-grid,.recommended-admin-grid,.admin-account-form,.admin-account-list,.admin-account-stats,.stats)>*{min-width:0;margin-top:0;margin-bottom:0}
+.admin-shell .admin-container :where(.ui-grid,.ui-form-grid)>[hidden],.admin-shell .admin-account-list>[hidden]{display:none!important}
+.admin-shell .admin-container :is(.stats,.admin-account-stats,.size-price-grid){grid-template-columns:repeat(2,minmax(0,1fr))}
+.admin-shell .admin-container .ui-form-grid>:is(.multilang-box,.pricing-box,.recommended-admin-box,.editor-actions,.ui-full,.toggle-row,.field-hint,button[type=submit],button:not([type])){grid-column:1/-1}
+.admin-shell .admin-container .ui-form-grid>.recommend-flags{grid-column:1/-1;align-items:center}
+.admin-shell .admin-container .ui-language-grid>:not(label){grid-column:1/-1}
+.admin-shell .admin-container .ui-settings-grid>label,.admin-shell .admin-container .ui-settings-grid>.settings-block{grid-column:1/-1}
+.admin-shell .admin-container .ui-settings-grid>.settings-block{align-content:start}
+.admin-shell .admin-container .recommended-admin-grid>.check-chip{width:100%;min-height:44px;padding:8px 12px;align-items:center!important;white-space:normal}
+.admin-shell .admin-container .recommended-admin-grid>.check-chip span{overflow-wrap:anywhere}
+.admin-shell .admin-container :is(.profile-card,.bank-admin-card,.hds-store-card){height:100%;margin-bottom:0}
+.admin-shell .admin-container .admin-account-tools{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.admin-shell .admin-account-search{width:100%;max-width:none!important}
+.admin-shell .admin-account-tools details{margin:0;min-width:0}.admin-shell .admin-account-tools summary{width:100%}.admin-shell .admin-account-tools summary .btn{width:100%}
+.admin-shell .admin-account-tools details[open]{grid-column:1/-1}
+.admin-shell .admin-container .editor-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:stretch}
+.admin-shell .admin-container .editor-actions>.btn{width:100%;height:100%}
+.admin-shell .developer-page{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;font-size:15px;line-height:1.65;min-width:0}
+.admin-shell .developer-page>*{min-width:0;margin:0}
+.admin-shell .developer-page .hdd-intro{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin:0;padding:20px;background:#fff;border:1px solid var(--ui-border);border-radius:16px;align-items:center}
+.admin-shell .developer-page .hdd-intro p{margin:0}.admin-shell .developer-page .hdd-language-note{margin-top:8px;font-size:13px}
+.admin-shell .developer-page :is(.hdd-tools,.hdd-summary,.hdd-shortcuts){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;min-width:0}
+.admin-shell .developer-page :is(.hdd-tools,.hdd-summary,.hdd-shortcuts)>*{width:100%;min-width:0;margin:0;box-sizing:border-box}
+.admin-shell .developer-page .hdd-tools .btn{white-space:normal;height:100%;min-height:48px;padding:10px 12px}
+.admin-shell .developer-page .hdd-summary>div{padding:16px;border-radius:16px;min-width:0;display:flex;flex-direction:column;gap:8px}
+.admin-shell .developer-page .hdd-summary span{font-size:13px;overflow-wrap:anywhere}.admin-shell .developer-page .hdd-summary strong{font-size:26px;line-height:1.2;font-variant-numeric:tabular-nums}
+.admin-shell .developer-page .hdd-shortcuts a{display:flex;align-items:center;justify-content:center;text-align:center;overflow-wrap:anywhere;min-height:56px;padding:12px;font-size:14px;line-height:1.5}
+.admin-shell .developer-page .hdd-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start}
+.admin-shell .developer-page .hdd-sidebar{position:static;max-height:none;overflow:visible;background:#fff;border:1px solid var(--ui-border);border-radius:16px;padding:16px;min-width:0}
+.admin-shell .developer-page .hdd-history>summary,.admin-shell .developer-page .hdd-toc>summary{font-size:15px;line-height:1.5;font-weight:750;min-height:44px;padding:10px 0;cursor:pointer}
+.admin-shell .developer-page .hdd-history nav{padding-top:12px}.admin-shell .developer-page .hdd-version-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.admin-shell .developer-page .hdd-release{margin:0;padding:12px;min-width:0;height:100%;overflow-wrap:anywhere;border-radius:12px}
+.admin-shell .developer-page .hdd-release strong{font-size:17px}.admin-shell .developer-page .hdd-release span{font-size:12px;line-height:1.5;margin:6px 0}.admin-shell .developer-page .hdd-release small{font-size:12px}
+.admin-shell .developer-page .hdd-toc{margin-top:12px;border-top:1px solid var(--ui-border);padding-top:8px}.admin-shell .developer-page .hdd-toc nav{max-height:240px;overflow:auto}.admin-shell .developer-page .hdd-append-note{font-size:12px;line-height:1.6;margin:12px 0 0}
+.admin-shell .developer-page .hdd-document{border-radius:16px}.admin-shell .developer-page .hdd-record-heading{padding:20px}.admin-shell .developer-page .hdd-record-heading h2{font-size:21px}.admin-shell .developer-page .hdd-prose{padding:16px 20px 24px}.admin-shell .developer-page .hdd-prose h2{font-size:23px}.admin-shell .developer-page .hdd-prose h3{font-size:20px}
+.admin-mobile .ma-order-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}.admin-mobile .ma-status-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-mobile .ma-status-tabs>a{min-width:0;height:100%;text-align:center}
+@container admin-content (min-width:640px){
+ .admin-shell .admin-container :where(.ui-grid-2,.ui-form-grid,.admin-grid.two,.admin-account-form,.admin-account-list,.hds-store-grid,.bank-admin-list,.profile-grid){grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin-shell .admin-container .ui-settings-grid>.settings-block:not(.ui-full){grid-column:auto}
+ .admin-shell .admin-container .ui-settings-grid>label{grid-column:1/-1}
+ .admin-shell .admin-container .ui-form-grid>.recommend-flags{grid-column:auto}
+ .admin-shell .admin-container :is(.multilang-grid,.ui-language-grid,.recommended-admin-grid){grid-template-columns:repeat(3,minmax(0,1fr))}
+ .admin-shell .admin-container .admin-account-tools{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+ .admin-shell .admin-container .editor-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@container admin-content (min-width:960px){
+ .admin-shell .admin-container :is(.ui-grid-3,.hds-store-grid,.bank-admin-list,.profile-grid){grid-template-columns:repeat(3,minmax(0,1fr))}
+ .admin-shell .admin-container :is(.stats,.admin-account-stats){grid-template-columns:repeat(4,minmax(0,1fr))}
+ .admin-shell .admin-container .ui-grid-2-1{grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:24px;align-items:start}
+ .admin-shell .admin-container .ui-grid-1-2{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+ .admin-shell .developer-page{gap:24px}.admin-shell .developer-page .hdd-intro{grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:24px;padding:24px}
+ .admin-shell .developer-page .hdd-shell{grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:24px}
+ .admin-shell .developer-page .hdd-sidebar{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto}
+}
+@supports not (container-type:inline-size){@media(min-width:1250px){.admin-shell .admin-container :is(.ui-form-grid,.admin-grid.two,.admin-account-form,.admin-account-list){grid-template-columns:repeat(2,minmax(0,1fr))}.admin-shell .admin-container :is(.ui-language-grid,.multilang-grid,.profile-grid,.hds-store-grid,.bank-admin-list){grid-template-columns:repeat(3,minmax(0,1fr))}.admin-shell .admin-container .ui-settings-grid>.settings-block:not(.ui-full){grid-column:auto}.admin-shell .admin-container .ui-grid-2-1{grid-template-columns:2fr 1fr}.admin-shell .developer-page .hdd-shell{grid-template-columns:1fr 2fr}}}
+@media(min-width:900px){.admin-mobile .ma-order-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-mobile .ma-status-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:360px){.admin-shell .developer-page .hdd-intro{padding:16px}.admin-shell .developer-page .hdd-tools .btn{font-size:12px;padding:8px}.admin-shell .developer-page .hdd-shortcuts a{font-size:12px;padding:10px 8px}.admin-shell .developer-page .hdd-summary>div{padding:12px}.admin-shell .developer-page .hdd-summary strong{font-size:22px}.admin-shell .developer-page .hdd-version-grid{grid-template-columns:minmax(0,1fr)}}
+}
+@media print{.admin-shell .admin-sidebar,.admin-shell .admin-shell-top,.admin-shell .admin-sidebar-overlay,.admin-shell .admin-skip,.admin-shell .hqp-ui,.admin-shell #hqp-ui{display:none!important}.admin-shell .admin-container{margin-left:0!important;padding:0!important;display:block!important;container-type:normal}.admin-shell .developer-page .hdd-sidebar{display:none!important}.admin-shell .developer-page .hdd-shell{display:block!important}.admin-shell .developer-page .hdd-document{width:100%;border:0}}
+
+@media screen{.admin-shell .page-title{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);align-items:center}.admin-shell .page-title>div{min-width:0}.admin-shell .view-store-link{width:100%;max-width:none;text-align:center;white-space:normal;overflow-wrap:anywhere}.admin-shell .ui-form-grid>input[type=hidden]{display:none!important}.admin-mobile .ma-order-list{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}@media(min-width:900px){.admin-mobile .ma-order-list{grid-template-columns:repeat(2,minmax(0,1fr))}}}
+
+@media screen{.admin-shell .developer-page .hdd-tools [hidden]{display:none!important}.admin-shell .developer-page .hdd-tools:has(>button[hidden])>a{grid-column:1/-1}}
+
+@media screen{.admin-shell .admin-container :is(.hds-field-grid,.multilang-grid,.ui-language-grid,.ui-form-grid,.admin-account-form)>label{align-content:start}.admin-shell .admin-container :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]):not([type=file]),select){height:44px}.admin-shell .admin-container .ui-form-grid>.ui-full{grid-column:1/-1}}

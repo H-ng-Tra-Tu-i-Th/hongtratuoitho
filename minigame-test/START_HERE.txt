@@ -1,0 +1,25 @@
+HỒNG TRÀ TUỔI THƠ — KÝ ỨC 10 LY
+Standalone cPanel Edition / 獨立翻牌配對遊戲
+Version 1.1.0｜12 cards / 6 pairs
+
+已安裝本專案 V1.0.0：使用更新包，先閱讀 UPDATE_V1.1.0.txt。保留原 app/config.php 與私有資料，不要重新安裝。
+Đã cài V1.0.0: dùng gói UPDATE; giữ app/config.php và thư mục dữ liệu riêng. Không chạy lại trình cài đặt.
+
+全新安裝 / Cài mới
+1. 使用完整安裝包，解壓縮到新的獨立目錄，例如 public_html/kyuc10/。index.php 應位於第一層。
+2. 使用 PHP 8.2+ 與 HTTPS；不需要 MySQL、Composer 或 npm。
+3. 編輯 setup-key.php 的空字串，填入您自行產生且不公開的 24 字元以上隨機安裝金鑰。
+4. 以 HTTPS 開啟 install.php，輸入相同金鑰並建立自己的管理員帳號／密碼。
+5. 私有資料夾必須位於 public_html 與所有網站公開根目錄以外；安裝畫面會提供建議絕對路徑。
+6. 完成後刪除 install.php、setup-key.php 與上傳的 ZIP。在 admin.php 設定門市、聯絡方式及獎項後，先測試再啟用正式活動。
+
+新安裝預設：正式活動暫停、免費試玩開啟。更新既有網站則沿用原設定。
+試玩沒有真實優惠券。正式獎勵需要門市確認完成消費後，發放綁定會員的一次性遊戲碼。
+本專案不與訂餐網站、POS、WordPress 或其他專案共用資料；不會自動核對真實訂單。
+Logo、男孩與女孩素材沿用原版。本次只改為翻牌配對消除並調整相應前後端邏輯。
+
+中文說明：docs/INSTALL_zh-Hant.html
+Tiếng Việt: docs/INSTALL_vi.txt
+更新說明：UPDATE_V1.1.0.txt
+系統說明：docs/ARCHITECTURE.md
+本地測試記錄：docs/TEST_REPORT.md

@@ -1,0 +1,36 @@
+KÝ ỨC 10 LY — V1.1.0 / GHÉP ĐÔI KÝ ỨC
+
+LUẬT CHƠI
+12 thẻ úp gồm 6 cặp hình. Lật hai thẻ mỗi lượt. Giống nhau: hai thẻ biến mất, các thẻ khác không đổi vị trí. Khác nhau: úp lại sau khoảng 1 giây.
+Ghép hết 6 cặp mới nhận quà. Không giới hạn thời gian hoặc số lần thử. Số lượt và thời gian chỉ để ghi nhận, không làm thay đổi phần thưởng.
+Thời gian tính từ lúc lật thẻ đầu tiên, bao gồm thời gian rời trang. Mã chơi vẫn giữ thời hạn ban đầu.
+Máy chủ lưu tiến độ thật theo tài khoản và chỉ cấp một phiếu cho mỗi mã/đơn. Chơi thử không cấp phiếu có giá trị đổi quà. Phiếu chỉ dùng cho đơn mua tiếp theo.
+
+NÂNG CẤP TỪ V1.0.0 CỦA CHÍNH DỰ ÁN NÀY
+1. Tạm tắt chương trình thật và chơi thử; tạm dừng cấp mã và đổi quà.
+2. Sao lưu toàn bộ thư mục web, app/config.php và toàn bộ thư mục riêng được khai báo trong data_dir. Không đặt bản sao lưu trong thư mục công khai.
+3. Giải nén gói UPDATE vào đúng thư mục game cũ, ghi đè các tệp cùng tên. Không tạo thêm một thư mục lồng bên ngoài.
+4. GIỮ app/config.php và thư mục dữ liệu cũ. Gói cập nhật không chứa cấu hình, tài khoản, mã chơi, phiếu thưởng hoặc dữ liệu mẫu.
+5. KHÔNG chạy install.php, không tạo cơ sở dữ liệu mới, không lấy cấu hình từ dự án khác.
+6. Đóng tab cũ và mở lại; có thể dùng Ctrl+F5 trên máy tính. Kiểm tra chơi thử, tài khoản và phiếu cũ trước khi bật hoạt động thật.
+7. Xóa ZIP đã tải lên. Duy trì .htaccess và bảo vệ thư mục dữ liệu ngoài web root.
+
+Tài khoản, quà, mã và phiếu cũ được giữ. Mã đã nhận quà không được nhận thêm quà. Mã hợp lệ chưa dùng sẽ bắt đầu bàn 12 thẻ khi mở.
+Quản trị cấp lại mã sẽ hủy mã cũ và đặt lại tiến độ ghép cặp chưa nhận quà. Mã đã nhận quà không thể cấp lại.
+
+CÀI MỚI
+Dùng gói FULL. Tạo thư mục web riêng; index.php phải nằm ở cấp đầu sau khi giải nén.
+Cần PHP 8.2+ và HTTPS. Không cần MySQL, npm hay Composer.
+Sửa setup-key.php, thay chuỗi rỗng bằng khóa bí mật ít nhất 24 ký tự. Mở install.php qua HTTPS, nhập đúng khóa và tạo tài khoản quản trị.
+Thư mục riêng phải nằm ngoài public_html và ngoài mọi document root khác. Dùng đường dẫn tuyệt đối theo gợi ý của trình cài.
+Xóa install.php, setup-key.php và ZIP sau khi cài xong. Vào admin.php để kiểm tra cửa hàng, liên hệ, điều kiện, số lượng và trọng số quà.
+Cài mới mặc định tắt quà thật và bật chơi thử. Không dùng chung dữ liệu hoặc cấu hình với dự án khác.
+
+HOẠT ĐỘNG ĐỘC LẬP
+Không nối giỏ hàng, thanh toán, POS hoặc tài khoản website đặt món. Nhân viên xác nhận đơn đã hoàn tất, số ly trả phí và tài khoản trước khi cấp mã.
+Dữ liệu được lưu dạng tệp riêng trên một máy chủ, không phải MySQL. Sao lưu độc lập định kỳ; tệp previous.php không thay thế một bản sao lưu an toàn.
+Nếu lỗi quyền ghi hoặc đường dẫn riêng, nhờ nhà cung cấp hosting kiểm tra quyền sở hữu. Không chuyển dữ liệu vào public_html và không cấp quyền 777 như cách khắc phục.
+
+PHẠM VI KIỂM TRA
+Đã kiểm tra PHP API, logic ghép cặp, khôi phục tiến độ, không cấp quà trùng, giao diện desktop/mobile và phiếu V1.0.0.
+Chưa nghiệm thu trên cPanel/Apache/HTTPS thực tế của cửa hàng hoặc Safari iPhone.

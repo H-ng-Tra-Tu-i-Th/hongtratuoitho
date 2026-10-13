@@ -1,0 +1,5 @@
+Ký Ức 10 Ly
+1.1.0
+mode=matching
+cards=12
+pairs=6

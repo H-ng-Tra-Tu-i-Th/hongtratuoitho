@@ -1,0 +1,1 @@
+<?php require __DIR__.'/../lib/bootstrap.php'; haa_clear_session(); unset($_SESSION['customer_payment_orders'],$_SESSION['last_order_no'],$_SESSION['checkout_drafts'],$_SESSION['checkout_requests'],$_SESSION['checkout_errors'],$_SESSION['transfer_payment_flash']); session_regenerate_id(true); redirect(base_url('admin/login.php'));

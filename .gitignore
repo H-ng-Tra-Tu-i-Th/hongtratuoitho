@@ -1,0 +1,28 @@
+﻿# Cấu hình môi trường nhạy cảm
+config.local.php
+
+# Thư mục ảnh/chứng từ người dùng tải lên (giữ lại vỏ thư mục)
+uploads/*
+!uploads/.gitkeep
+
+# File cấu hình web server
+.htaccess
+
+# Hệ điều hành & IDE rác
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# File log máy chủ cPanel (quan trọng: cPanel dùng error_log không có đuôi .log)
+error_log
+*/error_log
+*.log
+
+# File hệ thống hosting cPanel
+.ftpquota
+
+# File nén & sao lưu
+*.bak
+*.zip
+*.tar.gz

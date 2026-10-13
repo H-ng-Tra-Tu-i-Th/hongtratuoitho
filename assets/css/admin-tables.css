@@ -1,0 +1,20 @@
+/* v19.14.5: keep tabular values readable; overflow belongs to the table, never the page. */
+@media screen{
+.admin-shell .admin-container .table-wrap:not(:has(td[data-label])){overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;min-width:0;max-width:100%}
+.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) table{table-layout:auto;width:100%;min-width:100%;border-collapse:collapse}
+.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) :is(th,td){white-space:nowrap;overflow-wrap:normal;word-break:normal;hyphens:none;vertical-align:middle}
+.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) td :is(.field-hint,.table-note,.muted,.hyg-order-tag,.status,.hds-status){white-space:nowrap;overflow-wrap:normal;word-break:normal}
+.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) :is(.btn,.hds-btn){white-space:nowrap;max-width:none}
+.admin-shell .admin-container .table-wrap .table-price-lines{display:grid;gap:2px;font-variant-numeric:tabular-nums}
+.admin-shell .admin-container .table-wrap .table-price-lines>span{display:block;white-space:nowrap;overflow-wrap:normal;word-break:normal}
+.admin-shell .admin-container .table-wrap .table-note{display:block;margin-top:2px}
+.admin-shell .admin-container .table-wrap:focus-visible{outline:3px solid #efb3bd;outline-offset:2px}
+.admin-shell .admin-container .table-scroll-hint{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #eaecf0;background:#f8fafc;color:#667085;font-size:12px;line-height:1.5;white-space:normal}
+.admin-shell .admin-container .table-scroll-hint[hidden]{display:none!important}
+.admin-mobile .ma-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
+.admin-mobile .ma-toolbar>.ma-tool{width:100%;min-width:0;margin:0;text-align:center;justify-content:center;display:flex;align-items:center;gap:6px;white-space:normal;overflow-wrap:normal}
+.admin-mobile .ma-toolbar>.ma-home{grid-column:1/-1;background:#fff5f5;border:1px solid #eab5bc;color:#9f1825;font-weight:750;white-space:nowrap}
+@media(min-width:641px){.admin-shell .admin-container .table-wrap:has(td[data-label]) :is(th,td){white-space:nowrap;overflow-wrap:normal;word-break:normal}.admin-shell .admin-container .table-wrap:has(td[data-label]) td :is(small,.status){white-space:nowrap;overflow-wrap:normal}}
+@media(max-width:640px){.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) :is(th,td){padding:12px 14px}.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) table{min-width:100%}}
+@media(min-width:1000px){.admin-mobile .ma-toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}}
+}

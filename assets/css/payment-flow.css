@@ -1,0 +1,21 @@
+/* v19.15.0: payment ledger controls shared by desktop and mobile order desks. */
+#merchant-payment{min-width:0;overflow-wrap:anywhere}
+#merchant-payment .payment-financial-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;text-align:left}
+#merchant-payment .payment-financial-summary>div{padding:10px;border:1px solid var(--line,#e5e7eb);border-radius:10px;background:#fff;min-width:0}
+#merchant-payment .payment-financial-summary span{display:block;color:var(--muted,#667085);font-size:13px;line-height:1.5}
+#merchant-payment .payment-financial-summary b{display:block;margin-top:4px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+#merchant-payment .payment-staff-actions{display:grid;gap:10px;margin:18px 0;min-width:0}
+#merchant-payment .payment-staff-actions details,#merchant-payment .payment-history{border:1px solid var(--line,#e5e7eb);padding:12px;border-radius:12px;min-width:0}
+#merchant-payment .payment-staff-actions summary,#merchant-payment .payment-history summary{cursor:pointer;min-height:44px;font-weight:700;overflow-wrap:anywhere}
+#merchant-payment .payment-staff-form{display:grid;gap:12px;margin-top:12px;min-width:0}
+#merchant-payment .payment-staff-form label{display:grid;gap:5px;min-width:0;line-height:1.5}
+#merchant-payment .payment-staff-form :is(input,select,textarea){box-sizing:border-box;width:100%;min-width:0;max-width:100%;padding:11px 12px;border:1px solid var(--line,#e5e7eb);border-radius:10px;background:#fff;color:inherit;font:inherit}
+#merchant-payment .payment-staff-form select{min-height:44px}
+#merchant-payment .payment-staff-form textarea{resize:vertical}
+#merchant-payment .payment-staff-form small{color:var(--muted,#667085);overflow-wrap:anywhere}
+#merchant-payment .payment-staff-form .btn{min-height:44px;white-space:normal;overflow-wrap:anywhere}
+#merchant-payment .payment-history article{display:grid;gap:6px;border-top:1px solid var(--line,#e5e7eb);margin-top:12px;padding-top:12px;min-width:0}
+#merchant-payment .payment-history article p{margin:0}
+#merchant-payment .payment-history-value{white-space:pre-wrap;overflow-wrap:anywhere;min-width:0}
+#merchant-payment .payment-history article>span{font-size:12px;color:var(--muted,#667085);overflow-wrap:anywhere}
+@media(max-width:720px){#merchant-payment .payment-staff-form .btn{width:100%}}

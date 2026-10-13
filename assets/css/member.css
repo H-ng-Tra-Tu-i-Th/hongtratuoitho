@@ -1,0 +1,90 @@
+/* v19.4: local accounts and read-only store membership. */
+.member-link{display:inline-flex;align-items:center;gap:7px;min-height:42px;max-width:210px;padding:8px 12px;border:1px solid var(--line);border-radius:13px;background:#fff;font-size:17px;font-weight:750;min-width:0}
+.member-link svg{width:19px;height:19px;flex:0 0 19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.member-link span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.member-link:focus-visible{outline:3px solid var(--primary);outline-offset:3px}
+.front-body .cart-symbol{width:21px;height:21px;flex:0 0 21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hym-page{max-width:1080px;margin:auto;min-width:0;overflow-wrap:anywhere}
+.hym-page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin:6px 0 24px}
+.hym-page-head>div{min-width:0}.hym-page-head>form{flex-shrink:0}
+.hym-page-head h1{font-size:clamp(30px,4vw,40px);line-height:1.2;letter-spacing:-.035em;margin:7px 0 12px}
+.hym-page-head p{margin:0;color:var(--muted);line-height:1.7}
+.hym-eyebrow{font-size:14px;font-weight:800;color:var(--muted)}
+.hym-auth-grid,.hym-profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+.hym-auth-single{width:100%;max-width:560px;min-width:0}
+.hym-register-link{margin-top:16px;width:100%;min-height:48px;font-size:17px;white-space:normal}
+.hym-reward-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0}
+.hym-reward-toolbar>strong{font-size:17px;line-height:1.6;overflow-wrap:anywhere}
+.hym-reward-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.hym-reward{border:1px solid var(--line);border-radius:15px;padding:18px;display:flex;flex-direction:column;justify-content:space-between;gap:15px;min-width:0;background:#fafbfc}
+.hym-reward>div{min-width:0}.hym-reward code{display:block;font-size:18px;font-weight:750;line-height:1.6;overflow-wrap:anywhere;white-space:normal;margin:5px 0 9px}
+.hym-reward strong{display:block;font-size:19px;line-height:1.5;overflow-wrap:anywhere}
+.hym-reward .hym-note{margin:10px 0 0}.hym-reward .btn{width:100%;font-size:17px;min-height:48px;white-space:normal}
+.hym-card{padding:25px;border:1px solid var(--line);border-radius:22px;background:#fff;box-shadow:0 5px 20px rgba(17,24,39,.035);margin-bottom:20px;min-width:0}
+.hym-card h2{margin:0 0 14px;font-size:23px;line-height:1.35;letter-spacing:-.025em}
+.hym-card h3{font-size:19px;line-height:1.45;margin:3px 0 0;overflow-wrap:anywhere}
+.hym-source{color:var(--muted);font-size:14px;line-height:1.65;margin:8px 0 12px}
+.hym-note,.hym-updated,.hym-empty{font-size:15px;line-height:1.75;color:var(--muted);margin:12px 0 18px}
+.hym-form{display:grid;gap:16px;margin-top:20px}
+.hym-form label{display:grid;gap:8px;font-size:17px;font-weight:700;line-height:1.45}
+.hym-form input,.hym-form textarea{font-size:17px;min-width:0;width:100%;max-width:100%;line-height:1.5}
+.hym-form small{font-size:15px;line-height:1.65;color:var(--muted);margin-top:-8px}
+.hym-form .btn{justify-self:start;min-height:48px;font-size:17px;max-width:100%;white-space:normal}
+.hym-form .btn.block{justify-self:stretch}
+.hym-optional{font-size:14px;font-weight:500;color:var(--muted)}
+.hym-facts{display:grid;gap:14px;margin:20px 0}
+.hym-facts>div{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:12px;align-items:baseline}
+.hym-facts dt{font-size:15px;color:var(--muted);line-height:1.6;min-width:0;overflow-wrap:anywhere}
+.hym-facts dd{margin:0;font-size:17px;font-weight:700;line-height:1.6;min-width:0;overflow-wrap:anywhere}
+.hym-facts .hym-points dd{font-size:27px;font-variant-numeric:tabular-nums;color:var(--primary)}
+.hym-verification-note,.hym-sync-message{font-size:16px;line-height:1.7;padding:15px;border:1px solid #dfe6ef;border-radius:14px;background:#f7f9fc;color:#344054;margin:16px 0}
+.hym-updated{font-size:14px;margin-bottom:16px}
+.hym-order-list,.hym-transaction-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-top:20px}
+.hym-order,.hym-transaction{padding:18px;border:1px solid var(--line);border-radius:16px;background:#fafbfc;min-width:0}
+.hym-record-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.hym-record-head>div{min-width:0}
+.hym-label{font-size:14px;color:var(--muted);line-height:1.5}
+.hym-order-status{flex-shrink:0;max-width:45%;padding:6px 8px;border-radius:8px;background:#eef2f6;color:#344054;font-size:14px;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
+.hym-record-amount{padding-top:13px;border-top:1px solid var(--line)}
+.hym-facts .hym-record-amount dd{font-size:22px;font-variant-numeric:tabular-nums;line-height:1.4;text-align:right}
+.hym-items-title{font-size:16px;margin:18px 0 10px}
+.hym-purchased-items{list-style:none;padding:0;margin:0}
+.hym-purchased-items li{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.hym-purchased-items li>div{min-width:0;flex:1}
+.hym-purchased-items strong{font-size:17px;font-weight:650;line-height:1.5;overflow-wrap:anywhere}
+.hym-purchased-items small{display:block;font-size:14px;color:var(--muted);line-height:1.6;margin-top:4px}
+.hym-purchased-items b{font-size:17px;font-weight:750;font-variant-numeric:tabular-nums;max-width:44%;overflow-wrap:anywhere;text-align:right}
+@media(max-width:760px){
+ .hym-reward-list{grid-template-columns:minmax(0,1fr)}.hym-reward{padding:16px}.hym-reward-toolbar>.btn{width:100%;font-size:17px}
+ .hym-auth-grid,.hym-profile-grid,.hym-order-list,.hym-transaction-list{grid-template-columns:minmax(0,1fr);gap:0}
+ .hym-order-list,.hym-transaction-list{gap:13px}
+ .hym-card{padding:20px 18px;border-radius:18px;margin-bottom:18px}
+ .hym-page-head{gap:12px;margin-bottom:20px}
+ .hym-page-head p{font-size:16px}
+ .hym-card h2{font-size:22px}
+ .hym-source,.hym-label,.hym-updated,.hym-facts dt,.hym-purchased-items small{font-size:15px}
+ .hym-order,.hym-transaction{padding:16px}
+ .hym-facts>div{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:10px}
+ .hym-form .btn{width:100%;justify-self:stretch}
+ .hym-page-head>.hym-page-head-actions{width:100%}
+}
+@media(max-width:760px){
+ .front-body .topbar{padding-inline:13px;min-height:0}
+ .front-body .topbar-inner{display:grid;min-height:0;grid-template-columns:minmax(0,1fr) auto auto auto!important;gap:8px;padding-block:10px}
+ .front-body .topbar-actions{display:contents}
+ .front-body .brand{grid-column:1!important;grid-row:1;min-width:0;max-width:none;gap:7px}
+ .front-body .member-link{grid-column:2;grid-row:1;max-width:140px;padding:8px 9px;min-height:44px;gap:6px}
+ .front-body .game-link{grid-column:3;grid-row:1;min-height:44px}
+ .front-body .cart-link{grid-column:4!important;grid-row:1!important;min-height:44px}
+ .front-body .game-link-label,.front-body .cart-label{display:none}
+ .front-body .cart-link{padding-left:8px}
+ .front-body .language-switcher{grid-column:1/-1!important;grid-row:2!important;display:grid;grid-template-columns:22px repeat(3,minmax(0,1fr));width:100%;gap:3px;padding:4px}
+ .front-body .language-icon{margin:0 auto}
+}
+@media(max-width:390px){
+ .front-body .member-link{max-width:125px;padding-inline:8px}
+ .hym-page-head{flex-wrap:wrap}
+ .hym-page-head>form{width:100%}.hym-page-head>form .btn{width:100%}
+ .hym-record-head{flex-wrap:wrap}
+ .hym-order-status{max-width:100%}
+}

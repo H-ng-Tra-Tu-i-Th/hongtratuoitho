@@ -1,0 +1,36 @@
+﻿name: Deploy to Vietnix Production
+
+on:
+  push:
+    branches:
+      - main # Chạy tự động khi push hoặc merge PR vào nhánh main
+
+jobs:
+  deploy:
+    name: Sync to FTPS Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Lấy commit gần nhất để action so sánh diff và chỉ upload file thay đổi
+
+      - name: 🚀 Sync files via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 21
+          protocol: ftps
+          dangerous-clean-slate: false # BẮT BUỘC false: Không xoá file có sẵn trên server
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            config.local.php
+            uploads/**
+            .htaccess
+            README.md
+            *.md

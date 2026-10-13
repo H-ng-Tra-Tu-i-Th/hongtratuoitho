@@ -1,0 +1,16 @@
+HuiYiTea v19.2.2 QR Code encoder
+
+Bundled from qrcode-terminal 0.12.0, vendor/QRCode.
+Upstream: https://github.com/gtanner/qrcode-terminal/tree/master/vendor/QRCode
+Original QRCode JavaScript implementation: Copyright (c) 2009 Kazuhiko Arase,
+MIT License; original copyright header remains in the browser bundle.
+qrcode-terminal package and Node adaptations: Gord Tanner, Michael Brooks
+and contributors; Apache License 2.0 supplied alongside.
+No upstream NOTICE file was included in the installed 0.12.0 package.
+
+Modifications for this distribution: modules placed in a static browser IIFE,
+with an explicit UTF-8 adapter and a length-limited matrix-only public API.
+QR matrix algorithms are unchanged. No terminal rendering code is bundled.
+The application draws and downloads its QR images entirely in the browser.
+No invitation, title or customer information is sent to any third-party
+QR Code service. Node.js is not needed on the deployment host.
