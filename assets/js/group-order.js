@@ -73,7 +73,7 @@
       if (data.signature !== lastSignature) {
         const template = document.createElement('template'); template.innerHTML = data.html;
         const replacement = template.content.querySelector('#hyg-room-live');
-        // Keep polling from replacing a focused control or an in-flight payment selection.
+        // Keep polling from replacing a focused control before it can be used.
         const interacting = live && live.contains(document.activeElement) && document.activeElement.closest('form, a, button, input, select, textarea');
         const stateChanged = live && replacement && live.dataset.state !== replacement.dataset.state;
         if (interacting && !force && !stateChanged) { notice(config.changed); return; }
