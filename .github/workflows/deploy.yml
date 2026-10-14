@@ -3,10 +3,9 @@
 on:
   push:
     branches:
-      - main # Chạy tự động khi push hoặc merge vào main
-  workflow_dispatch: # Cho phép bấm nút "Run workflow" bằng tay
+      - main
+  workflow_dispatch:
 
-# Khi có commit mới, tự động hủy bỏ lần deploy cũ đang chạy để ưu tiên deploy bản mới nhất
 concurrency:
   group: production-vietnix
   cancel-in-progress: true
@@ -17,12 +16,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🚚 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # So sánh diff 2 commit gần nhất để upload đúng file thay đổi
+          fetch-depth: 2
 
-      - name: 🚀 Sync files via FTPS
+      - name: Sync files via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -30,7 +29,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
           protocol: ftps
-          dangerous-clean-slate: false # BẮT BUỘC false: Không xóa file có sẵn trên server
+          dangerous-clean-slate: false
           timeout: 60000
           exclude: |
             **/.git*
