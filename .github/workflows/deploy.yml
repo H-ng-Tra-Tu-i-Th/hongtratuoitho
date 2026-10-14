@@ -3,7 +3,13 @@
 on:
   push:
     branches:
-      - main # Chạy tự động khi push hoặc merge PR vào nhánh main
+      - main # Chạy tự động khi push hoặc merge vào main
+  workflow_dispatch: # Cho phép bấm nút "Run workflow" bằng tay
+
+# Đảm bảo các lần deploy chạy tuần tự, tránh xung đột FTPS
+concurrency:
+  group: production-vietnix
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -14,7 +20,7 @@ jobs:
       - name: 🚚 Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # Lấy commit gần nhất để action so sánh diff và chỉ upload file thay đổi
+          fetch-depth: 2 # So sánh diff 2 commit gần nhất để upload đúng file thay đổi
 
       - name: 🚀 Sync files via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -24,7 +30,8 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
           protocol: ftps
-          dangerous-clean-slate: false # BẮT BUỘC false: Không xoá file có sẵn trên server
+          dangerous-clean-slate: false # BẮT BUỘC false: Không xóa file có sẵn trên server
+          timeout: 60000
           exclude: |
             **/.git*
             **/.git*/**
@@ -34,3 +41,41 @@ jobs:
             .htaccess
             README.md
             *.md
+            install.sql
+            *.zip
+            *.tar.gz
+            error_log
+            */error_log
+            *.log
+            *.bak
+            .ftpquota
+
+      # Kiểm tra sức khỏe Website sau khi deploy
+      - name: 🩺 Check Production Health
+        shell: bash
+        env:
+          HEALTHCHECK_URL: ${{ secrets.PRODUCTION_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$HEALTHCHECK_URL" ]; then
+            echo "PRODUCTION_HEALTHCHECK_URL chưa cấu hình -> Bỏ qua bước kiểm tra."
+            exit 0
+          fi
+
+          echo "Đang kiểm tra endpoint Production: $HEALTHCHECK_URL"
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --location \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            "$HEALTHCHECK_URL" \
+            --output /dev/null
+
+          echo "Website Production hoạt động bình thường (HTTP 2xx/3xx)."
