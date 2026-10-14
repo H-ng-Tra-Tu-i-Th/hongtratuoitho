@@ -184,12 +184,11 @@ function hyg_render_room(array $r): string
                   <?php else: ?><div class="hyg-person-total"><strong><?= e(gt('member_due')) ?></strong><b><?= e(currency()) ?><?= money($payable) ?></b></div><?php endif; ?>
                   <?php if ($own && $open && ($split || $isHost)): ?>
 
-                    <!-- close-test-Hai || Đổi cập nhật bằng sự kiện onChange select => bỏ đi btn 'lưu phương thức thanh toán ở frrom' -->
                     <form class="hyg-payment-form" method="post" action="<?= e(base_url('group/action.php')) ?>">
                       <?= hyg_action_fields($r, 'payment_method') ?>
 
                       <label><?= e(gt('payment_method')) ?>
-                        <select name="payment_method">
+                        <select name="payment_method" onchange="this.form.requestSubmit()">
                           <option value="bank_transfer" <?= $memberPayment['method'] === 'bank_transfer' ? 'selected' : '' ?>><?= e(gt('payment_transfer')) ?></option>
                           <option value="cash" <?= $memberPayment['method'] === 'cash' ? 'selected' : '' ?>><?= e(gt('payment_cash')) ?></option>
                           <?php if (!$isHost): ?>
@@ -197,7 +196,6 @@ function hyg_render_room(array $r): string
                           <?php endif; ?>
                         </select>
                       </label>
-                      <button class="btn" type="submit"><?= e(gt('save_payment_method')) ?></button>
                     </form>
 
                   <?php else: ?><p class="hyg-payment-method"><?= e(gt('payment_method')) ?>：<strong><?= e(gt(['bank_transfer' => 'payment_transfer', 'cash' => 'payment_cash', 'host_advance' => 'payment_host_advance'][$memberPayment['method']] ?? 'payment_transfer')) ?></strong></p><?php endif; ?>
@@ -298,9 +296,9 @@ function hyg_render_room(array $r): string
       <?php else: ?>
 
         <!-- close-test-Hai | btn thanh toán chung dư thừa => bởi ở bước xác nhận thanh toán là thanh toán rồi phải chuyển đế trang nhập thông tin thanh toán  -->
-        <!-- <button class="btn primary block" type="button" disabled>
+        <button class="btn primary block" type="button" disabled>
           <?= e(gt($split ? 'submit_group' : 'checkout')) ?>
-        </button><?php endif; ?><?php endif; ?><?php if (!$hasReports): ?> -->
+        </button><?php endif; ?><?php endif; ?><?php if (!$hasReports): ?>
 
         <!-- btn mở lại chọn món  -->
         <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'reopen') ?>
@@ -316,12 +314,13 @@ function hyg_render_room(array $r): string
               <input name="reason" required minlength="3" maxlength="240">
             </label>
             <button class="btn block" type="submit"><?= e(gt('payment_extend')) ?></button>
-          </form><?php endif; ?> -->
+          </form> -->
+        <?php endif; ?>
 
-          <?php if (in_array($r['status'], ['open', 'locked'], true) && $host): ?>
-            <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form" data-confirm="<?= e(gt('cancel_confirm')) ?>"><?= hyg_payment_action_fields($r, 'cancel') ?><?php if ($r['status'] === 'locked'): ?>
-              <p class="hyg-muted"><?= e(gt('payment_cancel_hint')) ?></p><?php endif; ?><label><?= e(gt('payment_reason')) ?><input name="reason" required minlength="3" maxlength="240"></label><button class="btn danger block" type="submit"><?= e(gt('cancel')) ?></button>
-            </form><?php endif; ?>
+        <?php if (in_array($r['status'], ['open', 'locked'], true) && $host): ?>
+          <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form" data-confirm="<?= e(gt('cancel_confirm')) ?>"><?= hyg_payment_action_fields($r, 'cancel') ?><?php if ($r['status'] === 'locked'): ?>
+            <p class="hyg-muted"><?= e(gt('payment_cancel_hint')) ?></p><?php endif; ?><label><?= e(gt('payment_reason')) ?><input name="reason" required minlength="3" maxlength="240"></label><button class="btn danger block" type="submit"><?= e(gt('cancel')) ?></button>
+          </form><?php endif; ?>
       </aside>
     </div>
     <?= hyg_render_payment_history(hyg_payment_events($r, $host ? null : (int)$m['id'])) ?>
