@@ -3,7 +3,7 @@
   'use strict';
   const element = document.getElementById('hyg-config');
   let config = {};
-  try { config = element ? JSON.parse(element.textContent) : {}; } catch (_) {}
+  try { config = element ? JSON.parse(element.textContent) : {}; } catch (_) { }
   const status = document.querySelector('[data-sync-status]');
   let busy = false, lastSignature = '', lastShare = null, pollTimer;
   const notice = (message, error = false) => {
@@ -27,7 +27,7 @@
     const cp = event.target.closest('[data-copy-url]');
     if (share) {
       if (navigator.share) {
-        try { await navigator.share({title: share.dataset.shareTitle, text: share.dataset.shareTitle, url: share.dataset.shareUrl}); }
+        try { await navigator.share({ title: share.dataset.shareTitle, text: share.dataset.shareTitle, url: share.dataset.shareUrl }); }
         catch (error) { if (error.name !== 'AbortError') await copy(share.dataset.shareUrl); }
       } else await copy(share.dataset.shareUrl);
     }
@@ -54,17 +54,13 @@
     }
     window.HuiYiGroupQR?.sync(data.server_time);
   }
-  function restoreOpenMembers(live, replacement) {
-    const openMembers = new Set(Array.from(live.querySelectorAll('details[data-member-id][open]'), card => card.dataset.memberId));
-    replacement.querySelectorAll('details[data-member-id]').forEach(card => { card.open = openMembers.has(card.dataset.memberId); });
-  }
   async function refresh(force = false) {
     if (!config.snapshot || busy || document.hidden) return;
     busy = true;
     try {
       const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 12000);
       let response;
-      try { response = await fetch(config.snapshot, {credentials:'same-origin', cache:'no-store', signal:controller.signal, headers:{'Accept':'application/json'}}); }
+      try { response = await fetch(config.snapshot, { credentials: 'same-origin', cache: 'no-store', signal: controller.signal, headers: { 'Accept': 'application/json' } }); }
       finally { clearTimeout(timeout); }
       const data = await response.json();
       if (!response.ok || !data.ok) {
@@ -77,17 +73,12 @@
       if (data.signature !== lastSignature) {
         const template = document.createElement('template'); template.innerHTML = data.html;
         const replacement = template.content.querySelector('#hyg-room-live');
-        // Buttons also count as active form controls: a poll must not swallow a click.
-        const editing = live && live.contains(document.activeElement) && document.activeElement.closest('form');
+        // Keep polling from replacing a focused control or an in-flight payment selection.
+        const interacting = live && live.contains(document.activeElement) && document.activeElement.closest('form, a, button, input, select, textarea');
         const stateChanged = live && replacement && live.dataset.state !== replacement.dataset.state;
-        if (editing && !force && !stateChanged) { notice(config.changed); return; }
+        if (interacting && !force && !stateChanged) { notice(config.changed); return; }
         if (live && replacement) {
-          restoreOpenMembers(live, replacement);
-          const activeMember = live.contains(document.activeElement) ? document.activeElement.closest('details[data-member-id]') : null;
-          const focusSummary = activeMember && document.activeElement.matches('summary');
-          const activeMemberId = activeMember?.dataset.memberId;
           live.replaceWith(replacement); lastSignature = data.signature;
-          if (focusSummary) Array.from(replacement.querySelectorAll('details[data-member-id]')).find(card => card.dataset.memberId === activeMemberId)?.querySelector('summary')?.focus({preventScroll:true});
         }
         const shareBox = document.querySelector('.hyg-share');
         if (shareBox && replacement && replacement.dataset.state !== 'open') shareBox.hidden = true;
@@ -103,6 +94,6 @@
     window.addEventListener('online', () => refresh());
     window.addEventListener('offline', () => notice(config.offline, true));
     window.addEventListener('pagehide', () => clearInterval(pollTimer));
-    window.addEventListener('pageshow', event => { if(event.persisted){clearInterval(pollTimer);pollTimer=setInterval(()=>refresh(),5000);refresh();} });
+    window.addEventListener('pageshow', event => { if (event.persisted) { clearInterval(pollTimer); pollTimer = setInterval(() => refresh(), 5000); refresh(); } });
   }
 })();
