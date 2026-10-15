@@ -1,3 +1,22 @@
 /* Scoped notification controls: does not alter the shop theme or product layout. */
 .hq-push-dialog{box-sizing:border-box;width:min(580px,calc(100vw - 24px));max-height:calc(100dvh - 32px);padding:22px;border:1px solid #d8dce3;border-radius:20px;color:#17202e;background:#fff;overflow:auto;line-height:1.6;font-family:inherit;box-shadow:0 20px 65px #10182833}
 .hq-push-dialog::backdrop{background:#10182888}.hq-push-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.hq-push-head h2{margin:0;font-size:21px;line-height:1.4}.hq-push-dialog button{appearance:none;font:inherit;font-weight:700;line-height:1.45;border:1px solid #d0d5dd;background:#fff;color:#17202e;border-radius:12px;padding:10px 12px;min-height:44px;cursor:pointer;white-space:normal}.hq-push-dialog button:focus-visible{outline:3px solid #7899c9;outline-offset:2px}.hq-push-dialog button:disabled{opacity:.5;cursor:not-allowed}.hq-push-version{display:block;margin-top:6px;color:#667085}.hq-push-help{font-size:13px;color:#667085}.hq-push-message:empty{display:none}.hq-push-message{padding:12px;background:#f1f6f3;border-radius:12px}.hq-push-message.hq-error{background:#fff1ef;color:#9b2719}.hq-push-fields{margin:18px 0}.hq-push-fields dt{font-size:12px;color:#667085;margin-top:13px}.hq-push-fields dd{margin:2px 0 0;font-size:14px;overflow-wrap:anywhere}.hq-push-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.hq-push-actions [data-action=enable]{grid-column:1/-1;background:var(--primary,#111827);color:#fff;border-color:transparent}.hq-push-actions [data-action=delay],.hq-push-actions [data-action=wake]{grid-column:1/-1}.hq-push-job{border-top:1px solid #e4e7ec;padding:12px 0;font-size:13px;overflow-wrap:anywhere}.hq-push-job strong,.hq-push-job small{display:block}.hq-push-job small{color:#667085}.hq-connection-status{font-size:12px;padding:8px 12px;margin:0 0 12px;border-radius:10px;background:#f0f7f3;color:#276344;overflow-wrap:anywhere}.hq-connection-error{background:#fff3e8;color:#925220}@media(max-width:380px){.hq-push-dialog{padding:16px}.hq-push-head h2{font-size:18px}.hq-push-actions{grid-template-columns:1fr}.hq-push-actions button{grid-column:1}.hq-push-dialog{max-height:calc(100dvh - 16px)}}
+
+/* [CUSTOM_STOP_BTN_CSS_START]
+ * Ensure the stop ring button is completely hidden when sound is stopped or disabled,
+ * overriding any .btn or .ma-btn display properties.
+ * To ROLLBACK: delete this CSS block.
+ */
+[data-alert-stop][hidden],
+[data-alert-stop].is-hidden {
+  display: none !important;
+}
+
+.order-alert-actions:has([data-alert-stop][hidden]) [data-alert-view],
+.order-alert-actions:has([data-alert-stop].is-hidden) [data-alert-view],
+.ma-alert-actions:has([data-alert-stop][hidden]) [data-alert-view],
+.ma-alert-actions:has([data-alert-stop].is-hidden) [data-alert-view] {
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+}
+/* [CUSTOM_STOP_BTN_CSS_END] */
