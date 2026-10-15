@@ -9,7 +9,9 @@ function hqp_ui_config(string $app): void {
         'loginUrl'=>base_url($prefix.'login.php'),'latest'=>latest_order_id(),
         'soundEnabled'=>setting('order_alert_enabled','1')==='1','soundUrl'=>($source==='custom'&&$sound!=='')?base_url('uploads/'.$sound):'',
         'mode'=>setting('order_alert_mode','seconds'),'duration'=>(int)setting('order_alert_duration','20')];
-    echo '<link rel="stylesheet" href="'.e(base_url('assets/css/order-notifications.css?v=19.1')).'">';
+    $cssVer = is_file(__DIR__.'/../assets/css/order-notifications.css') ? (string)filemtime(__DIR__.'/../assets/css/order-notifications.css') : '19.1';
+    $jsVer = is_file(__DIR__.'/../assets/js/order-notifications.js') ? (string)filemtime(__DIR__.'/../assets/js/order-notifications.js') : '19.1';
+    echo '<link rel="stylesheet" href="'.e(base_url('assets/css/order-notifications.css?v='.$cssVer)).'">';
     echo '<script type="application/json" id="hq-notification-config">'.json_encode($config,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT).'</script>';
-    echo '<script defer src="'.e(base_url('assets/js/order-notifications.js?v=19.1')).'"></script>';
+    echo '<script defer src="'.e(base_url('assets/js/order-notifications.js?v='.$jsVer)).'"></script>';
 }
