@@ -126,6 +126,8 @@ function hyg_render_room(array $r): string
     <?php if ($r['status'] === 'locked' && hyg_room_has_payment_work($paymentMembers)): ?><p class="alert info"><?= e(gt('payment_recovery')) ?></p><?php endif; ?>
     <?php if ($status === 'locked'): ?><div class="alert info"><?= e(gt(!empty($payment['legacy']) ? 'settlement_unavailable' : ($split ? 'waiting_split' : 'waiting'))) ?></div><?php endif; ?>
     <div class="hyg-room-grid">
+
+      <!-- Group left -->
       <div class="hyg-members">
         <?php foreach ($members as $person): $own = (int)$person['id'] === (int)$m['id'];
           $rows = array_filter($cart, fn($x) => (int)$x['group_member_id'] === (int)$person['id']);
@@ -163,6 +165,8 @@ function hyg_render_room(array $r): string
             <div class="hyg-person-body">
               <?php if ($own || $isHost): ?><p class="hyg-person-identity"><?php if ($own): ?><span class="hyg-you"><?= e(gt('you')) ?></span><?php endif; ?><?php if ($isHost): ?><span><?= e(gt('host')) ?></span><?php endif; ?></p><?php endif; ?>
               <?php if (!$rows): ?><p class="hyg-muted"><?= e(gt('empty_person')) ?></p><?php endif; ?>
+
+              <!-- Danh sách sản phẩm đã đặt -->
               <?php foreach ($rows as $key => $row): $editable = $open && ($own || $host);
                 $invalid = !empty($row['_invalid']); ?>
                 <article class="hyg-item <?= $invalid ? 'is-invalid' : '' ?>">
@@ -178,6 +182,8 @@ function hyg_render_room(array $r): string
                   <?php if ($editable && !$invalid): ?><form method="post" action="<?= e(base_url('group/action.php')) ?>" class="hyg-qty-form"><?= hyg_action_fields($r, 'quantity') ?><input type="hidden" name="item_id" value="<?= $row['_item_id'] ?>"><input type="hidden" name="item_version" value="<?= $row['_item_version'] ?>"><label><?= e(t('quantity')) ?><input aria-label="<?= e(t('quantity')) ?> <?= e($row['name']) ?>" name="qty" type="number" inputmode="numeric" min="1" max="20" value="<?= (int)$row['qty'] ?>"></label><button class="btn small" type="submit"><?= e(gt('update_qty')) ?></button></form><?php endif; ?>
                 </article>
               <?php endforeach; ?>
+
+
               <?php if ($rows): ?><div class="hyg-person-total"><small><?= e(gt('subtotal')) ?></small><b><?= e(currency()) ?><?= money($memberPayment['subtotal']) ?></b></div><?php endif; ?>
               <?php if (!$payment['legacy'] && ($hasPayment || $isHost || $rows || ($memberPayment['net_received'] ?? 0) > 0)): ?><section class="hyg-member-payment" aria-label="<?= e(gt('payment_summary')) ?>">
                   <?php if ($isHost): ?><div class="hyg-totals-line"><span><?= e(gt('member_own_due')) ?></span><b><?= e(currency()) ?><?= money($payment['host_subtotal']) ?></b></div>
@@ -216,45 +222,62 @@ function hyg_render_room(array $r): string
                                                                                   else: ?><?= hyg_render_member_banks($banks) ?><?php endif; ?>
 
                       <!-- close-test-Hai | Ẩn thông tin chuyển khoảng do khách hàng đã chuyển trực tiếp cho cửa hàng-->
-                      <!-- <p class="hyg-payment-reference"><?= e(gt('payment_reference_unique', ['reference' => hyg_payment_reference($r, (int)$person['id'])])) ?></p><?php endif; ?> -->
-
+                      <!-- <p class="hyg-payment-reference">
+                        <?= e(gt('payment_reference_unique', ['reference' => hyg_payment_reference($r, (int)$person['id'])])) ?>
+                      </p> -->
                     <?php endif; ?>
+
+
+
                   <?php endif; ?>
-                  <?php if ($canRequest): ?><div class="hyg-payment-approval">
-                      <form method="post" action="<?= e(base_url('group/action.php')) ?>" data-confirm="<?= e(gt('payment_report_increment_prompt', ['amount' => currency() . money($newPayment)])) ?>">
-                        <?= hyg_payment_action_fields($r, 'payment_complete', (int)$person['id'], $newPayment) ?>
-                        <button class="btn primary block" type="submit"><?= e(gt('payment_complete')) ?> · <?= e(currency()) ?><?= money($newPayment) ?>
-                        </button>
-                      </form>
-                      <p class="hyg-muted"><?= e(gt('payment_self_report')) ?></p>
-                    </div><?php endif; ?>
-                  <?php if ($canConfirm): ?><div class="hyg-payment-approval">
-                      <p class="hyg-muted"><?= e(gt('payment_increment_review', ['amount' => currency() . money($newPayment), 'net' => currency() . money($retainedFunds)])) ?></p>
-                      <form method="post" action="<?= e(base_url('group/action.php')) ?>" data-confirm="<?= e(gt('payment_confirm_increment_prompt', ['name' => $person['nickname'], 'amount' => currency() . money($newPayment)])) ?>"><?= hyg_payment_action_fields($r, 'payment_confirm', (int)$person['id'], $newPayment) ?><button class="btn primary block" type="submit"><?= e($hostCollect && $own ? htp('contribution_confirm') : gt('payment_confirm')) ?> · <?= e(currency()) ?><?= money($newPayment) ?></button></form>
-                    </div><?php endif; ?>
-                  <?php if ($approval && $hasPayment && $requested && !$canRequest && !$canConfirm): ?><p class="hyg-muted"><?= e(gt('payment_requested_hint')) ?></p><?php endif; ?>
-                  <?php if ($approval && $hasPayment && $paid): ?><p class="hyg-muted"><?= e(gt('payment_confirmed_hint')) ?></p><?php endif; ?>
-                  <?php if ($covered > 0 && $approval): ?><p class="hyg-muted"><?= e(gt('payment_advance_hint')) ?></p><?php endif; ?>
-                  <?php if (!$approval && $status === 'submitted'): ?><p class="hyg-muted"><?= e(gt('payment_historical_hint')) ?></p><?php endif; ?>
-                  <?php if (in_array($memberPayment['status'], ['rejected', 'refunded'], true)): ?><p class="hyg-muted"><?= e(gt($memberPayment['status'] === 'rejected' ? 'payment_rejected' : 'payment_refunded_status')) ?></p><?php endif; ?>
-                  <?php if (isset($memberPayment['received_amount']) && ($memberPayment['received_amount'] > 0 || $memberPayment['refunded_amount'] > 0)): ?><dl class="hyg-settlement-totals">
-                      <div>
-                        <dt><?= e(gt('payment_received')) ?></dt>
-                        <dd><?= e(currency()) ?><?= money($memberPayment['received_amount']) ?></dd>
-                      </div>
-                      <div>
-                        <dt><?= e(gt('payment_refunded')) ?></dt>
-                        <dd><?= e(currency()) ?><?= money($memberPayment['refunded_amount']) ?></dd>
-                      </div>
-                      <div>
-                        <dt><?= e(gt('payment_net')) ?></dt>
-                        <dd><?= e(currency()) ?><?= money($memberPayment['net_received']) ?></dd>
-                      </div><?php if ($memberPayment['refund_due'] > 0): ?><div>
-                          <dt><?= e(gt('payment_refund_due')) ?></dt>
-                          <dd><?= e(currency()) ?><?= money($memberPayment['refund_due']) ?></dd>
-                        </div><?php endif; ?>
-                    </dl><?php endif; ?>
-                  <?php if ($host): ?><?= hyg_render_payment_controls($r, $memberPayment) ?><?php endif; ?>
+                <?php endif; ?>
+
+                <?php if ($canRequest): ?><div class="hyg-payment-approval">
+                    <form method="post" action="<?= e(base_url('group/action.php')) ?>" data-confirm="<?= e(gt('payment_report_increment_prompt', ['amount' => currency() . money($newPayment)])) ?>">
+                      <?= hyg_payment_action_fields($r, 'payment_complete', (int)$person['id'], $newPayment) ?>
+                      <button class="btn primary block" type="submit"><?= e(gt('payment_complete')) ?> · <?= e(currency()) ?><?= money($newPayment) ?>
+                      </button>
+                    </form>
+                    <p class="hyg-muted"><?= e(gt('payment_self_report')) ?></p>
+                  </div><?php endif; ?>
+                <?php if ($canConfirm): ?>
+
+                  <!-- Form submit Xác nhận đã thanh toán ... -->
+                  <div class="hyg-payment-approval">
+                    <p class="hyg-muted"><?= e(gt('payment_increment_review', ['amount' => currency() . money($newPayment), 'net' => currency() . money($retainedFunds)])) ?></p>
+                    <form method="post" action="<?= e(base_url('group/action.php')) ?>" data-confirm="<?= e(gt('payment_confirm_increment_prompt', ['name' => $person['nickname'], 'amount' => currency() . money($newPayment)])) ?>">
+                      <?= hyg_payment_action_fields($r, 'payment_confirm', (int)$person['id'], $newPayment) ?>
+                      <button class="btn primary block" type="submit"><?= e($hostCollect && $own ? htp('contribution_confirm') : gt('payment_confirm')) ?> · <?= e(currency()) ?>
+                        <?= money($newPayment) ?>
+                      </button>
+                    </form>
+                  </div>
+
+
+                <?php endif; ?>
+                <?php if ($approval && $hasPayment && $requested && !$canRequest && !$canConfirm): ?><p class="hyg-muted"><?= e(gt('payment_requested_hint')) ?></p><?php endif; ?>
+                <?php if ($approval && $hasPayment && $paid): ?><p class="hyg-muted"><?= e(gt('payment_confirmed_hint')) ?></p><?php endif; ?>
+                <?php if ($covered > 0 && $approval): ?><p class="hyg-muted"><?= e(gt('payment_advance_hint')) ?></p><?php endif; ?>
+                <?php if (!$approval && $status === 'submitted'): ?><p class="hyg-muted"><?= e(gt('payment_historical_hint')) ?></p><?php endif; ?>
+                <?php if (in_array($memberPayment['status'], ['rejected', 'refunded'], true)): ?><p class="hyg-muted"><?= e(gt($memberPayment['status'] === 'rejected' ? 'payment_rejected' : 'payment_refunded_status')) ?></p><?php endif; ?>
+                <?php if (isset($memberPayment['received_amount']) && ($memberPayment['received_amount'] > 0 || $memberPayment['refunded_amount'] > 0)): ?><dl class="hyg-settlement-totals">
+                    <div>
+                      <dt><?= e(gt('payment_received')) ?></dt>
+                      <dd><?= e(currency()) ?><?= money($memberPayment['received_amount']) ?></dd>
+                    </div>
+                    <div>
+                      <dt><?= e(gt('payment_refunded')) ?></dt>
+                      <dd><?= e(currency()) ?><?= money($memberPayment['refunded_amount']) ?></dd>
+                    </div>
+                    <div>
+                      <dt><?= e(gt('payment_net')) ?></dt>
+                      <dd><?= e(currency()) ?><?= money($memberPayment['net_received']) ?></dd>
+                    </div><?php if ($memberPayment['refund_due'] > 0): ?><div>
+                        <dt><?= e(gt('payment_refund_due')) ?></dt>
+                        <dd><?= e(currency()) ?><?= money($memberPayment['refund_due']) ?></dd>
+                      </div><?php endif; ?>
+                  </dl><?php endif; ?>
+                <?php if ($host): ?><?= hyg_render_payment_controls($r, $memberPayment) ?><?php endif; ?>
                 </section><?php endif; ?>
               <?php if ($canRemove): ?><div class="hyg-member-manage">
                   <form method="post" action="<?= e(base_url('group/action.php')) ?>" data-confirm="<?= e(gt('remove_member_confirm', ['name' => $person['nickname']])) ?>"><?= hyg_action_fields($r, 'remove_member') ?><input type="hidden" name="member_id" value="<?= (int)$person['id'] ?>"><button class="btn danger block" type="submit"><?= e(gt('remove_member')) ?></button></form>
@@ -266,6 +289,8 @@ function hyg_render_room(array $r): string
         <?php if ($open): ?><div class="hyg-join-actions"><a class="btn primary" href="<?= e(base_url('index.php?group=' . $r['public_id'])) ?>"><?= e(gt('choose')) ?></a></div>
           <p class="hyg-muted"><?= e(gt('automatic_ready_hint')) ?></p><?php endif; ?>
       </div>
+
+      <!-- Group right -->
       <aside class="hyg-summary hyg-card"><span class="hyg-eyebrow">HỒNG TRÀ TUỔI THƠ</span>
         <h2><?= e(gt($order ? 'final_total' : 'total')) ?></h2>
         <div class="hyg-total"><?= e(currency()) ?><?= money($order ? $order['total_amount'] : $payment['total']) ?></div>
@@ -297,37 +322,35 @@ function hyg_render_room(array $r): string
             <?= hyg_action_fields($r, 'lock') ?><button class="btn primary block" type="submit" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>><?= e(gt('lock')) ?>
             </button>
           </form><?php endif; ?>
+
         <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?><?php if (!empty($payment['can_checkout']) && $cart && !$hasInvalid): ?>
         <a class="btn primary block" href="<?= e(base_url('checkout.php?group=' . $r['public_id'])) ?>"><?= e(gt($split ? 'submit_group' : 'checkout')) ?>
         </a>
-      <?php else: ?>
+      <?php endif; ?>
+    <?php endif; ?>
+    <?php if (!$hasReports): ?>
 
-        <!-- close-test-Hai | btn thanh toán chung dư thừa => bởi ở bước xác nhận thanh toán là thanh toán rồi phải chuyển đế trang nhập thông tin thanh toán  -->
-        <button class="btn primary block" type="button" disabled>
-          <?= e(gt($split ? 'submit_group' : 'checkout')) ?>
-        </button><?php endif; ?><?php endif; ?><?php if (!$hasReports): ?>
+      <!-- btn mở lại chọn món  -->
+      <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'reopen') ?>
+        <button class="btn block" type="submit"><?= e(gt('reopen')) ?></button>
+      </form><?php else: ?><p class="hyg-muted"><?= e(gt('payment_locked')) ?></p><?php endif; ?><?php endif; ?>
 
-        <!-- btn mở lại chọn món  -->
-        <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'reopen') ?>
-          <button class="btn block" type="submit"><?= e(gt('reopen')) ?></button>
-        </form><?php else: ?><p class="hyg-muted"><?= e(gt('payment_locked')) ?></p><?php endif; ?><?php endif; ?>
+      <?php if ($r['status'] === 'locked' && $host): ?>
 
-        <?php if ($r['status'] === 'locked' && $host): ?>
+        <!-- closs-test-Hai | btn Gia Hạn thanh toán -->
 
-          <!-- closs-test-Hai | btn Gia Hạn thanh toán -->
-
-          <!-- <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form"><?= hyg_payment_action_fields($r, 'payment_extend') ?>
+        <!-- <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form"><?= hyg_payment_action_fields($r, 'payment_extend') ?>
             <label><?= e(gt('payment_reason')) ?>
               <input name="reason" required minlength="3" maxlength="240">
             </label>
             <button class="btn block" type="submit"><?= e(gt('payment_extend')) ?></button>
           </form> -->
-        <?php endif; ?>
+      <?php endif; ?>
 
-        <?php if (in_array($r['status'], ['open', 'locked'], true) && $host): ?>
-          <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form" data-confirm="<?= e(gt('cancel_confirm')) ?>"><?= hyg_payment_action_fields($r, 'cancel') ?><?php if ($r['status'] === 'locked'): ?>
-            <p class="hyg-muted"><?= e(gt('payment_cancel_hint')) ?></p><?php endif; ?><label><?= e(gt('payment_reason')) ?><input name="reason" required minlength="3" maxlength="240"></label><button class="btn danger block" type="submit"><?= e(gt('cancel')) ?></button>
-          </form><?php endif; ?>
+      <?php if (in_array($r['status'], ['open', 'locked'], true) && $host): ?>
+        <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form" data-confirm="<?= e(gt('cancel_confirm')) ?>"><?= hyg_payment_action_fields($r, 'cancel') ?><?php if ($r['status'] === 'locked'): ?>
+          <p class="hyg-muted"><?= e(gt('payment_cancel_hint')) ?></p><?php endif; ?><label><?= e(gt('payment_reason')) ?><input name="reason" required minlength="3" maxlength="240"></label><button class="btn danger block" type="submit"><?= e(gt('cancel')) ?></button>
+        </form><?php endif; ?>
       </aside>
     </div>
     <?= hyg_render_payment_history(hyg_payment_events($r, $host ? null : (int)$m['id'])) ?>
