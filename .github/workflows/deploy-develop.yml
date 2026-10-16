@@ -1,4 +1,4 @@
-name: Deploy to Vietnix Staging (Develop)
+name: Deploy to Vietnix Develop
 
 on:
   push:
@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: staging-vietnix
+  group: develop-vietnix
   cancel-in-progress: true
 
 jobs:
   deploy:
-    name: Sync to Staging FTPS Server
+    name: Sync to Develop FTPS Server
     runs-on: ubuntu-latest
 
     steps:
