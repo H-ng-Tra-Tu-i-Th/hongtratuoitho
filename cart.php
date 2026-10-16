@@ -48,6 +48,6 @@ unset($_SESSION['coupon_message'], $_SESSION['coupon_error']);
   <?php if(cart_discount()>0):?><div class="discount-line"><span><?=e(t('coupon_discount'))?><?php if($coupon['code']):?> · <?=e($coupon['code'])?><?php endif;?></span><strong>-<?=e(currency())?><?=money(cart_discount())?></strong></div><?php endif;?>
   <div class="total-line"><span><?=e(t('total'))?></span><strong><?=e(currency())?><?=money(cart_total())?></strong></div>
 </div>
-<div class="cart-actions checkout-action"><a class="btn primary" href="<?=e(base_url('checkout.php'))?>"><?=e(t('checkout_info'))?></a></div>
+<div class="cart-actions checkout-action"><button class="btn primary" type="submit" form="cart-promotion-selector" name="continue_to_checkout" value="1"><?=e(t('checkout_info'))?></button></div>
 <?php endif; ?>
 <?php front_footer(); ?>

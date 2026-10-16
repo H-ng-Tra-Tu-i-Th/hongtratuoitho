@@ -205,4 +205,16 @@ front_header(t('order_info'));
     </div>
   </aside>
 </div>
+
+<!-- Dialog Mua 10ly nước được chơi game -->
+<div style="margin: 20px 0; text-align: center;">
+  <button type="button" class="btn primary" onclick="openMinigameModal()">
+    🎮 Chơi Mini Game nhận quà
+  </button>
+</div>
+
+<?php require_once __DIR__ . '/minigame/minigame_dialog.php'; ?>
+
+
+
 <?php front_footer(); ?>

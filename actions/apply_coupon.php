@@ -14,6 +14,10 @@ try{
     $choice=promotion_selection_from_post($_POST);
     $_SESSION['promotion_mode']=$choice['mode'];
     if($choice['code']!=='')$_SESSION['coupon_code']=$choice['code'];else unset($_SESSION['coupon_code']);
+    if(($_POST['continue_to_checkout']??'')==='1'){
+        unset($_SESSION['coupon_message'],$_SESSION['coupon_error']);
+        redirect(base_url('checkout.php'));
+    }
     $_SESSION['coupon_message']=pt('selection_saved');
 }catch(Throwable $e){
     $_SESSION['coupon_error']=t('coupon_invalid');

@@ -151,7 +151,7 @@ function promotion_selector(array $choice, array $options = []): string
   <section class="promotion-panel">
     <h2><?= e(pt('title')) ?></h2>
     <p class="promotion-help"><?= e(pt('choose_one')) ?></p>
-    <form class="promotion-selector" data-promotion-selector method="post" action="<?= e(base_url($group !== '' ? 'group/action.php' : 'actions/apply_coupon.php')) ?>">
+    <form id="<?= e($prefix) ?>-selector" class="promotion-selector" data-promotion-selector method="post" action="<?= e(base_url($group !== '' ? 'group/action.php' : 'actions/apply_coupon.php')) ?>">
       <?= csrf_field() ?><input type="hidden" name="action" value="<?= $group !== '' ? 'coupon' : 'apply' ?>">
       <?php if ($group !== ''): ?><input type="hidden" name="room_id" value="<?= e($group) ?>"><input type="hidden" name="revision" value="<?= (int)($options['revision'] ?? 0) ?>"><?php endif; ?>
 
@@ -198,7 +198,7 @@ function promotion_selector(array $choice, array $options = []): string
 
       <div class="promotion-reward-field" data-promotion-reward <?= $mode !== 'reward' ? 'hidden' : '' ?>><label for="<?= $prefix ?>-code"><?= e(pt('reward_code')) ?></label><input id="<?= $prefix ?>-code" data-promotion-code name="coupon_code" value="<?= e($code) ?>" <?= $mode === 'reward' ? 'required' : 'disabled' ?> maxlength="80" autocomplete="off" spellcheck="false" list="<?= $prefix ?>-codes" placeholder="<?= e(pt('reward_code_placeholder')) ?>" aria-describedby="<?= $prefix ?>-code-hint"><datalist id="<?= $prefix ?>-codes"><?php foreach ($coupons as $coupon): ?><option value="<?= e($coupon['code']) ?>"><?= e($coupon['coupon_type'] === 'game_reward' ? hgr_label($coupon) : currency() . money($coupon['amount'])) ?></option><?php endforeach; ?></datalist><small id="<?= $prefix ?>-code-hint"><?= e(pt('reward_code_hint')) ?></small></div>
       <?php if (!$hostDiscount): ?><p class="promotion-help"><?= e(pt('host_discount_note')) ?></p><?php endif; ?>
-      <button class="btn primary block" type="submit"><?= e(pt('apply')) ?></button>
+      <?php if ($group !== ''): ?><button class="btn primary block" type="submit"><?= e(pt('apply')) ?></button><?php endif; ?>
     </form>
   </section>
 
