@@ -24,10 +24,9 @@ jobs:
       - name: Sync files via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_DEV_SERVER || 'host142.vietnix.vn' }}
-          username: ${{ secrets.FTP_DEV_USERNAME || 'huiyi.it@shoptest.huiyitea.vn' }}
+          server: ${{ secrets.FTP_DEV_SERVER }}
+          username: ${{ secrets.FTP_DEV_USERNAME }}
           password: ${{ secrets.FTP_DEV_PASSWORD }}
-          server-dir: ${{ secrets.FTP_DEV_DIR || './' }}
           port: 21
           protocol: ftps
           dangerous-clean-slate: false
