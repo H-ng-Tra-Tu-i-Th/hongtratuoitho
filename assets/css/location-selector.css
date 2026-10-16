@@ -1,0 +1,661 @@
+  /* Location & Store Selector Styles */
+
+  .location-store-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #86efac;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(22, 101, 52, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .location-store-banner.is-loading {
+    background: linear-gradient(90deg, #f0fdf4 0%, #e0f2fe 50%, #f0fdf4 100%);
+    background-size: 200% 100%;
+    animation: bannerShimmer 1.4s infinite linear;
+    border-color: #38bdf8;
+    box-shadow: 0 2px 10px rgba(56, 189, 248, 0.2);
+  }
+
+  .location-store-banner.is-updated {
+    animation: bannerBounceHighlight 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes bannerShimmer {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes bannerBounceHighlight {
+    0% {
+      transform: scale(0.97);
+    }
+
+    50% {
+      transform: scale(1.02);
+      box-shadow: 0 4px 16px rgba(34, 197, 94, 0.28);
+    }
+
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .location-banner-icon.is-spinning {
+    background: #0284c7;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+  }
+
+  .location-banner-icon.is-spinning svg {
+    animation: bannerSpin 0.9s infinite linear;
+  }
+
+  @keyframes bannerSpin {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .location-store-banner.has-error {
+    background: #fef2f2;
+    border-color: #fca5a5;
+  }
+
+  .location-banner-main {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .location-banner-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #16a34a;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.25);
+  }
+
+  .location-banner-icon svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .location-banner-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .location-banner-eyebrow {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #15803d;
+  }
+
+  .location-banner-title {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #14532d;
+    line-height: 1.35;
+  }
+
+  .location-banner-distance {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+    color: #166534;
+    margin-top: 2px;
+  }
+
+  .location-banner-badge {
+    background: #22c55e;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .location-banner-duration {
+    color: #4b5563;
+    font-size: 0.82rem;
+  }
+
+  .location-banner-reason {
+    margin-top: 6px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px dashed #86efac;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #15803d;
+    line-height: 1.4;
+  }
+
+  .location-banner-reason strong {
+    font-weight: 700;
+    color: #166534;
+  }
+
+  .location-banner-btn-change {
+    background: #fff;
+    color: #15803d;
+    border: 1.5px solid #22c55e;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .location-banner-btn-change:hover {
+    background: #16a34a;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+  }
+
+  /* Address input container with GPS button */
+  .address-input-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .address-input-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+
+  .address-input-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 0 !important;
+  }
+
+  .address-label-hint {
+    font-size: 0.78rem;
+    font-weight: normal;
+    color: #64748b;
+  }
+
+  /* Modern GPS Pill Chip Button */
+  .btn-gps-trigger {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1px solid #a7f3d0;
+    border-radius: 9999px;
+    color: #065f46;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.15px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    overflow: visible;
+  }
+
+  .btn-gps-trigger:hover {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-color: #34d399;
+    color: #047857;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .btn-gps-trigger:hover .gps-icon-crosshair {
+    transform: rotate(45deg);
+  }
+
+  .btn-gps-trigger:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 1px 2px rgba(16, 185, 129, 0.15);
+  }
+
+  .btn-gps-trigger:focus-visible {
+    outline: 2px solid #10b981;
+    outline-offset: 2px;
+  }
+
+  /* Live Radar Pulse Indicator */
+  .gps-radar-dot {
+    position: relative;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    flex-shrink: 0;
+  }
+
+  .gps-radar-dot::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1.5px solid #10b981;
+    animation: gpsRadarWave 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    box-sizing: border-box;
+  }
+
+  @keyframes gpsRadarWave {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.9;
+    }
+
+    60% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+
+  /* Crosshair Target Icon */
+  .gps-icon-crosshair {
+    width: 15px;
+    height: 15px;
+    fill: #059669;
+    flex-shrink: 0;
+    transition: transform 0.3s ease, fill 0.2s ease;
+  }
+
+  .btn-gps-text {
+    white-space: nowrap;
+  }
+
+  /* Detecting GPS State */
+  .btn-gps-trigger.is-detecting {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border-color: #93c5fd;
+    color: #1e40af;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.22);
+    cursor: wait;
+    pointer-events: none;
+  }
+
+  .btn-gps-trigger.is-detecting .gps-radar-dot {
+    background: #3b82f6;
+  }
+
+  .btn-gps-trigger.is-detecting .gps-radar-dot::before {
+    border-color: #3b82f6;
+    animation-duration: 0.85s;
+  }
+
+  .btn-gps-trigger.is-detecting .gps-icon-crosshair {
+    fill: #2563eb;
+    animation: gpsCrosshairSpin 0.9s linear infinite;
+  }
+
+  @keyframes gpsCrosshairSpin {
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* AutoComplete Dropdown */
+  .autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-top: 4px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    max-height: 260px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+  }
+
+  .autocomplete-dropdown.is-open {
+    display: block;
+  }
+
+  .autocomplete-item {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    color: #1f2937;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.15s ease;
+  }
+
+  .autocomplete-item:last-child {
+    border-bottom: none;
+  }
+
+  .autocomplete-item:hover,
+  .autocomplete-item.is-active {
+    background: #f0fdf4;
+    color: #15803d;
+  }
+
+  .autocomplete-item-icon {
+    color: #9ca3af;
+    flex-shrink: 0;
+  }
+
+  .autocomplete-item:hover .autocomplete-item-icon {
+    color: #16a34a;
+  }
+
+  /* Address Validation & Warning Banner */
+  .address-select-warning {
+    display: none;
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1.5px solid #f87171;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 8px;
+    line-height: 1.45;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+    animation: addressShake 0.35s ease;
+  }
+
+  .address-select-warning.is-visible {
+    display: block;
+  }
+
+  .address-input-wrap textarea.has-location-error {
+    border-color: #ef4444 !important;
+    background: #fffafa !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+  }
+
+  .address-input-wrap textarea.is-location-verified {
+    border-color: #22c55e !important;
+    background: #f0fdf4 !important;
+  }
+
+  @keyframes addressShake {
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    20%,
+    60% {
+      transform: translateX(-4px);
+    }
+
+    40%,
+    80% {
+      transform: translateX(4px);
+    }
+  }
+
+  /* Store Selection Modal / Bottom Sheet */
+  .store-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+  }
+
+  .store-modal-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .store-modal-card {
+    background: #fff;
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    transform: translateY(20px) scale(0.97);
+    transition: all 0.25s ease;
+    overflow: hidden;
+  }
+
+  .store-modal-backdrop.is-open .store-modal-card {
+    transform: translateY(0) scale(1);
+  }
+
+  .store-modal-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .store-modal-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: #0f172a;
+  }
+
+  .store-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .store-modal-close:hover {
+    color: #0f172a;
+  }
+
+  .store-modal-search {
+    padding: 12px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .store-modal-search input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    background: #fff;
+    box-sizing: border-box;
+  }
+
+  .store-modal-list {
+    padding: 12px 20px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .store-card-item {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    transition: all 0.2s ease;
+    background: #fff;
+  }
+
+  .store-card-item:hover {
+    border-color: #86efac;
+    background: #f0fdf4;
+  }
+
+  .store-card-item.is-selected {
+    border-color: #22c55e;
+    background: #f0fdf4;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+  }
+
+  .store-card-info {
+    flex: 1;
+  }
+
+  .store-card-title {
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .store-badge-nearest {
+    font-size: 0.72rem;
+    background: #dcfce7;
+    color: #15803d;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #86efac;
+  }
+
+  .store-card-address {
+    font-size: 0.84rem;
+    color: #475569;
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+
+  .store-card-metrics {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+  }
+
+  .store-metric-km {
+    font-weight: 700;
+    color: #16a34a;
+    background: #f0fdf4;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .store-metric-duration {
+    color: #64748b;
+  }
+
+  .store-card-radio {
+    margin-top: 4px;
+    width: 18px;
+    height: 18px;
+    accent-color: #16a34a;
+  }
+
+  @media (max-width: 640px) {
+    .store-modal-backdrop {
+      align-items: flex-end;
+      padding: 0;
+    }
+
+    .store-modal-card {
+      max-width: 100%;
+      max-height: 80vh;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      transform: translateY(100%);
+    }
+
+    .store-modal-backdrop.is-open .store-modal-card {
+      transform: translateY(0);
+    }
+
+    .location-store-banner {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .location-banner-btn-change {
+      text-align: center;
+      width: 100%;
+    }
+
+    .address-input-action-bar {
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-gps-trigger {
+      padding: 5px 11px;
+      font-size: 0.78rem;
+      gap: 5px;
+    }
+
+    .address-label-hint {
+      display: none;
+    }
+  }

@@ -11,6 +11,10 @@ require __DIR__ . '/config.local.php';
 
 date_default_timezone_set(APP_TIMEZONE ?? 'Asia/Taipei');
 
+if (!defined('GOONG_API_KEY')) {
+    define('GOONG_API_KEY', '');
+}
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_name('drink_order_sid');
     session_start();

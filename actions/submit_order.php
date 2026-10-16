@@ -94,6 +94,18 @@ try{
         if(!mark_customer_coupon_used($couponCode,$oid)) throw new RuntimeException('Coupon already used.');
     }
     if($groupCheckout)hyg_finish($groupCheckout,$oid);
+    $selectedStoreId = !empty($_POST['selected_store_id']) ? (int)$_POST['selected_store_id'] : null;
+    if ($selectedStoreId > 0) {
+        $stStore = $pdo->prepare('SELECT id, name, address, map_url FROM dispatch_stores WHERE id = ? AND enabled = 1');
+        $stStore->execute([$selectedStoreId]);
+        $storeRow = $stStore->fetch();
+        if ($storeRow) {
+            $upd = $pdo->prepare('UPDATE orders SET dispatch_store_id = ?, dispatch_store_name = ?, dispatch_store_address = ?, dispatch_store_map_url = ?, dispatch_assigned_at = UTC_TIMESTAMP(), dispatch_revision = 1 WHERE id = ?');
+            $upd->execute([(int)$storeRow['id'], (string)$storeRow['name'], (string)$storeRow['address'], (string)$storeRow['map_url'], $oid]);
+            $hist = $pdo->prepare('INSERT INTO dispatch_history(order_id, revision, store_id, name, address, map_url, admin_id, created_at) VALUES(?, 1, ?, ?, ?, ?, 0, UTC_TIMESTAMP())');
+            $hist->execute([$oid, (int)$storeRow['id'], (string)$storeRow['name'], (string)$storeRow['address'], (string)$storeRow['map_url']]);
+        }
+    }
     htp_initialize_order($oid);
     // This server-generated reference also authorizes recovery if COMMIT loses its reply.
     if($orderMemberId===null)htp_remember_customer_order($no);
