@@ -72,8 +72,8 @@ unset($_SESSION['hyg_message']);
         </label>
 
         <!-- CheckBox (AutoComplete) payment group -->
-        <!-- Bug chờ fix -->
-        <?= htp_render_group_fields() ?>
+        <!-- close-test-Hai | (Trưởng nhóm thu tiền hộ) -->
+        <!-- <?= htp_render_group_fields() ?> -->
 
         <?php if (!empty($_SESSION['cart'])): ?>
           <label class="hyg-check"><input type="checkbox" name="copy_cart" value="1" checked>
