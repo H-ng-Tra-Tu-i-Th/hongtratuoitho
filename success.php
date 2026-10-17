@@ -46,21 +46,21 @@ if ($savedOrder && $isTransfer && !$isConfirmed) {
 
 front_header(t('order_sent'));
 ?>
-<link rel="stylesheet" href="<?= e(base_url('assets/css/sepay-payment.css?v=1.0.0')) ?>">
-<link rel="stylesheet" href="<?= e(base_url('assets/css/order-success.css?v=1.0.0')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('assets/css/sepay-payment.css?v=1.0.3')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('assets/css/order-success.css?v=1.0.3')) ?>">
 
-<div class="order-success-container">
+<div class="payment-page-container order-success-container">
   <?php if ($savedOrder || $orderNo): ?>
-    <!-- 1. Hero Confirmation Banner -->
-    <header class="order-success-hero">
-      <div class="order-hero-icon-wrap" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+    <!-- 1. Hero Confirmation Banner (exact same classes and styles as payment.php) -->
+    <header class="payment-page-hero is-success">
+      <div class="payment-hero-icon-wrap is-success" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="20 6 9 17 4 12"></polyline>
         </svg>
       </div>
-      <span class="order-hero-eyebrow"><?= e(sepay_t('success_eyebrow')) ?></span>
-      <h1 class="order-hero-title"><?= e(sepay_t('success_heading')) ?></h1>
-      <p class="order-hero-desc">
+      <span class="payment-hero-eyebrow is-success"><?= e(sepay_t('success_eyebrow')) ?></span>
+      <h1 class="payment-hero-title"><?= e(sepay_t('success_heading')) ?></h1>
+      <p class="payment-hero-desc">
         <?php if ($isTransfer && $isConfirmed): ?>
           <?= e(sepay_t('sepay_success_desc_order')) ?>
         <?php else: ?>
@@ -69,16 +69,9 @@ front_header(t('order_sent'));
       </p>
 
       <?php if ($orderNo): ?>
-        <div class="order-code-badge">
-          <span class="order-code-label"><?= e(t('order_number')) ?>:</span>
-          <strong class="order-code-val"><?= e($orderNo) ?></strong>
-          <button type="button" class="btn-order-copy" data-sepay-copy="<?= e($orderNo) ?>" title="<?= e(sepay_t('success_copy_code')) ?>">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            <span><?= e(sepay_t('success_copy_code')) ?></span>
-          </button>
+        <div class="payment-code-badge" data-sepay-copy="<?= e($orderNo) ?>" title="<?= e(sepay_t('success_copy_code')) ?>" role="button" tabindex="0">
+          <span class="payment-code-label"><?= e(t('order_number')) ?>:</span>
+          <strong class="payment-code-val"><?= e($orderNo) ?></strong>
         </div>
       <?php endif; ?>
     </header>
@@ -269,24 +262,33 @@ front_header(t('order_sent'));
           </div>
         <?php endif; ?>
 
-        <!-- D. Quick Action Buttons -->
-        <section class="order-actions-card">
-          <div class="order-action-btns">
-            <a class="btn-primary-order" href="<?= e(base_url('index.php')) ?>">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6"></polyline>
-              </svg>
-              <span><?= e(sepay_t('success_order_more')) ?></span>
-            </a>
-          </div>
-        </section>
       </aside>
     </div>
 
-    <!-- 3. Guest Session Orders (Discrete bottom bar) -->
+    <!-- 3. Action Buttons Bar (exact same classes and styles as payment.php) -->
+    <div class="payment-actions-bar">
+      <a class="btn-payment-action primary" href="<?= e(base_url('index.php')) ?>">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span><?= e(sepay_t('success_order_more')) ?></span>
+      </a>
+
+      <?php if (!empty($savedOrder['phone'])): ?>
+        <a class="btn-payment-action secondary" href="<?= e(base_url('member/orders.php')) ?>">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+          </svg>
+          <span><?= e(t('my_orders') ?? 'Đơn hàng của tôi') ?></span>
+        </a>
+      <?php endif; ?>
+    </div>
+
+    <!-- 4. Guest Session Orders (exact same classes and styles as payment.php) -->
     <?php $sessionOrdersHtml = htp_render_session_orders(); ?>
     <?php if ($sessionOrdersHtml): ?>
-      <div class="order-session-chips">
+      <div class="payment-session-orders-wrap">
         <?= $sessionOrdersHtml ?>
       </div>
     <?php endif; ?>

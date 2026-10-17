@@ -66,7 +66,7 @@ if ($order) {
 
 front_header(sepay_t('sepay_card_title'));
 ?>
-<link rel="stylesheet" href="<?= e(base_url('assets/css/sepay-payment.css?v=1.0.1')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('assets/css/sepay-payment.css?v=1.0.3')) ?>">
 
 <div class="payment-page-container">
   <?php if ($message): ?>
@@ -89,16 +89,9 @@ front_header(sepay_t('sepay_card_title'));
       <h1 class="payment-hero-title"><?= e(sepay_t('sepay_card_title')) ?></h1>
       <p class="payment-hero-desc"><?= e(sepay_t('payment_gateway_desc')) ?></p>
 
-      <div class="payment-code-badge">
+      <div class="payment-code-badge" data-sepay-copy="<?= e($order['order_no']) ?>" title="<?= e(sepay_t('success_copy_code')) ?>" role="button" tabindex="0">
         <span class="payment-code-label"><?= e(t('order_number')) ?>:</span>
         <strong class="payment-code-val"><?= e($order['order_no']) ?></strong>
-        <button type="button" class="btn-order-copy" data-sepay-copy="<?= e($order['order_no']) ?>" title="<?= e(sepay_t('success_copy_code')) ?>">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-          <span><?= e(sepay_t('success_copy_code')) ?></span>
-        </button>
       </div>
     </header>
 

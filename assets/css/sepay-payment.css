@@ -377,6 +377,10 @@
   padding: 0 16px;
 }
 
+.payment-page-container.order-success-container {
+  max-width: 1040px;
+}
+
 /* 1. Payment Hero Banner */
 .payment-page-hero {
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -400,6 +404,10 @@
   background: linear-gradient(90deg, #0ea5e9, #2563eb, #10b981);
 }
 
+.payment-page-hero.is-success::before {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
 .payment-hero-icon-wrap {
   width: 60px;
   height: 60px;
@@ -411,6 +419,24 @@
   justify-content: center;
   margin-bottom: 14px;
   box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.08);
+}
+
+.payment-hero-icon-wrap.is-success {
+  background: #ecfdf5;
+  color: #059669;
+  box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+  animation: heroPulse 2s infinite ease-in-out;
+}
+
+@keyframes heroPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 14px rgba(16, 185, 129, 0.05);
+  }
 }
 
 .payment-hero-icon-wrap svg {
@@ -426,6 +452,10 @@
   color: #0284c7;
   text-transform: uppercase;
   margin-bottom: 6px;
+}
+
+.payment-hero-eyebrow.is-success {
+  color: #059669;
 }
 
 .payment-hero-title {
@@ -453,41 +483,47 @@
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
   border-radius: 9999px;
-  padding: 6px 14px 6px 16px;
-  font-size: 13px;
+  padding: 8px 20px;
+  font-size: 13.5px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.payment-code-badge:hover {
+  background: #ffffff;
+  border-color: #0284c7;
+  color: #0284c7;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.15);
+  transform: translateY(-1px);
+}
+
+.payment-code-badge:active {
+  transform: scale(0.98);
 }
 
 .payment-code-label {
   color: #64748b;
   font-weight: 500;
+  pointer-events: none;
+  transition: color 0.15s ease;
+}
+
+.payment-code-badge:hover .payment-code-label {
+  color: #0284c7;
 }
 
 .payment-code-val {
   color: #0f172a;
   font-family: monospace;
-  font-size: 14px;
+  font-size: 14.5px;
+  font-weight: 700;
   letter-spacing: 0.03em;
+  pointer-events: none;
 }
 
 .btn-order-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 9999px;
-  color: #475569;
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-order-copy:hover {
-  background: #f8fafc;
-  color: #0284c7;
-  border-color: #0284c7;
+  display: none !important;
 }
 
 /* 2. Reset legacy panel wrapper styling when in payment page */
@@ -630,3 +666,158 @@
   color: #1e293b;
   margin-bottom: 20px;
 }
+
+/* ==========================================================================
+   Comprehensive Mobile & Web Responsive Polish
+   ========================================================================== */
+@media (min-width: 641px) {
+  .payment-actions-bar {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+  }
+
+  .btn-payment-action {
+    min-width: 170px;
+  }
+}
+
+@media (max-width: 640px) {
+  .payment-page-container {
+    padding: 0 12px;
+    margin: 0 auto 36px;
+  }
+
+  .payment-page-hero {
+    padding: 24px 16px 20px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+
+  .payment-hero-icon-wrap {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 12px;
+  }
+
+  .payment-hero-icon-wrap svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .payment-hero-title {
+    font-size: 21px;
+    margin-bottom: 6px;
+  }
+
+  .payment-hero-desc {
+    font-size: 13.5px;
+    margin-bottom: 14px;
+    line-height: 1.45;
+  }
+
+  .payment-code-badge {
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 9999px;
+    padding: 8px 16px;
+    gap: 6px;
+    max-width: 100%;
+  }
+
+  .sepay-payment-card {
+    padding: 18px 14px;
+    border-radius: 18px;
+    margin: 14px 0;
+    gap: 16px;
+  }
+
+  .sepay-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .sepay-title {
+    font-size: 1.1rem;
+  }
+
+  .sepay-timer-badge {
+    align-self: flex-start;
+    font-size: 0.8rem;
+    padding: 3px 10px;
+  }
+
+  .sepay-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .sepay-qr-box {
+    width: 100%;
+    max-width: 240px;
+    margin: 0 auto;
+    padding: 12px;
+  }
+
+  .sepay-qr-img {
+    width: 100%;
+    max-width: 190px;
+    height: auto;
+    aspect-ratio: 1/1;
+  }
+
+  .sepay-info-list {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .sepay-info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 10px 14px;
+  }
+
+  .sepay-info-label {
+    font-size: 0.8rem;
+  }
+
+  .sepay-info-val-wrap {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sepay-info-val {
+    font-size: 0.95rem;
+  }
+
+  .sepay-info-val.amount {
+    font-size: 1.15rem;
+  }
+
+  .payment-info-callout {
+    padding: 12px 14px;
+    font-size: 13px;
+    border-radius: 12px;
+    margin: 16px 0;
+  }
+
+  .payment-actions-bar {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 18px;
+    width: 100%;
+  }
+
+  .btn-payment-action {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+}

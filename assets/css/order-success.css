@@ -1,152 +1,21 @@
 /**
  * HUIYI Tea - Order Success Page Styles
- * Premium, polished 2-column order confirmation layout
+ * Unified with SePay Payment Design System (Shared typography, radii, shadows & tokens)
  */
 
+/* 1. Container & Responsive 2-Column Layout */
 .order-success-container {
-  max-width: 1140px;
+  max-width: 1040px;
   margin: 0 auto 50px;
   padding: 0 16px;
 }
 
-/* 1. Hero Confirmation Banner */
-.order-success-hero {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border: 1px solid #e2e8f0;
-  border-radius: 24px;
-  padding: 36px 24px 32px;
-  text-align: center;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 10px -6px rgba(15, 23, 42, 0.02);
-  position: relative;
-  overflow: hidden;
-}
-
-.order-success-hero::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #10b981, #059669);
-}
-
-.order-hero-icon-wrap {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: #ecfdf5;
-  color: #059669;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
-  box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
-  animation: heroPulse 2s infinite ease-in-out;
-}
-
-@keyframes heroPulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
-  }
-  50% {
-    transform: scale(1.04);
-    box-shadow: 0 0 0 14px rgba(16, 185, 129, 0.05);
-  }
-}
-
-.order-hero-icon-wrap svg {
-  width: 32px;
-  height: 32px;
-  stroke-width: 2.5;
-}
-
-.order-hero-eyebrow {
-  display: block;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  color: #059669;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-
-.order-hero-title {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: #0f172a;
-  margin: 0 0 10px;
-}
-
-.order-hero-desc {
-  font-size: 15px;
-  color: #64748b;
-  max-width: 620px;
-  margin: 0 auto 20px;
-  line-height: 1.5;
-}
-
-.order-code-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  padding: 8px 16px;
-  border-radius: 999px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
-}
-
-.order-code-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-}
-
-.order-code-val {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 15px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: 0.04em;
-}
-
-.btn-order-copy {
-  border: none;
-  background: #f1f5f9;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-order-copy:hover {
-  background: #0f172a;
-  color: #ffffff;
-}
-
-/* 2. Responsive 2-Column Layout */
 .order-success-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(330px, 1fr);
+  grid-template-columns: minmax(0, 1.35fr) minmax(340px, 1fr);
   gap: 24px;
   margin-top: 24px;
   align-items: start;
-}
-
-@media (max-width: 920px) {
-  .order-success-layout {
-    grid-template-columns: 1fr;
-  }
 }
 
 .order-success-primary {
@@ -161,16 +30,25 @@
   gap: 20px;
 }
 
-/* 3. Cards Shared Styles */
+@media (min-width: 921px) {
+  .order-success-sidebar {
+    position: sticky;
+    top: 96px;
+  }
+}
+
+/* 2. Unified Cards Shared Styles (matches .sepay-payment-card) */
 .order-info-card,
 .order-items-card,
 .order-cod-card,
-.order-actions-card {
+.order-paid-status-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 20px;
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+  position: relative;
+  overflow: hidden;
 }
 
 .order-card-header {
@@ -191,6 +69,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: -0.01em;
 }
 
 .order-card-header svg {
@@ -199,12 +78,20 @@
   height: 18px;
 }
 
-/* 4. Cash on Delivery (COD) Card */
+/* 3. Paid Status Card (Confirmed VietQR Order) */
 .order-paid-status-card {
   background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  border-radius: 18px;
-  padding: 20px 24px;
+  border-color: #bbf7d0;
+}
+
+.order-paid-status-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #059669);
 }
 
 .order-paid-badge {
@@ -221,14 +108,14 @@
   font-size: 14px;
   color: #15803d;
   margin: 0 0 14px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .order-paid-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  font-size: 13px;
+  font-size: 13.5px;
   color: #166534;
   padding-top: 12px;
   border-top: 1px dashed #bbf7d0;
@@ -238,24 +125,20 @@
   color: #0f172a;
 }
 
-.order-pending-transfer-card {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 18px;
-  padding: 24px;
-  text-align: center;
-}
-
-.order-pending-transfer-card p {
-  font-size: 14px;
-  color: #1e40af;
-  margin: 0 0 16px;
-  line-height: 1.5;
-}
-
+/* 4. Cash on Delivery (COD) Card */
 .order-cod-card {
-  border-left: 4px solid #f59e0b;
   background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.order-cod-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #f59e0b, #d97706);
 }
 
 .order-cod-head {
@@ -301,7 +184,7 @@
 }
 
 .order-cod-total-box span {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: #78350f;
 }
@@ -321,6 +204,7 @@
 .order-delivery-item {
   display: flex;
   gap: 14px;
+  align-items: flex-start;
 }
 
 .order-delivery-item-icon {
@@ -349,13 +233,14 @@
   text-transform: uppercase;
   color: #64748b;
   margin-bottom: 2px;
+  letter-spacing: 0.05em;
 }
 
 .order-delivery-text {
   font-size: 14px;
   color: #0f172a;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .order-delivery-text a {
@@ -400,6 +285,7 @@
   gap: 6px;
   white-space: nowrap;
   transition: all 0.15s ease;
+  cursor: pointer;
 }
 
 .btn-store-call:hover {
@@ -415,7 +301,7 @@
   border-radius: 10px;
   font-size: 13px;
   color: #92400e;
-  line-height: 1.4;
+  line-height: 1.45;
   border-left: 3px solid #f59e0b;
 }
 
@@ -430,7 +316,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
   padding-bottom: 12px;
   border-bottom: 1px solid #f1f5f9;
 }
@@ -445,12 +331,13 @@
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 4px;
+  line-height: 1.4;
 }
 
 .order-item-meta {
   font-size: 12px;
   color: #64748b;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .order-item-qty {
@@ -465,7 +352,7 @@
 }
 
 .order-item-price {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 700;
   color: #0f172a;
   white-space: nowrap;
@@ -483,7 +370,7 @@
 .order-total-row {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
+  font-size: 13.5px;
   color: #64748b;
 }
 
@@ -495,100 +382,91 @@
   font-size: 16px;
   font-weight: 800;
   color: #0f172a;
-  padding-top: 8px;
+  padding-top: 10px;
   border-top: 1px dashed #cbd5e1;
 }
 
 .order-total-row.final strong {
-  font-size: 19px;
+  font-size: 20px;
   color: #0f172a;
 }
 
-/* 7. Action Buttons */
-.order-action-btns {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+/* 7. Promotion Voucher Slot */
+.order-promotion-slot {
+  margin-top: 4px;
 }
 
-.btn-primary-order {
-  background: #111827;
-  color: #ffffff;
-  border-radius: 12px;
-  padding: 13px 18px;
-  font-weight: 800;
-  font-size: 14px;
-  text-align: center;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+/* ==========================================================================
+   Comprehensive Mobile & Responsive Polish
+   ========================================================================== */
+@media (max-width: 920px) {
+  .order-success-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .order-success-sidebar {
+    order: 2;
+  }
 }
 
-.btn-primary-order:hover {
-  background: #1f2937;
-  transform: translateY(-1px);
-}
+@media (max-width: 640px) {
+  .order-success-container {
+    padding: 0 12px;
+    margin: 0 auto 36px;
+  }
 
-.btn-secondary-order {
-  background: #ffffff;
-  color: #334155;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 11px 18px;
-  font-weight: 700;
-  font-size: 13px;
-  text-align: center;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
+  .order-info-card,
+  .order-items-card,
+  .order-cod-card,
+  .order-paid-status-card {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
 
-.btn-secondary-order:hover {
-  background: #f8fafc;
-  color: #0f172a;
-}
+  .order-card-header {
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+  }
 
-/* 8. Session Orders Bottom Chips */
-.order-session-chips {
-  margin-top: 24px;
-  padding: 16px 20px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-}
+  .order-card-header h2,
+  .order-card-header h3 {
+    font-size: 15px;
+  }
 
-.order-session-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-  display: block;
-}
+  .order-paid-badge {
+    font-size: 15px;
+  }
 
-.order-session-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+  .order-paid-meta {
+    flex-direction: column;
+    gap: 8px;
+    font-size: 12.5px;
+  }
 
-.order-session-chip {
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  font-size: 12px;
-  font-weight: 700;
-  color: #334155;
-  transition: all 0.15s ease;
-}
+  .order-store-badge-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px 14px;
+  }
 
-.order-session-chip:hover {
-  background: #0f172a;
-  color: #ffffff;
-  border-color: #0f172a;
+  .btn-store-call {
+    width: 100%;
+    justify-content: center;
+    min-height: 44px;
+    font-size: 13px;
+  }
+
+  .order-summary-item {
+    gap: 10px;
+  }
+
+  .order-item-main h4 {
+    font-size: 13.5px;
+  }
+
+  .order-total-row.final strong {
+    font-size: 18px;
+  }
 }

@@ -192,8 +192,7 @@ front_header(t('order_info'));
           <button type="button" class="location-banner-btn-change" data-btn-change-store><?= e(sepay_t('gps_change_store')) ?></button>
         </div>
 
-        <!-- close-test-Hai Thêm css ẩn thông tin thanh toán (Thanh toán chung · Chuyển khoản) -->
-        <fieldset style="display: none;">
+        <fieldset>
           <legend><?= e(t('payment_method')) ?></legend>
           <?php if ($groupPayment): ?>
             <input type="hidden" name="payment_method" value="<?= e($groupPayCode) ?>">
