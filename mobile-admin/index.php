@@ -11,7 +11,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     redirect(ma_url('index.php'.(!empty($_GET['status'])?'?status='.urlencode((string)$_GET['status']):'')));
 }
 $status=is_string($_GET['status']??'')?$_GET['status']??'':'';$orders=htp_list_query($_GET,120);$dispatchList=hds_order_dispatch_list($orders);
-$counts=['new'=>0,'accepted'=>0,'done'=>0,'cancelled'=>0]; foreach(db()->query('SELECT status,COUNT(*) c FROM orders GROUP BY status')->fetchAll() as $r) if(isset($counts[$r['status']]))$counts[$r['status']]=(int)$r['c'];
+$counts=['new'=>0,'accepted'=>0,'done'=>0,'cancelled'=>0]; foreach(db()->query("SELECT o.status,COUNT(*) c FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id WHERE (o.payment_method != 'transfer' OR o.total_amount <= 0 OR r.status IN ('confirmed', 'overpaid') OR r.received_amount >= r.amount) GROUP BY o.status")->fetchAll() as $r) if(isset($counts[$r['status']]))$counts[$r['status']]=(int)$r['c'];
 ma_header(ma_t('orders')); ?>
 <?php if($error):?><div class="hds-notice danger" role="alert"><?=e($error)?></div><?php endif;?>
 <?=htp_render_list_filters(ma_url('index.php'),$_GET)?>

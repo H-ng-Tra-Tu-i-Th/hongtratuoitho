@@ -144,6 +144,49 @@
     font-size: 0.82rem;
   }
 
+  .location-banner-shipping {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 999px;
+    margin-left: 4px;
+    letter-spacing: 0.2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .location-banner-shipping.is-free {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #86efac;
+  }
+
+  .location-banner-shipping.is-grab {
+    background: #ffedd5;
+    color: #c2410c;
+    border: 1px solid #fdba74;
+  }
+
+  .shipping-review-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.95rem;
+    border-bottom: 1px dashed #e5e7eb;
+  }
+
+  .shipping-review-line .shipping-text-free {
+    color: #16a34a;
+    font-weight: 700;
+  }
+
+  .shipping-review-line .shipping-text-grab {
+    color: #ea580c;
+    font-weight: 700;
+  }
+
   .location-banner-reason {
     margin-top: 6px;
     background: rgba(255, 255, 255, 0.8);

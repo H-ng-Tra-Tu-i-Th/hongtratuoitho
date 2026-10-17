@@ -307,6 +307,9 @@
     const bannerDistanceWrap = wrap.querySelector('[data-banner-distance-wrap]');
     const bannerDistanceText = wrap.querySelector('[data-banner-distance-text]');
     const bannerDurationText = wrap.querySelector('[data-banner-duration-text]');
+    const bannerShippingText = wrap.querySelector('[data-banner-shipping-text]');
+    const reviewShippingWrap = document.querySelector('[data-review-shipping-wrap]');
+    const reviewShippingText = document.querySelector('[data-review-shipping-text]');
     const bannerReasonWrap = wrap.querySelector('[data-banner-reason-wrap]');
     const bannerReasonText = wrap.querySelector('[data-banner-reason-text]');
     const btnChangeStore = wrap.querySelector('[data-btn-change-store]');
@@ -379,6 +382,8 @@
         bannerEl.classList.remove('is-updated');
         if (bannerIcon) bannerIcon.classList.add('is-spinning');
         if (bannerReasonWrap) bannerReasonWrap.style.display = 'none';
+        if (bannerShippingText) bannerShippingText.style.display = 'none';
+        if (reviewShippingWrap) reviewShippingWrap.style.display = 'none';
 
         bannerStoreTitle.textContent = t('gps_calculating_nearest', 'Đang tính toán khoảng cách và tìm chi nhánh gần nhất...');
         bannerDistanceWrap.style.display = 'inline-flex';
@@ -412,8 +417,35 @@
           bannerDistanceWrap.style.display = 'inline-flex';
           bannerDistanceText.textContent = state.selectedStore.distance.text;
           bannerDurationText.textContent = state.selectedStore.duration ? t('gps_travel_time', `(~${state.selectedStore.duration.text} di chuyển)`, { time: state.selectedStore.duration.text }) : '';
+
+          // Tính số km từ Goong Maps API (distance.value là mét -> chia 1000 để ra km)
+          const distanceKm = (state.selectedStore.distance.value || 0) / 1000;
+          const isFreeship = distanceKm <= 3.0;
+
+          // In test console log để dễ theo dõi
+          console.log(`[Goong Map] Khoảng cách: ${distanceKm.toFixed(2)} km -> ${isFreeship ? 'Miễn phí giao hàng (Freeship)' : 'Tính phí theo Grab'}`);
+
+          // Cập nhật nhãn phí ship trên Banner chi nhánh
+          if (bannerShippingText) {
+            bannerShippingText.style.display = 'inline-flex';
+            bannerShippingText.className = 'location-banner-shipping ' + (isFreeship ? 'is-free' : 'is-grab');
+            bannerShippingText.innerHTML = isFreeship
+              ? `🎉 ${t('shipping_fee_freeship', 'Miễn phí giao hàng (Freeship ≤ 3km)')}`
+              : `🛵 ${t('shipping_fee_grab', 'Tính phí theo giá Grab (> 3km)')}`;
+          }
+
+          // Cập nhật dòng phí giao hàng trong Bảng tổng tiền đơn hàng (Order Review)
+          if (reviewShippingWrap && reviewShippingText) {
+            reviewShippingWrap.style.display = 'flex';
+            reviewShippingText.className = isFreeship ? 'shipping-text-free' : 'shipping-text-grab';
+            reviewShippingText.textContent = isFreeship
+              ? t('shipping_fee_freeship', 'Miễn phí giao hàng (Freeship ≤ 3km)')
+              : t('shipping_fee_grab', 'Tính phí theo giá Grab (> 3km)');
+          }
         } else {
           bannerDistanceWrap.style.display = 'none';
+          if (bannerShippingText) bannerShippingText.style.display = 'none';
+          if (reviewShippingWrap) reviewShippingWrap.style.display = 'none';
         }
 
         // Hiển thị lý do vì sao chọn chi nhánh này
@@ -436,6 +468,8 @@
         bannerEl.classList.remove('is-loading');
         if (bannerIcon) bannerIcon.classList.remove('is-spinning');
         if (bannerReasonWrap) bannerReasonWrap.style.display = 'none';
+        if (bannerShippingText) bannerShippingText.style.display = 'none';
+        if (reviewShippingWrap) reviewShippingWrap.style.display = 'none';
         if (btnChangeStore) {
           btnChangeStore.disabled = false;
           btnChangeStore.style.opacity = '1';

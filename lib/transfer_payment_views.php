@@ -331,11 +331,18 @@ function htp_render_customer(array $order): string
   $des = sepay_order_description($order['order_no']);
   $vietQrUrl = ($accNum && $bankName) ? sepay_qr_url($accNum, $bankName, (float) $r['amount'], $des, 'compact') : '';
 
+  // Tính thời gian giữ đơn thực tế dựa trên thời điểm tạo đơn trong DB (15 phút = 900 giây)
+  $createdAt = !empty($order['created_at']) ? strtotime($order['created_at'] . ' UTC') : time();
+  $holdSeconds = 15 * 60;
+  $remainingSeconds = max(0, ($createdAt + $holdSeconds) - time());
+  $countdownDisplay = sprintf('%02d:%02d', floor($remainingSeconds / 60), $remainingSeconds % 60);
+
   ob_start(); ?>
   <link rel="stylesheet" href="<?= e(base_url('assets/css/sepay-payment.css?v=1.0.0')) ?>">
   <section class="transfer-payment-panel sepay-payment-container" id="merchant-payment" data-sepay-panel
     data-is-confirmed="<?= $isConfirmed ? '1' : '0' ?>" data-order-no="<?= e($order['order_no']) ?>" data-payment-panel
     data-payment-version="<?= e($version) ?>"
+    data-duration-seconds="<?= (int) $remainingSeconds ?>"
     data-payment-state-url="<?= e(base_url('payment-state.php?order=' . rawurlencode($order['order_no']))) ?>"
     data-payment-changed="<?= e(htp_ux('changed')) ?>" data-payment-offline="<?= e(htp_ux('offline')) ?>"
     data-payment-lost="<?= e(htp_ux('session_lost')) ?>"
@@ -366,7 +373,7 @@ function htp_render_customer(array $order): string
           </h3>
           <span class="sepay-timer-badge">
             <span class="sepay-pulse-dot"></span>
-            <?= e(sepay_t('sepay_timer_label')) ?> <span data-sepay-countdown>15:00</span>
+            <?= e(sepay_t('sepay_timer_label')) ?> <span data-sepay-countdown><?= e($countdownDisplay) ?></span>
           </span>
         </div>
 

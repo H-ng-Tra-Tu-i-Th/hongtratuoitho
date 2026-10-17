@@ -76,6 +76,9 @@ function sepay_i18n_dictionary(): array {
             'gps_nearest_badge' => 'Gần bạn nhất',
             'gps_distance_away' => '📍 Cách {distance}',
             'gps_distance_calculating' => 'Khoảng cách đang tính',
+            'shipping_fee_freeship' => 'Miễn phí giao hàng (Freeship ≤ 3km)',
+            'shipping_fee_grab' => 'Tính phí theo giá Grab (> 3km)',
+            'shipping_fee_label' => 'Phí giao hàng',
 
             // Order Success Page
             'success_eyebrow' => 'ĐẶT HÀNG THÀNH CÔNG',
@@ -160,6 +163,9 @@ function sepay_i18n_dictionary(): array {
             'gps_nearest_badge' => 'Closest to you',
             'gps_distance_away' => '📍 {distance} away',
             'gps_distance_calculating' => 'Calculating distance',
+            'shipping_fee_freeship' => 'Free Delivery (≤ 3km)',
+            'shipping_fee_grab' => 'Delivery fee by Grab (> 3km)',
+            'shipping_fee_label' => 'Shipping fee',
 
             // Order Success Page
             'success_eyebrow' => 'ORDER RECEIVED',
@@ -244,6 +250,9 @@ function sepay_i18n_dictionary(): array {
             'gps_nearest_badge' => '離您最近',
             'gps_distance_away' => '📍 距離 {distance}',
             'gps_distance_calculating' => '距離計算中',
+            'shipping_fee_freeship' => '免外送費（3公里內免運）',
+            'shipping_fee_grab' => '依 Grab 費率計費（超過 3公里）',
+            'shipping_fee_label' => '外送費用',
 
             // Order Success Page
             'success_eyebrow' => '訂購成功',
@@ -291,4 +300,17 @@ function sepay_render_js_i18n(): string {
         'sepay' => $dict[$lang] ?? $dict['vi'],
     ];
     return '<script>window.__HUIYI_I18N__ = ' . json_encode($payload, JSON_UNESCAPED_UNICODE) . ';</script>' . "\n";
+}
+
+/**
+ * Kiểm tra chính sách phí ship theo số km tính từ Goong Maps (≤ 3km: freeship, > 3km: tính theo Grab).
+ */
+function sepay_shipping_policy(float $distanceKm): array {
+    $isFree = ($distanceKm <= 3.0);
+    return [
+        'is_free' => $isFree,
+        'distance_km' => $distanceKm,
+        'code' => $isFree ? 'freeship' : 'grab',
+        'text' => sepay_t($isFree ? 'shipping_fee_freeship' : 'shipping_fee_grab'),
+    ];
 }

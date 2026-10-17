@@ -182,6 +182,7 @@ front_header(t('order_info'));
               <div class="location-banner-distance" data-banner-distance-wrap style="display:none;">
                 <span class="location-banner-badge" data-banner-distance-text></span>
                 <span class="location-banner-duration" data-banner-duration-text></span>
+                <span class="location-banner-shipping" data-banner-shipping-text style="display:none;"></span>
               </div>
               <div class="location-banner-reason" data-banner-reason-wrap style="display:none;">
                 <span data-banner-reason-text></span>
@@ -319,6 +320,10 @@ front_header(t('order_info'));
         <div class="discount-line"><span><?= e(t('coupon_discount')) ?> ·
             <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div>
       <?php endif; ?>
+      <div class="shipping-review-line" data-review-shipping-wrap style="display:none;">
+        <span><?= e(sepay_t('shipping_fee_label')) ?></span>
+        <strong data-review-shipping-text></strong>
+      </div>
       <div class="review-total">
         <span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
     </div>

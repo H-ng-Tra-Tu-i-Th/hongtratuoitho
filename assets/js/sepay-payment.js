@@ -209,9 +209,7 @@
       const countdownEl = document.querySelector('[data-sepay-countdown]');
       if (!countdownEl) return;
 
-      this.countdownTimer = setInterval(() => {
-        if (this.isDestroyed) return;
-        this.remainingSeconds--;
+      const updateDisplay = () => {
         if (this.remainingSeconds <= 0) {
           this.stopCountdown();
           countdownEl.textContent = '00:00';
@@ -225,6 +223,14 @@
         const m = Math.floor(this.remainingSeconds / 60);
         const s = this.remainingSeconds % 60;
         countdownEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      };
+
+      updateDisplay();
+
+      this.countdownTimer = setInterval(() => {
+        if (this.isDestroyed) return;
+        this.remainingSeconds--;
+        updateDisplay();
       }, 1000);
     }
 
@@ -346,10 +352,14 @@
 
       const orderNo = individualPanel.dataset.orderNo || '';
       const stateUrl = individualPanel.dataset.paymentStateUrl || '';
+      const durationSeconds = individualPanel.dataset.durationSeconds !== undefined
+        ? Math.max(0, parseInt(individualPanel.dataset.durationSeconds, 10))
+        : 900;
       const service = new SepayPaymentService();
       const manager = new SepayPaymentManager(service, {
         orderNo,
         stateUrl,
+        durationSeconds,
         containerSelector: '[data-sepay-panel]',
         onPaymentConfirmed: () => {
           // Success handled in renderSuccessState
