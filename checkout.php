@@ -149,17 +149,17 @@ front_header(t('order_info'));
               <span><?= e(t('delivery_address')) ?></span>
             </label>
             <button type="button" class="btn-gps-trigger" data-btn-gps
-              title="Tự động lấy vị trí hiện tại của bạn qua GPS">
+              title="<?= e(sepay_t('gps_tooltip')) ?>">
               <span class="gps-radar-dot" aria-hidden="true"></span>
               <svg class="gps-icon-crosshair" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
               </svg>
-              <span class="btn-gps-text">Dùng vị trí hiện tại</span>
+              <span class="btn-gps-text"><?= e(sepay_t('gps_use_current')) ?></span>
             </button>
           </div>
           <textarea id="delivery-address-field" name="address" required maxlength="255" rows="3"
-            autocomplete="street-address" placeholder="Nhập địa chỉ nhận hàng (bắt buộc chọn từ gợi ý bên dưới)..."
+            autocomplete="street-address" placeholder="<?= e(sepay_t('gps_address_placeholder')) ?>"
             <?= hcq_field_attrs($fieldErrors, 'address') ?>><?= e($values['address']) ?></textarea>
           <div class="autocomplete-dropdown" data-autocomplete-dropdown></div>
           <div class="address-select-warning" data-address-warning role="alert"></div>
@@ -177,8 +177,8 @@ front_header(t('order_info'));
               </svg>
             </div>
             <div class="location-banner-content">
-              <span class="location-banner-eyebrow">Chi nhánh phục vụ tối ưu</span>
-              <div class="location-banner-title" data-banner-store-name>Đang tự động chọn chi nhánh gần nhất...</div>
+              <span class="location-banner-eyebrow"><?= e(sepay_t('gps_optimal_store')) ?></span>
+              <div class="location-banner-title" data-banner-store-name><?= e(sepay_t('gps_auto_detecting')) ?></div>
               <div class="location-banner-distance" data-banner-distance-wrap style="display:none;">
                 <span class="location-banner-badge" data-banner-distance-text></span>
                 <span class="location-banner-duration" data-banner-duration-text></span>
@@ -188,7 +188,7 @@ front_header(t('order_info'));
               </div>
             </div>
           </div>
-          <button type="button" class="location-banner-btn-change" data-btn-change-store>Đổi chi nhánh</button>
+          <button type="button" class="location-banner-btn-change" data-btn-change-store><?= e(sepay_t('gps_change_store')) ?></button>
         </div>
 
         <!-- close-test-Hai Thêm css ẩn thông tin thanh toán (Thanh toán chung · Chuyển khoản) -->
@@ -283,11 +283,11 @@ front_header(t('order_info'));
         aria-labelledby="store-modal-title">
         <div class="store-modal-card">
           <div class="store-modal-header">
-            <h3 id="store-modal-title">Chọn chi nhánh phục vụ</h3>
-            <button type="button" class="store-modal-close" data-modal-close aria-label="Đóng">&times;</button>
+            <h3 id="store-modal-title"><?= e(sepay_t('gps_select_store_title')) ?></h3>
+            <button type="button" class="store-modal-close" data-modal-close aria-label="<?= e(sepay_t('gps_close')) ?>">&times;</button>
           </div>
           <div class="store-modal-search">
-            <input type="text" placeholder="Tìm kiếm tên chi nhánh hoặc địa chỉ..." data-store-search>
+            <input type="text" placeholder="<?= e(sepay_t('gps_search_store_placeholder')) ?>" data-store-search>
           </div>
           <div class="store-modal-list" data-store-list>
             <!-- Danh sách chi nhánh cập nhật động theo khoảng cách từ Goong Maps -->
@@ -324,5 +324,6 @@ front_header(t('order_info'));
     </div>
   </aside>
 </div>
+<?= sepay_render_js_i18n() ?>
 <script src="<?= e(base_url('assets/js/goong-location.js?v=1.0.0')) ?>" defer></script>
 <?php front_footer(); ?>

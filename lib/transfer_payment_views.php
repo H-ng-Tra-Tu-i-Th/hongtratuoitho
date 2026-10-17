@@ -176,9 +176,11 @@ function htp(string $key, array $vars = []): string
     'en' => ['order_first' => 'Submit the order first. Then verify its recipient and order reference on the payment page before transferring. If no account is configured, the store will provide details when confirming.', 'not_required' => 'No payment required (zero total)', 'funds_ready' => 'Host funds prepared', 'collected' => 'Host collection confirmed', 'contribution' => 'Host contribution / advances'],
     'zh' => ['order_first' => '請先送出訂單，取得訂單編號並在訂單付款頁確認收款對象後再轉帳；若尚未設定帳戶，店家會在確認訂單時另行提供資訊。', 'not_required' => '無需付款（訂單金額為零）', 'funds_ready' => '團主出資已備妥', 'collected' => '團主已確認代收', 'contribution' => '團主自購／墊付出資'],
   ];
-  foreach ($extra as $lang => $values) $copy[$lang] = array_merge($copy[$lang], $values);
+  foreach ($extra as $lang => $values)
+    $copy[$lang] = array_merge($copy[$lang], $values);
   $text = $copy[current_lang()][$key] ?? $copy['vi'][$key] ?? $key;
-  foreach ($vars as $k => $v) $text = str_replace('{' . $k . '}', (string)$v, $text);
+  foreach ($vars as $k => $v)
+    $text = str_replace('{' . $k . '}', (string) $v, $text);
   return $text;
 }
 function htp_ux(string $key): string
@@ -196,156 +198,371 @@ function htp_copy(string $value, string $label, ?string $display = null): string
 }
 function htp_contact(?array $order = null): string
 {
-  if (!$order || empty($order['dispatch_store_id'])) return '';
-  $store = hyg_one('SELECT phone FROM dispatch_stores WHERE id=?', [(int)$order['dispatch_store_id']]);
-  $phone = trim((string)($store['phone'] ?? ''));
+  if (!$order || empty($order['dispatch_store_id']))
+    return '';
+  $store = hyg_one('SELECT phone FROM dispatch_stores WHERE id=?', [(int) $order['dispatch_store_id']]);
+  $phone = trim((string) ($store['phone'] ?? ''));
   $dial = preg_replace('/[^0-9+]/', '', $phone);
-  if ($phone === '' || !preg_match('/^\+?[0-9]{6,20}$/D', $dial)) return '';
+  if ($phone === '' || !preg_match('/^\+?[0-9]{6,20}$/D', $dial))
+    return '';
   return '<a class="btn" href="tel:' . e($dial) . '">' . e(htp_ux('contact')) . ' · ' . e($phone) . '</a>';
 }
 function htp_render_session_orders(): string
 {
   $numbers = $_SESSION['customer_payment_orders'] ?? [];
-  if (!is_array($numbers) || !$numbers) return '';
+  if (!is_array($numbers) || !$numbers)
+    return '';
   $links = [];
   foreach (array_reverse(array_slice($numbers, -10)) as $number) {
-    if (!is_string($number)) continue;
+    if (!is_string($number))
+      continue;
     try {
       $order = htp_customer_order($number);
       $links[] = '<a class="btn small" href="' . e(base_url('payment.php?order=' . rawurlencode($number))) . '">' . e($number) . '</a>';
     } catch (Throwable $e) {
     }
   }
-  if (!$links) return '';
+  if (!$links)
+    return '';
   return '<nav aria-label="' . e(htp_ux('same_session')) . '"><strong>' . e(htp_ux('same_session')) . '</strong><div class="payment-session-orders">' . implode('', $links) . '</div><p class="muted">' . e(htp_ux('guest_note')) . '</p></nav>';
 }
 function htp_render_account(array $a): string
 {
-  ob_start(); ?><article class="transfer-account-card payment-account-card">
-    <div class="transfer-account-main"><?php if (!empty($a['recipient'])): ?><small><?= e(htp('recipient')) ?>：<?= e($a['recipient']) ?></small><?php endif; ?><strong><?= e($a['bank_name'] ?? '') ?></strong>
+  ob_start(); ?>
+  <article class="transfer-account-card payment-account-card">
+    <div class="transfer-account-main">
+      <?php if (!empty($a['recipient'])): ?><small><?= e(htp('recipient')) ?>：<?= e($a['recipient']) ?></small><?php endif; ?><strong><?= e($a['bank_name'] ?? '') ?></strong>
       <dl>
         <dt><?= e(t('account_number')) ?></dt>
-        <dd><?= htp_copy((string)($a['account_number'] ?? ''), t('account_number')) ?></dd>
+        <dd><?= htp_copy((string) ($a['account_number'] ?? ''), t('account_number')) ?></dd>
         <dt><?= e(t('account_name')) ?></dt>
         <dd><?= e($a['account_name'] ?? '') ?></dd>
       </dl>
-    </div><?php if (!empty($a['qr_url'])): ?><div class="payment-qr"><a href="<?= e($a['qr_url']) ?>" target="_blank" rel="noopener noreferrer" data-payment-qr data-qr-title="<?= e(t('transfer_qr_alt')) ?>"><img loading="lazy" src="<?= e($a['qr_url']) ?>" alt="<?= e(t('transfer_qr_alt')) ?>" width="180" height="180"><span><?= e(htp_ux('qr_open')) ?></span></a><a class="btn small" href="<?= e($a['qr_url']) ?>" download="payment-qr.png"><?= e(htp_ux('qr_save')) ?></a></div><?php endif; ?>
+    </div><?php if (!empty($a['qr_url'])): ?>
+      <div class="payment-qr"><a href="<?= e($a['qr_url']) ?>" target="_blank" rel="noopener noreferrer" data-payment-qr
+          data-qr-title="<?= e(t('transfer_qr_alt')) ?>"><img loading="lazy" src="<?= e($a['qr_url']) ?>"
+            alt="<?= e(t('transfer_qr_alt')) ?>" width="180" height="180"><span><?= e(htp_ux('qr_open')) ?></span></a><a
+          class="btn small" href="<?= e($a['qr_url']) ?>" download="payment-qr.png"><?= e(htp_ux('qr_save')) ?></a></div>
+    <?php endif; ?>
   </article><?php return ob_get_clean();
-          }
-          function htp_render_group_fields(): string
-          {
-            ob_start(); ?><details class="hyg-card">
+}
+function htp_render_group_fields(): string
+{
+  ob_start(); ?>
+  <details class="hyg-card">
     <summary><?= e(htp('host_collect')) ?></summary>
-    <p class="hyg-muted"><?= e(htp('host_help')) ?></p><label class="hyg-check"><input type="checkbox" name="collect_by_host" value="1"><span><?= e(htp('host_collect')) ?></span></label><label><?= e(htp('host_bank')) ?><input name="host_bank_name" maxlength="120" autocomplete="off"></label><label><?= e(htp('host_number')) ?><input name="host_account_number" maxlength="80" autocomplete="off"></label><label><?= e(htp('host_name')) ?><input name="host_account_name" maxlength="160" autocomplete="off"></label><label><?= e(htp('host_qr')) ?><input type="file" name="host_qr" accept="image/jpeg,image/png,image/webp"><small><?= e(htp('qr_help')) ?></small></label>
+    <p class="hyg-muted"><?= e(htp('host_help')) ?></p><label class="hyg-check"><input type="checkbox"
+        name="collect_by_host"
+        value="1"><span><?= e(htp('host_collect')) ?></span></label><label><?= e(htp('host_bank')) ?><input
+        name="host_bank_name" maxlength="120" autocomplete="off"></label><label><?= e(htp('host_number')) ?><input
+        name="host_account_number" maxlength="80" autocomplete="off"></label><label><?= e(htp('host_name')) ?><input
+        name="host_account_name" maxlength="160" autocomplete="off"></label><label><?= e(htp('host_qr')) ?><input
+        type="file" name="host_qr"
+        accept="image/jpeg,image/png,image/webp"><small><?= e(htp('qr_help')) ?></small></label>
   </details><?php return ob_get_clean();
-          }
-          function htp_render_store_fields(array $store): string
-          {
-            ob_start(); ?><fieldset>
+}
+function htp_render_store_fields(array $store): string
+{
+  ob_start(); ?>
+  <fieldset>
     <legend><?= e(htp('store_account')) ?></legend>
-    <p class="hds-help"><?= e(htp('store_help')) ?></p><label class="hds-check"><input type="checkbox" name="transfer_enabled" value="1" <?= !empty($store['transfer_enabled']) ? 'checked' : '' ?>><span><?= e(htp('enabled')) ?></span></label>
-    <div class="hds-field-grid"><label><?= e(t('bank_name')) ?><input name="transfer_bank_name" value="<?= e($store['transfer_bank_name'] ?? '') ?>" maxlength="120"></label><label><?= e(t('account_number')) ?><input name="transfer_account_number" value="<?= e($store['transfer_account_number'] ?? '') ?>" maxlength="80"></label><label><?= e(t('account_name')) ?><input name="transfer_account_name" value="<?= e($store['transfer_account_name'] ?? '') ?>" maxlength="160"></label><label><?= e(t('qr_image')) ?><input type="file" name="transfer_qr" accept="image/jpeg,image/png,image/webp"><small><?= e(htp('qr_help')) ?></small></label></div><?php if (!empty($store['transfer_has_qr'])): ?><img src="<?= e(base_url('payment-qr.php?type=store&store=' . (int)$store['id'])) ?>" alt="<?= e(t('transfer_qr_alt')) ?>" width="160" height="160" style="max-width:100%;height:auto"><label class="hds-check"><input type="checkbox" name="remove_transfer_qr" value="1"><span><?= e(htp('remove_qr')) ?></span></label><?php endif; ?>
+    <p class="hds-help"><?= e(htp('store_help')) ?></p><label class="hds-check"><input type="checkbox"
+        name="transfer_enabled" value="1" <?= !empty($store['transfer_enabled']) ? 'checked' : '' ?>><span><?= e(htp('enabled')) ?></span></label>
+    <div class="hds-field-grid"><label><?= e(t('bank_name')) ?><input name="transfer_bank_name"
+          value="<?= e($store['transfer_bank_name'] ?? '') ?>"
+          maxlength="120"></label><label><?= e(t('account_number')) ?><input name="transfer_account_number"
+          value="<?= e($store['transfer_account_number'] ?? '') ?>"
+          maxlength="80"></label><label><?= e(t('account_name')) ?><input name="transfer_account_name"
+          value="<?= e($store['transfer_account_name'] ?? '') ?>"
+          maxlength="160"></label><label><?= e(t('qr_image')) ?><input type="file" name="transfer_qr"
+          accept="image/jpeg,image/png,image/webp"><small><?= e(htp('qr_help')) ?></small></label></div>
+    <?php if (!empty($store['transfer_has_qr'])): ?><img
+        src="<?= e(base_url('payment-qr.php?type=store&store=' . (int) $store['id'])) ?>"
+        alt="<?= e(t('transfer_qr_alt')) ?>" width="160" height="160" style="max-width:100%;height:auto"><label
+        class="hds-check"><input type="checkbox" name="remove_transfer_qr"
+          value="1"><span><?= e(htp('remove_qr')) ?></span></label><?php endif; ?>
   </fieldset><?php return ob_get_clean();
-            }
-            function htp_customer_version(array $order, array $r, ?array $accounts = null): string
-            {
-              $accounts ??= (empty($r['recipient_json']) || ($r['report_state'] ?? '') === 'rejected') ? htp_order_accounts($order) : [];
-              $quotes = [];
-              foreach ($accounts as $a) $quotes[] = htp_quote($order, $r, $a);
-              return hash('sha256', json_encode([(int)$r['version'], $order['status'], $r['status'], $r['financial_state'] ?? '', $r['received_amount'] ?? 0, $r['refunded_amount'] ?? 0, $r['report_state'] ?? '', (int)($order['dispatch_revision'] ?? 0), $quotes], JSON_THROW_ON_ERROR));
-            }
-            function htp_payment_label(array $r): string
-            {
-              return function_exists('pwf') ? pwf($r['financial_state'] ?? ($r['status'] === 'pending' ? 'unpaid' : $r['status'])) : htp($r['status']);
-            }
-            function htp_render_customer(array $order): string
-            {
-              if (!htp_customer_allowed($order)) return '';
-              $r = htp_receipt((int)$order['id']);
-              if (!$r) return '';
-              $summary = hyg_order_payment_summary($order);
-              $host = ($summary['collection_mode'] ?? 'store') === 'host';
-              $cancelled = $order['status'] === 'cancelled';
-              $legacy = !empty($r['ledger_only']);
-              $rejected = ($r['report_state'] ?? '') === 'rejected';
-              $accounts = $r['recipient_json'] && !$rejected ? [] : htp_order_accounts($order);
-              $version = htp_customer_version($order, $r, $accounts);
-              $canReport = !$cancelled && !$legacy && $r['status'] === 'pending' && (float)($r['received_amount'] ?? 0) <= 0;
-              $financial = $r['financial_state'] ?? $r['status'];
-              $paymentUrl = base_url('payment.php?order=' . rawurlencode($order['order_no']));
-              ob_start(); ?>
-  <section class="transfer-payment-panel" id="merchant-payment" data-payment-panel data-payment-version="<?= e($version) ?>" data-payment-state-url="<?= e(base_url('payment-state.php?order=' . rawurlencode($order['order_no']))) ?>" data-payment-changed="<?= e(htp_ux('changed')) ?>" data-payment-offline="<?= e(htp_ux('offline')) ?>" data-payment-lost="<?= e(htp_ux('session_lost')) ?>" data-payment-login="<?= e(base_url('member/index.php?return_order=' . rawurlencode($order['order_no']))) ?>" data-payment-login-label="<?= e(htp_ux('login')) ?>" data-payment-copied="<?= e(htp_ux('copied')) ?>" data-payment-copy-manual="<?= e(htp_ux('copy_manual')) ?>" data-payment-close="<?= e(htp_ux('qr_close')) ?>">
-    <h2><?= e(htp('merchant_title')) ?></h2>
-    <div class="hyg-person-total"><strong><?= e(htp('merchant_total')) ?></strong><?= htp_copy((string)(int)round((float)$r['amount']), t('total'), money($r['amount'])) ?> <span><?= e(currency()) ?></span></div>
-    <p><?= e(htp_ux('payment_method')) ?>：<?= e(payment_label($order['payment_method'])) ?></p><?php if ($host): ?><p><?= e(htp('merchant_host')) ?></p>
-      <p class="muted"><?= e(htp('collected_hint')) ?></p><?php endif; ?><p role="status"><strong><?= e($cancelled ? htp('cancelled') : htp_payment_label($r)) ?></strong></p>
-    <?php if ($legacy): ?><p class="alert info"><?= e(htp('legacy')) ?></p><?php elseif ($financial === 'not_required'): ?><p><?= e(htp_ux('not_required_hint')) ?></p><?php else: ?><p class="muted"><?= e(htp('confirmed_hint')) ?></p><?php endif; ?>
-    <?php if ((float)($r['received_amount'] ?? 0) > 0 || ($r['report_state'] ?? '') === 'rejected'): ?><div class="payment-financial-summary"><?php foreach (['received_amount', 'refunded_amount', 'balance_due', 'refund_due'] as $key): ?><div><span><?= e(pwf($key)) ?></span><b><?= e(currency()) ?><?= money($r[$key] ?? 0) ?></b></div><?php endforeach; ?></div>
-      <p class="alert info"><?= e(htp_ux('reconcile')) ?></p><?php endif; ?>
-    <?php if ($r['recipient_json']): $a = json_decode($r['recipient_json'], true);
-                if ($rejected): ?><details>
-          <summary><?= e(pwf('snapshot_account')) ?></summary><?php endif; ?><?php if (is_array($a)) {
-                                                                                $a['qr_url'] = !$cancelled && !$legacy && !$rejected && !empty($r['has_qr']) ? base_url('payment-qr.php?type=receipt&order=' . rawurlencode($order['order_no'])) : '';
-                                                                                if ($order['payment_method'] === 'transfer') echo htp_render_account($a);
-                                                                              } ?><?php if ($rejected): ?>
-        </details>
-        <p class="alert info"><?= e(htp('changed')) ?></p><?php else: ?><p class="muted"><?= e(htp('recipient_frozen')) ?></p><?php endif; ?>
-    <?php endif;
-              if ($canReport): ?>
-      <?php if ($order['payment_method'] === 'cash'): ?><p><?= e(htp('cash_help')) ?></p><?php elseif (!$accounts): ?><p role="status"><?= e(htp('missing')) ?></p><?php endif; ?>
-      <?php foreach ($accounts as $a): ?><?php if ($order['payment_method'] === 'transfer'): ?><?= htp_render_account($a) ?><?php endif; ?><form method="post" action="<?= e($paymentUrl) ?>" data-payment-report data-confirm="<?= e(htp('report_prompt')) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="report"><input type="hidden" name="account_code" value="<?= e($a['code']) ?>"><input type="hidden" name="payment_quote" value="<?= e(htp_quote($order, $r, $a)) ?>"><button class="btn primary" type="submit"><?= e(htp('report')) ?></button></form><?php endforeach; ?>
-  <?php endif; ?><div class="payment-reference"><span><?= e(htp('reference', ['number' => ''])) ?></span><?= htp_copy($order['order_no'], t('order_number')) ?></div>
-  <p class="muted"><?= e(htp_ux('qr_verify')) ?></p>
-  <p class="payment-sync-note muted" role="status" aria-live="polite" data-payment-feedback><?= e(htp_ux('live')) ?></p>
-  <div class="payment-actions"><a class="btn" href="<?= e($paymentUrl) ?>" data-payment-refresh><?= e(htp('refresh')) ?></a><?= htp_contact($order) ?></div>
-  </section><?php return ob_get_clean();
-            }
-            function htp_render_staff(array $order): string
-            {
-              $r = htp_receipt((int)$order['id']);
-              if (!$r) {
-                $r = htp_financial_summary($order, null);
-                $r += ['recipient_json' => null, 'reported_at' => null, 'confirmed_at' => null, 'confirmed_by_admin_id' => null];
-                $r['version'] = 1;
-              }
-              $accounts = htp_staff_accounts($order);
-              $events = htp_events((int)$order['id']);
-              $cancelled = $order['status'] === 'cancelled';
-              ob_start(); ?><section class="panel ma-panel" id="merchant-payment">
+}
+function htp_customer_version(array $order, array $r, ?array $accounts = null): string
+{
+  $accounts ??= (empty($r['recipient_json']) || ($r['report_state'] ?? '') === 'rejected') ? htp_order_accounts($order) : [];
+  $quotes = [];
+  foreach ($accounts as $a)
+    $quotes[] = htp_quote($order, $r, $a);
+  return hash('sha256', json_encode([(int) $r['version'], $order['status'], $r['status'], $r['financial_state'] ?? '', $r['received_amount'] ?? 0, $r['refunded_amount'] ?? 0, $r['report_state'] ?? '', (int) ($order['dispatch_revision'] ?? 0), $quotes], JSON_THROW_ON_ERROR));
+}
+function htp_payment_label(array $r): string
+{
+  return function_exists('pwf') ? pwf($r['financial_state'] ?? ($r['status'] === 'pending' ? 'unpaid' : $r['status'])) : htp($r['status']);
+}
+function htp_render_customer(array $order): string
+{
+  if (!htp_customer_allowed($order))
+    return '';
+  $r = htp_receipt((int) $order['id']);
+  if (!$r)
+    return '';
+  $summary = hyg_order_payment_summary($order);
+  $host = ($summary['collection_mode'] ?? 'store') === 'host';
+  $cancelled = $order['status'] === 'cancelled';
+  $legacy = !empty($r['ledger_only']);
+  $rejected = ($r['report_state'] ?? '') === 'rejected';
+  $accounts = $r['recipient_json'] && !$rejected ? [] : htp_order_accounts($order);
+  $version = htp_customer_version($order, $r, $accounts);
+  $canReport = !$cancelled && !$legacy && $r['status'] === 'pending' && (float) ($r['received_amount'] ?? 0) <= 0;
+  $financial = $r['financial_state'] ?? $r['status'];
+  $isConfirmed = in_array($financial, ['confirmed', 'not_required'], true) || ((float) ($r['received_amount'] ?? 0) >= (float) $r['amount'] && (float) $r['amount'] > 0);
+  $paymentUrl = base_url('payment.php?order=' . rawurlencode($order['order_no']));
+
+  // Resolve bank account details for SePay VietQR
+  $selectedAcc = null;
+  if (!empty($r['recipient_json']) && !$rejected) {
+    $selectedAcc = json_decode($r['recipient_json'], true);
+  }
+  if (!$selectedAcc && $accounts) {
+    $selectedAcc = $accounts[0];
+  }
+  if (!$selectedAcc) {
+    $selectedAcc = hyg_one('SELECT bank_name, account_number, account_name FROM bank_accounts WHERE active = 1 ORDER BY sort_order, id LIMIT 1');
+  }
+  $bankName = $selectedAcc['bank_name'] ?? '';
+  $accNum = $selectedAcc['account_number'] ?? '';
+  $accName = $selectedAcc['account_name'] ?? '';
+  $des = sepay_order_description($order['order_no']);
+  $vietQrUrl = ($accNum && $bankName) ? sepay_qr_url($accNum, $bankName, (float) $r['amount'], $des, 'compact') : '';
+
+  ob_start(); ?>
+  <link rel="stylesheet" href="<?= e(base_url('assets/css/sepay-payment.css?v=1.0.0')) ?>">
+  <section class="transfer-payment-panel sepay-payment-container" id="merchant-payment" data-sepay-panel
+    data-is-confirmed="<?= $isConfirmed ? '1' : '0' ?>" data-order-no="<?= e($order['order_no']) ?>" data-payment-panel
+    data-payment-version="<?= e($version) ?>"
+    data-payment-state-url="<?= e(base_url('payment-state.php?order=' . rawurlencode($order['order_no']))) ?>"
+    data-payment-changed="<?= e(htp_ux('changed')) ?>" data-payment-offline="<?= e(htp_ux('offline')) ?>"
+    data-payment-lost="<?= e(htp_ux('session_lost')) ?>"
+    data-payment-login="<?= e(base_url('member/index.php?return_order=' . rawurlencode($order['order_no']))) ?>"
+    data-payment-login-label="<?= e(htp_ux('login')) ?>" data-payment-copied="<?= e(htp_ux('copied')) ?>"
+    data-payment-copy-manual="<?= e(htp_ux('copy_manual')) ?>" data-payment-close="<?= e(htp_ux('qr_close')) ?>">
+
+    <?php if ($isConfirmed): ?>
+      <div class="sepay-success-card">
+        <div class="sepay-success-icon" aria-hidden="true">✓</div>
+        <h3 class="sepay-success-title"><?= e(sepay_t('sepay_success_title')) ?></h3>
+        <p class="sepay-success-desc"><?= e(sepay_t('sepay_success_desc_order')) ?></p>
+        <div class="sepay-success-details">
+          <div><span><?= e(sepay_t('sepay_order_number')) ?></span> <strong><?= e($order['order_no']) ?></strong></div>
+          <div><span><?= e(sepay_t('sepay_status')) ?></span> <b class="badge-success"><?= e(htp_payment_label($r)) ?></b></div>
+          <div><span><?= e(sepay_t('sepay_received')) ?></span> <strong><?= e(currency()) ?><?= money($r['received_amount']) ?></strong></div>
+        </div>
+      </div>
+    <?php elseif ($order['payment_method'] === 'transfer' && $vietQrUrl): ?>
+      <article class="sepay-payment-card">
+        <div class="sepay-header">
+          <h3 class="sepay-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <line x1="2" y1="10" x2="22" y2="10" />
+            </svg>
+            <?= e(sepay_t('sepay_card_title')) ?>
+          </h3>
+          <span class="sepay-timer-badge">
+            <span class="sepay-pulse-dot"></span>
+            <?= e(sepay_t('sepay_timer_label')) ?> <span data-sepay-countdown>15:00</span>
+          </span>
+        </div>
+
+        <div class="sepay-grid">
+          <div class="sepay-qr-box">
+            <img src="<?= e($vietQrUrl) ?>" alt="VietQR" class="sepay-qr-img" data-sepay-qr-modal
+              data-sepay-qr-src="<?= e($vietQrUrl) ?>" title="VietQR">
+            <div class="sepay-qr-actions">
+              <button type="button" class="btn small" data-sepay-qr-modal data-sepay-qr-src="<?= e($vietQrUrl) ?>"><?= e(sepay_t('sepay_qr_zoom')) ?></button>
+              <a class="btn small" href="<?= e($vietQrUrl) ?>&download=true"
+                download="VietQR-<?= e($order['order_no']) ?>.png"><?= e(sepay_t('sepay_qr_download')) ?></a>
+            </div>
+          </div>
+
+          <div class="sepay-info-list">
+            <div class="sepay-info-item">
+              <span class="sepay-info-label"><?= e(sepay_t('sepay_bank')) ?></span>
+              <div class="sepay-info-val-wrap">
+                <span class="sepay-info-val"><?= e($bankName) ?> (<?= e(sepay_bank_code($bankName)) ?>)</span>
+              </div>
+            </div>
+
+            <div class="sepay-info-item">
+              <span class="sepay-info-label"><?= e(sepay_t('sepay_account_number')) ?></span>
+              <div class="sepay-info-val-wrap">
+                <span class="sepay-info-val" data-sepay-copy="<?= e($accNum) ?>"><?= e($accNum) ?></span>
+              </div>
+            </div>
+
+            <div class="sepay-info-item">
+              <span class="sepay-info-label"><?= e(sepay_t('sepay_account_name')) ?></span>
+              <div class="sepay-info-val-wrap">
+                <span class="sepay-info-val"><?= e($accName) ?></span>
+              </div>
+            </div>
+
+            <div class="sepay-info-item">
+              <span class="sepay-info-label"><?= e(sepay_t('sepay_amount')) ?></span>
+              <div class="sepay-info-val-wrap">
+                <span class="sepay-info-val amount"><?= e(currency()) ?><?= money($r['amount']) ?></span>
+              </div>
+            </div>
+
+            <div class="sepay-info-item">
+              <span class="sepay-info-label"><?= e(sepay_t('sepay_transfer_syntax')) ?></span>
+              <div class="sepay-info-val-wrap">
+                <span class="sepay-info-val syntax" data-sepay-copy="<?= e($des) ?>"><?= e($des) ?></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sepay-live-status">
+          <div class="sepay-spinner"></div>
+          <span data-sepay-status-note><?= e(sepay_t('sepay_waiting_status')) ?></span>
+        </div>
+      </article>
+    <?php endif; ?>
+
+    <?php if (!$isConfirmed && !$vietQrUrl): ?>
+      <div class="hyg-person-total">
+        <strong><?= e(htp('merchant_total')) ?></strong><?= htp_copy((string) (int) round((float) $r['amount']), t('total'), money($r['amount'])) ?>
+        <span><?= e(currency()) ?></span></div>
+      <p><?= e(htp_ux('payment_method')) ?>：<?= e(payment_label($order['payment_method'])) ?></p><?php if ($host): ?>
+        <p><?= e(htp('merchant_host')) ?></p>
+        <p class="muted"><?= e(htp('collected_hint')) ?></p><?php endif; ?>
+      <p role="status"><strong><?= e($cancelled ? htp('cancelled') : htp_payment_label($r)) ?></strong></p>
+      <?php if ($legacy): ?>
+        <p class="alert info"><?= e(htp('legacy')) ?></p><?php elseif ($financial === 'not_required'): ?>
+        <p><?= e(htp_ux('not_required_hint')) ?></p><?php else: ?>
+        <p class="muted"><?= e(htp('confirmed_hint')) ?></p><?php endif; ?>
+    <?php endif; ?>
+
+    <?php if (!$isConfirmed && ((float) ($r['received_amount'] ?? 0) > 0 || ($r['report_state'] ?? '') === 'rejected')): ?>
+      <div class="payment-financial-summary">
+        <?php foreach (['received_amount', 'refunded_amount', 'balance_due', 'refund_due'] as $key): ?>
+          <div><span><?= e(pwf($key)) ?></span><b><?= e(currency()) ?><?= money($r[$key] ?? 0) ?></b></div>
+        <?php endforeach; ?>
+      </div>
+      <p class="alert info"><?= e(htp_ux('reconcile')) ?></p>
+    <?php endif; ?>
+
+    <?php if ($canReport && $order['payment_method'] === 'transfer' && !$isConfirmed): ?>
+      <details class="sepay-manual-report">
+        <summary><?= e(sepay_t('sepay_help_toggle')) ?></summary>
+        <p class="muted"><?= e(sepay_t('sepay_help_desc')) ?></p>
+        <?php foreach ($accounts as $a): ?>
+          <form method="post" action="<?= e($paymentUrl) ?>" data-payment-report
+            data-confirm="<?= e(htp('report_prompt')) ?>"><?= csrf_field() ?><input type="hidden" name="action"
+              value="report"><input type="hidden" name="account_code" value="<?= e($a['code']) ?>"><input type="hidden"
+              name="payment_quote" value="<?= e(htp_quote($order, $r, $a)) ?>"><button class="btn secondary"
+              type="submit"><?= e(htp('report')) ?></button></form><?php endforeach; ?>
+      </details>
+    <?php endif; ?>
+
+    <?php if (!$vietQrUrl): ?>
+    <div class="payment-actions"><a class="btn" href="<?= e($paymentUrl) ?>"
+        data-payment-refresh><?= e(htp('refresh')) ?></a><?= htp_contact($order) ?></div>
+    <?php endif; ?>
+  </section>
+  <?= sepay_render_js_i18n() ?>
+  <script src="<?= e(base_url('assets/js/sepay-payment.js?v=1.0.0')) ?>" defer></script>
+  <?php return ob_get_clean();
+}
+
+function htp_render_staff(array $order): string
+{
+  $r = htp_receipt((int) $order['id']);
+  if (!$r) {
+    $r = htp_financial_summary($order, null);
+    $r += ['recipient_json' => null, 'reported_at' => null, 'confirmed_at' => null, 'confirmed_by_admin_id' => null];
+    $r['version'] = 1;
+  }
+  $accounts = htp_staff_accounts($order);
+  $events = htp_events((int) $order['id']);
+  $cancelled = $order['status'] === 'cancelled';
+  ob_start(); ?>
+  <section class="panel ma-panel" id="merchant-payment">
     <h2><?= e(htp('merchant_title')) ?></h2>
     <p><strong><?= e(htp_payment_label($r)) ?></strong> · <?= e(currency()) ?><?= money($r['amount']) ?></p>
     <p class="muted"><?= e(htp('confirmed_hint')) ?></p>
-    <div class="payment-financial-summary"><?php foreach (['received_amount', 'refunded_amount', 'net_received', 'balance_due', 'overpaid_amount', 'refund_due'] as $key): $value = $key === 'overpaid_amount' ? ($r['overpaid'] ?? 0) : ($r[$key] ?? 0); ?><div><span><?= e(pwf($key)) ?></span><b><?= e(currency()) ?><?= money($value) ?></b></div><?php endforeach; ?></div>
-    <?php if ($r['recipient_json']): $a = json_decode($r['recipient_json'], true);
-                if (is_array($a)): ?><p class="payment-history-value"><?= e(htp('recipient')) ?>：<?= e($a['recipient'] ?? '') ?> · <?= e($a['bank_name'] ?? '') ?> · <?= e($a['account_number'] ?? '') ?> · <?= e($a['account_name'] ?? '') ?></p><?php endif;
-                                                                                                                                                                                                                                              endif; ?><p><?= e(htp('reported_at')) ?>：<?= e($r['reported_at'] ?? '—') ?></p>
-    <p><?= e(htp('confirmed_at')) ?>：<?= e($r['confirmed_at'] ?? '—') ?> · <?= e(htp('confirmed_by')) ?>：<?= e($r['confirmed_by_admin_id'] ?? '—') ?></p>
+    <div class="payment-financial-summary">
+      <?php foreach (['received_amount', 'refunded_amount', 'net_received', 'balance_due', 'overpaid_amount', 'refund_due'] as $key):
+        $value = $key === 'overpaid_amount' ? ($r['overpaid'] ?? 0) : ($r[$key] ?? 0); ?>
+        <div><span><?= e(pwf($key)) ?></span><b><?= e(currency()) ?><?= money($value) ?></b></div><?php endforeach; ?>
+    </div>
+    <?php if ($r['recipient_json']):
+      $a = json_decode($r['recipient_json'], true);
+      if (is_array($a)): ?>
+        <p class="payment-history-value"><?= e(htp('recipient')) ?>：<?= e($a['recipient'] ?? '') ?> ·
+          <?= e($a['bank_name'] ?? '') ?> · <?= e($a['account_number'] ?? '') ?> · <?= e($a['account_name'] ?? '') ?></p>
+      <?php endif;
+    endif; ?>
+    <p><?= e(htp('reported_at')) ?>：<?= e($r['reported_at'] ?? '—') ?></p>
+    <p><?= e(htp('confirmed_at')) ?>：<?= e($r['confirmed_at'] ?? '—') ?> ·
+      <?= e(htp('confirmed_by')) ?>：<?= e($r['confirmed_by_admin_id'] ?? '—') ?></p>
     <div class="payment-staff-actions">
-      <?php foreach (['payment_receive', 'payment_correct', 'payment_reject', 'payment_refund'] as $action): if ($action === 'payment_reject' && ($r['report_state'] ?? '') !== 'requested' && $r['status'] !== 'requested') continue;
-                if ($action === 'payment_refund' && (float)($r['net_received'] ?? 0) <= 0) continue; ?>
+      <?php foreach (['payment_receive', 'payment_correct', 'payment_reject', 'payment_refund'] as $action):
+        if ($action === 'payment_reject' && ($r['report_state'] ?? '') !== 'requested' && $r['status'] !== 'requested')
+          continue;
+        if ($action === 'payment_refund' && (float) ($r['net_received'] ?? 0) <= 0)
+          continue; ?>
         <details>
           <summary><?= e(pwf($action)) ?></summary>
-          <form method="post" class="payment-staff-form" onsubmit="return confirm(this.dataset.confirm)" data-confirm="<?= e($action === 'payment_receive' ? htp('staff_prompt') : pwf($action)) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="<?= e($action) ?>"><input type="hidden" name="payment_version" value="<?= (int)$r['version'] ?>">
+          <form method="post" class="payment-staff-form" onsubmit="return confirm(this.dataset.confirm)"
+            data-confirm="<?= e($action === 'payment_receive' ? htp('staff_prompt') : pwf($action)) ?>">
+            <?= csrf_field() ?><input type="hidden" name="action" value="<?= e($action) ?>"><input type="hidden"
+              name="payment_version" value="<?= (int) $r['version'] ?>">
             <?php if ($action !== 'payment_reject'): ?><label><?= e(pwf('account')) ?><select name="account_code" required>
-                  <option value="" disabled selected><?= e(pwf('account')) ?></option><?php foreach ($accounts as $a): ?><option value="<?= e($a['code']) ?>"><?= e(($a['source'] ?? '') === 'cash' ? pwf('cash_account') : (($a['code'] === 'snapshot' ? pwf('snapshot_account') . ' · ' : '') . ($a['recipient'] ?? '') . ' · ' . ($a['bank_name'] ?? '') . ' · ' . ($a['account_number'] ?? ''))) ?></option><?php endforeach; ?>
+                  <option value="" disabled selected><?= e(pwf('account')) ?></option><?php foreach ($accounts as $a): ?>
+                    <option value="<?= e($a['code']) ?>">
+                      <?= e(($a['source'] ?? '') === 'cash' ? pwf('cash_account') : (($a['code'] === 'snapshot' ? pwf('snapshot_account') . ' · ' : '') . ($a['recipient'] ?? '') . ' · ' . ($a['bank_name'] ?? '') . ' · ' . ($a['account_number'] ?? ''))) ?>
+                    </option><?php endforeach; ?>
                 </select></label><?php endif; ?>
-            <?php if ($action !== 'payment_reject'): ?><label><?= e(pwf('amount')) ?><input name="amount" type="number" step="1" <?= ($action === 'payment_correct' ? '' : 'min="1"') ?> value="<?= e($action === 'payment_receive' ? (string)(int)max(0, $r['balance_due'] ?? $r['amount']) : '') ?>" required></label><?php endif; ?>
-            <?php if ($action === 'payment_receive' || $action === 'payment_refund'): ?><label><?= e(pwf('transaction_reference')) ?><input name="transaction_reference" maxlength="160" autocomplete="off"><small><?= e($action === 'payment_receive' ? pwf('reference_required') : pwf('refund_manual_only')) ?></small></label><?php endif; ?>
-            <?php if ($action === 'payment_correct'): ?><label><?= e(pwf('payment_correct')) ?><select name="correction_target">
+            <?php if ($action !== 'payment_reject'): ?><label><?= e(pwf('amount')) ?><input name="amount" type="number"
+                  step="1" <?= ($action === 'payment_correct' ? '' : 'min="1"') ?>
+                  value="<?= e($action === 'payment_receive' ? (string) (int) max(0, $r['balance_due'] ?? $r['amount']) : '') ?>"
+                  required></label><?php endif; ?>
+            <?php if ($action === 'payment_receive' || $action === 'payment_refund'): ?><label><?= e(pwf('transaction_reference')) ?><input
+                  name="transaction_reference" maxlength="160"
+                  autocomplete="off"><small><?= e($action === 'payment_receive' ? pwf('reference_required') : pwf('refund_manual_only')) ?></small></label><?php endif; ?>
+            <?php if ($action === 'payment_correct'): ?><label><?= e(pwf('payment_correct')) ?><select
+                  name="correction_target">
                   <option value="received"><?= e(pwf('received_amount')) ?></option>
                   <option value="refunded"><?= e(pwf('refunded_amount')) ?></option>
                 </select></label>
-              <p class="muted"><?= e(pwf('correction_help')) ?></p><?php elseif ($action === 'payment_reject'): ?><p class="muted"><?= e(pwf('reject_help')) ?></p><?php endif; ?>
-            <label><?= e(pwf('reason')) ?><textarea name="reason" maxlength="1000" rows="2" required></textarea></label><button class="btn primary ma-btn" type="submit"><?= e(pwf($action)) ?></button>
+              <p class="muted"><?= e(pwf('correction_help')) ?></p><?php elseif ($action === 'payment_reject'): ?>
+              <p class="muted"><?= e(pwf('reject_help')) ?></p><?php endif; ?>
+            <label><?= e(pwf('reason')) ?><textarea name="reason" maxlength="1000" rows="2"
+                required></textarea></label><button class="btn primary ma-btn" type="submit"><?= e(pwf($action)) ?></button>
           </form>
         </details><?php endforeach; ?>
     </div>
     <details class="payment-history">
-      <summary><?= e(pwf('history')) ?> (<?= count($events) ?>)</summary><?php foreach ($events as $event): ?><article><strong><?= e(pwf($event['event_type'])) ?></strong><span><?= e($event['created_at']) ?> · <?= e(pwf('staff')) ?> <?= e($event['admin_id'] ?? '—') ?></span>
-          <p><?= e(pwf('received_amount')) ?> <?= e(currency()) ?><?= money($event['amount_delta'] ?? 0) ?> · <?= e(pwf('refunded_amount')) ?> <?= e(currency()) ?><?= money($event['refund_delta'] ?? 0) ?></p><?php if (!empty($event['transaction_reference'])): ?><p class="payment-history-value"><?= e(pwf('transaction_reference')) ?>：<?= e($event['transaction_reference']) ?></p><?php endif; ?><p class="payment-history-value"><?= e($event['reason'] ?? '') ?></p><?php foreach (['before_json' => 'before', 'after_json' => 'after'] as $json => $label): $state = json_decode((string)($event[$json] ?? ''), true);
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  if (!is_array($state)) continue; ?><p><?= e(pwf($label)) ?>：<?php foreach (['received_amount', 'refunded_amount'] as $key): if (isset($state[$key])): ?><?= e(pwf($key)) ?> <?= e(currency()) ?><?= money($state[$key]) ?> <?php endif;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          endforeach; ?></p><?php endforeach; ?>
+      <summary><?= e(pwf('history')) ?> (<?= count($events) ?>)</summary><?php foreach ($events as $event): ?>
+        <article><strong><?= e(pwf($event['event_type'])) ?></strong><span><?= e($event['created_at']) ?> ·
+            <?= e(pwf('staff')) ?>     <?= e($event['admin_id'] ?? '—') ?></span>
+          <p><?= e(pwf('received_amount')) ?>     <?= e(currency()) ?>    <?= money($event['amount_delta'] ?? 0) ?> ·
+            <?= e(pwf('refunded_amount')) ?>     <?= e(currency()) ?>    <?= money($event['refund_delta'] ?? 0) ?></p>
+          <?php if (!empty($event['transaction_reference'])): ?>
+            <p class="payment-history-value"><?= e(pwf('transaction_reference')) ?>：<?= e($event['transaction_reference']) ?>
+            </p><?php endif; ?>
+          <p class="payment-history-value"><?= e($event['reason'] ?? '') ?></p>
+          <?php foreach (['before_json' => 'before', 'after_json' => 'after'] as $json => $label):
+            $state = json_decode((string) ($event[$json] ?? ''), true);
+            if (!is_array($state))
+              continue; ?>
+            <p>
+              <?= e(pwf($label)) ?>：<?php foreach (['received_amount', 'refunded_amount'] as $key):
+                  if (isset($state[$key])): ?><?= e(pwf($key)) ?>
+                  <?= e(currency()) ?>          <?= money($state[$key]) ?>
+                <?php endif;
+                endforeach; ?>
+            </p><?php endforeach; ?>
         </article><?php endforeach; ?>
     </details>
-  </section><?php return ob_get_clean();
-            }
+  </section>
+  <?php return ob_get_clean();
+}

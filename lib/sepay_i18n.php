@@ -1,0 +1,294 @@
+<?php
+/**
+ * SePay VietQR Payment & GPS Delivery Multilingual (i18n) Service.
+ * Provides unified, synchronized translations for Vietnamese (vi), English (en), and Traditional Chinese (zh).
+ */
+
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+
+function sepay_i18n_dictionary(): array {
+    return [
+        'vi' => [
+            // SePay VietQR Payment
+            'sepay_card_title' => 'Thanh toán chuyển khoản VietQR',
+            'sepay_member_card_title' => 'Mã VietQR thanh toán phần của bạn',
+            'sepay_timer_label' => 'Thời gian giữ đơn:',
+            'sepay_qr_zoom' => 'Phóng to QR',
+            'sepay_qr_download' => 'Tải ảnh QR',
+            'sepay_bank' => 'Ngân hàng',
+            'sepay_account_number' => 'Số tài khoản',
+            'sepay_account_name' => 'Chủ tài khoản',
+            'sepay_amount' => 'Số tiền',
+            'sepay_member_amount' => 'Số tiền cần trả',
+            'sepay_transfer_syntax' => 'Nội dung chuyển khoản',
+            'sepay_copy' => 'Sao chép',
+            'sepay_copied_toast' => 'Đã sao chép: {text}',
+            'sepay_waiting_status' => 'Đang chờ chuyển khoản... Hệ thống sẽ tự động xác nhận ngay khi bạn chuyển tiền xong.',
+            'sepay_member_waiting_status' => 'Chuyển đúng nội dung <strong>{syntax}</strong>. Hệ thống sẽ tự động xác nhận sau khi nhận tiền.',
+            'sepay_success_title' => 'Đã nhận được thanh toán!',
+            'sepay_success_desc_order' => 'Cửa hàng đã ghi nhận thanh toán thành công và bắt đầu chuẩn bị món cho bạn.',
+            'sepay_success_desc_live' => 'Hệ thống SePay đã xác nhận giao dịch thành công. Cửa hàng bắt đầu chế biến và giao hàng cho bạn.',
+            'sepay_order_number' => 'Mã đơn hàng:',
+            'sepay_status' => 'Trạng thái:',
+            'sepay_received' => 'Đã nhận:',
+            'sepay_status_paid' => 'Đã thanh toán (PAID)',
+            'sepay_help_toggle' => 'Bạn đã chuyển khoản nhưng chưa thấy cập nhật?',
+            'sepay_help_desc' => 'Hệ thống SePay tự động kiểm tra mỗi 3 giây. Nếu cần, bạn có thể bấm báo đã thanh toán thủ công:',
+            'sepay_scan_hint' => 'Quét mã bằng ứng dụng Ngân hàng bất kỳ',
+            'sepay_qr_expired' => 'Mã QR đã hết thời gian chờ. Vui lòng tải lại trang để tạo mã mới.',
+            'sepay_success_toast' => 'Thanh toán thành công qua SePay!',
+            'sepay_reconcile_warning' => 'Thu thừa, cần đối soát',
+            'sepay_prompt_copy' => 'Sao chép nội dung:',
+            'payment_gateway_title' => 'CỔNG THANH TOÁN TỰ ĐỘNG',
+            'payment_gateway_desc' => 'Quét mã VietQR bằng ứng dụng Ngân hàng để hoàn tất thanh toán tức thì.',
+            'payment_important_note' => 'Vui lòng giữ nguyên nội dung chuyển khoản để hệ thống xác nhận tự động trong 3-10 giây.',
+
+            // GPS & Location
+            'gps_use_current' => 'Dùng vị trí hiện tại',
+            'gps_tooltip' => 'Tự động lấy vị trí hiện tại của bạn qua GPS',
+            'gps_address_placeholder' => 'Nhập địa chỉ nhận hàng (bắt buộc chọn từ gợi ý bên dưới)...',
+            'gps_calculating' => 'Đang tính...',
+            'gps_change_store' => 'Đổi chi nhánh',
+            'gps_reason_selected' => 'Lý do chọn:',
+            'gps_reason_nearest_desc' => 'Chi nhánh có khoảng cách gần bạn nhất (chỉ <strong>{distance}</strong>), giúp giao nhanh & giữ lạnh đồ uống tốt nhất.',
+            'gps_reason_manual_desc' => 'Chi nhánh cách vị trí nhận <strong>{distance}</strong>.',
+            'gps_manual_choice' => 'Đổi theo lựa chọn của bạn:',
+            'gps_travel_time' => '(~{time} di chuyển)',
+            'gps_locating' => 'Đang xác định vị trí...',
+            'gps_permission_denied' => 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép quyền vị trí trong trình duyệt hoặc nhập địa chỉ thủ công.',
+            'gps_select_hint' => 'Vui lòng bấm chọn địa chỉ chính xác từ danh sách gợi ý để định vị chi nhánh gần nhất.',
+            'gps_stores_modal_title' => 'Chọn chi nhánh giao hàng',
+            'gps_selected_badge' => 'Đang chọn',
+            'gps_optimal_store' => 'Chi nhánh phục vụ tối ưu',
+            'gps_auto_detecting' => 'Đang tự động chọn chi nhánh gần nhất...',
+            'gps_select_store_title' => 'Chọn chi nhánh phục vụ',
+            'gps_search_store_placeholder' => 'Tìm kiếm tên chi nhánh hoặc địa chỉ...',
+            'gps_close' => 'Đóng',
+            'gps_calculating_nearest' => 'Đang tính toán khoảng cách và tìm chi nhánh gần nhất...',
+            'gps_calculating_distance' => 'Đang tính km...',
+            'gps_scanning_route' => '⏱ Đang quét đường xe chạy',
+            'gps_address_changed_warning' => 'Bạn vừa thay đổi địa chỉ. Bắt buộc phải bấm chọn một gợi ý trong danh sách bên dưới hoặc bấm nút "Dùng vị trí hiện tại".',
+            'gps_submit_required_warning' => 'Bắt buộc phải bấm chọn một địa chỉ cụ thể từ danh sách gợi ý bên dưới hoặc bấm nút "Dùng vị trí hiện tại" để hệ thống tính chi nhánh phục vụ gần nhất!',
+            'gps_loading_stores' => 'Đang tải danh sách chi nhánh...',
+            'gps_nearest_badge' => 'Gần bạn nhất',
+            'gps_distance_away' => '📍 Cách {distance}',
+            'gps_distance_calculating' => 'Khoảng cách đang tính',
+
+            // Order Success Page
+            'success_eyebrow' => 'ĐẶT HÀNG THÀNH CÔNG',
+            'success_heading' => 'Đơn hàng đã được tiếp nhận!',
+            'success_desc_transfer' => 'Vui lòng hoàn tất chuyển khoản VietQR bên dưới để cửa hàng bắt đầu pha chế.',
+            'success_desc_cash' => 'Cửa hàng đã nhận đơn và sẽ sớm liên hệ xác nhận để chuẩn bị giao đồ uống cho bạn.',
+            'success_delivery_title' => 'Thông tin nhận hàng',
+            'success_recipient' => 'Người nhận:',
+            'success_store_title' => 'Chi nhánh chuẩn bị',
+            'success_call_branch' => 'Gọi chi nhánh',
+            'success_order_items' => 'Món đã đặt',
+            'success_copy_code' => 'Sao chép mã',
+            'success_copied_code' => 'Đã sao chép mã đơn hàng',
+            'success_tracking_btn' => 'Trang trạng thái đơn',
+            'success_order_more' => 'Đặt thêm đồ uống',
+            'success_cod_title' => 'Thanh toán tiền mặt khi nhận hàng (COD)',
+            'success_cod_desc' => 'Vui lòng chuẩn bị sẵn tiền mặt khi tài xế giao trà sữa tới nơi.',
+            'success_order_note' => 'Ghi chú:',
+        ],
+        'en' => [
+            // SePay VietQR Payment
+            'sepay_card_title' => 'VietQR Bank Transfer',
+            'sepay_member_card_title' => 'Your VietQR Split Bill',
+            'sepay_timer_label' => 'Order held for:',
+            'sepay_qr_zoom' => 'Enlarge QR',
+            'sepay_qr_download' => 'Download QR',
+            'sepay_bank' => 'Bank',
+            'sepay_account_number' => 'Account number',
+            'sepay_account_name' => 'Account name',
+            'sepay_amount' => 'Amount',
+            'sepay_member_amount' => 'Amount due',
+            'sepay_transfer_syntax' => 'Transfer memo',
+            'sepay_copy' => 'Copy',
+            'sepay_copied_toast' => 'Copied: {text}',
+            'sepay_waiting_status' => 'Waiting for transfer... The system will automatically confirm once received.',
+            'sepay_member_waiting_status' => 'Transfer with memo <strong>{syntax}</strong>. The system will auto-confirm once received.',
+            'sepay_success_title' => 'Payment Received!',
+            'sepay_success_desc_order' => 'The store has confirmed your payment and is preparing your drinks.',
+            'sepay_success_desc_live' => 'SePay confirmed the transaction. The store is preparing and delivering your order.',
+            'sepay_order_number' => 'Order No.:',
+            'sepay_status' => 'Status:',
+            'sepay_received' => 'Received:',
+            'sepay_status_paid' => 'Paid (PAID)',
+            'sepay_help_toggle' => 'Transferred but not updated yet?',
+            'sepay_help_desc' => 'SePay automatically checks every 3 seconds. You can also report manually if needed:',
+            'sepay_scan_hint' => 'Scan with any banking app',
+            'sepay_qr_expired' => 'QR code session has expired. Please reload the page to generate a new one.',
+            'sepay_success_toast' => 'Payment successful via SePay!',
+            'sepay_reconcile_warning' => 'Overpaid, reconciliation required',
+            'sepay_prompt_copy' => 'Copy text:',
+            'payment_gateway_title' => 'AUTOMATED PAYMENT GATEWAY',
+            'payment_gateway_desc' => 'Scan the VietQR code using your banking app for instant confirmation.',
+            'payment_important_note' => 'Please keep the transfer memo unchanged for automatic confirmation within 3-10 seconds.',
+
+            // GPS & Location
+            'gps_use_current' => 'Use current location',
+            'gps_tooltip' => 'Automatically get your current location via GPS',
+            'gps_address_placeholder' => 'Enter delivery address (please select from suggestions below)...',
+            'gps_calculating' => 'Calculating...',
+            'gps_change_store' => 'Change store',
+            'gps_reason_selected' => 'Reason selected:',
+            'gps_reason_nearest_desc' => 'The store closest to you (only <strong>{distance}</strong>), ensuring fastest delivery & freshest drinks.',
+            'gps_reason_manual_desc' => 'Store is <strong>{distance}</strong> from your delivery address.',
+            'gps_manual_choice' => 'Changed by your choice:',
+            'gps_travel_time' => '(~{time} travel)',
+            'gps_locating' => 'Locating...',
+            'gps_permission_denied' => 'Location permission denied. Please allow location access in your browser or type your address manually.',
+            'gps_select_hint' => 'Please select an exact address from the suggestions to locate the nearest store.',
+            'gps_stores_modal_title' => 'Select fulfillment store',
+            'gps_selected_badge' => 'Selected',
+            'gps_optimal_store' => 'Optimal fulfillment store',
+            'gps_auto_detecting' => 'Automatically selecting nearest store...',
+            'gps_select_store_title' => 'Select fulfillment store',
+            'gps_search_store_placeholder' => 'Search store name or address...',
+            'gps_close' => 'Close',
+            'gps_calculating_nearest' => 'Calculating distance and finding nearest store...',
+            'gps_calculating_distance' => 'Calculating km...',
+            'gps_scanning_route' => '⏱ Scanning delivery route',
+            'gps_address_changed_warning' => 'You just changed the address. Please select a suggestion from the list below or click "Use current location".',
+            'gps_submit_required_warning' => 'You must select a specific address from suggestions or click "Use current location" to determine the nearest store!',
+            'gps_loading_stores' => 'Loading store list...',
+            'gps_nearest_badge' => 'Closest to you',
+            'gps_distance_away' => '📍 {distance} away',
+            'gps_distance_calculating' => 'Calculating distance',
+
+            // Order Success Page
+            'success_eyebrow' => 'ORDER RECEIVED',
+            'success_heading' => 'Your order has been placed!',
+            'success_desc_transfer' => 'Please complete the VietQR transfer below so the store can begin preparing your drinks.',
+            'success_desc_cash' => 'The store has received your order and will contact you shortly to confirm and deliver.',
+            'success_delivery_title' => 'Delivery details',
+            'success_recipient' => 'Recipient:',
+            'success_store_title' => 'Assigned store',
+            'success_call_branch' => 'Call store',
+            'success_order_items' => 'Order summary',
+            'success_copy_code' => 'Copy code',
+            'success_copied_code' => 'Order code copied',
+            'success_tracking_btn' => 'View payment status',
+            'success_order_more' => 'Order more drinks',
+            'success_cod_title' => 'Cash on delivery (COD)',
+            'success_cod_desc' => 'Please have exact cash ready when the driver arrives with your order.',
+            'success_order_note' => 'Note:',
+        ],
+        'zh' => [
+            // SePay VietQR Payment
+            'sepay_card_title' => 'VietQR 銀行轉帳付款',
+            'sepay_member_card_title' => '您的個人分攤 VietQR',
+            'sepay_timer_label' => '訂單保留時間：',
+            'sepay_qr_zoom' => '放大 QR',
+            'sepay_qr_download' => '下載 QR',
+            'sepay_bank' => '銀行',
+            'sepay_account_number' => '帳號',
+            'sepay_account_name' => '戶名',
+            'sepay_amount' => '金額',
+            'sepay_member_amount' => '應付金額',
+            'sepay_transfer_syntax' => '轉帳備註',
+            'sepay_copy' => '複製',
+            'sepay_copied_toast' => '已複製：{text}',
+            'sepay_waiting_status' => '等待轉帳中... 系統收到款項後將自動確認。',
+            'sepay_member_waiting_status' => '請備註 <strong>{syntax}</strong>。系統收到款項後將自動確認。',
+            'sepay_success_title' => '已收到款項！',
+            'sepay_success_desc_order' => '店家已確認收到款項，開始為您製作飲品。',
+            'sepay_success_desc_live' => 'SePay 系統已確認交易成功，店家開始製作並安排配送。',
+            'sepay_order_number' => '訂單編號：',
+            'sepay_status' => '狀態：',
+            'sepay_received' => '已收：',
+            'sepay_status_paid' => '已付款 (PAID)',
+            'sepay_help_toggle' => '已轉帳但尚未更新？',
+            'sepay_help_desc' => 'SePay 系統每 3 秒自動核對一次。如有需要，您也可手動回報付款：',
+            'sepay_scan_hint' => '使用任何銀行 App 掃描',
+            'sepay_qr_expired' => 'QR 碼已超過等待時間，請重新整理頁面以產生新的碼。',
+            'sepay_success_toast' => '透過 SePay 付款成功！',
+            'sepay_reconcile_warning' => '多收金額，需對帳',
+            'sepay_prompt_copy' => '複製內容：',
+            'payment_gateway_title' => '自動支付網關',
+            'payment_gateway_desc' => '使用任何銀行 App 掃描下方 VietQR 碼以即時完成付款。',
+            'payment_important_note' => '請務必保留轉帳備註，系統將於 3-10 秒內自動確認。',
+
+            // GPS & Location
+            'gps_use_current' => '使用目前位置',
+            'gps_tooltip' => '透過 GPS 自動取得您目前的位置',
+            'gps_address_placeholder' => '輸入外送地址（請務必從下方建議中選取）...',
+            'gps_calculating' => '計算中...',
+            'gps_change_store' => '變更門市',
+            'gps_reason_selected' => '選擇原因：',
+            'gps_reason_nearest_desc' => '距離您最近的門市（僅 <strong>{distance}</strong>），配送最快且最佳保冷。',
+            'gps_reason_manual_desc' => '門市距離您的外送地址 <strong>{distance}</strong>。',
+            'gps_manual_choice' => '依您的選擇變更：',
+            'gps_travel_time' => '（車程約 {time}）',
+            'gps_locating' => '定位中...',
+            'gps_permission_denied' => '您已拒絕位置存取權限。請在瀏覽器中允許位置存取，或手動輸入地址。',
+            'gps_select_hint' => '請從建議清單中選擇正確地址，以定位最近門市。',
+            'gps_stores_modal_title' => '選擇配送門市',
+            'gps_selected_badge' => '目前選取',
+            'gps_optimal_store' => '最佳服務門市',
+            'gps_auto_detecting' => '正在自動選擇最近門市...',
+            'gps_select_store_title' => '選擇服務門市',
+            'gps_search_store_placeholder' => '搜尋門市名稱或地址...',
+            'gps_close' => '關閉',
+            'gps_calculating_nearest' => '正在計算距離並尋找最近門市...',
+            'gps_calculating_distance' => '正在計算里程...',
+            'gps_scanning_route' => '⏱ 正在規劃行車路線',
+            'gps_address_changed_warning' => '您剛剛更改了地址。請務必從下方清單中選取建議，或點擊「使用目前位置」。',
+            'gps_submit_required_warning' => '請務必從建議清單中選取具體地址，或點擊「使用目前位置」以計算最近服務門市！',
+            'gps_loading_stores' => '正在載入門市清單...',
+            'gps_nearest_badge' => '離您最近',
+            'gps_distance_away' => '📍 距離 {distance}',
+            'gps_distance_calculating' => '距離計算中',
+
+            // Order Success Page
+            'success_eyebrow' => '訂購成功',
+            'success_heading' => '您的訂單已成功送出！',
+            'success_desc_transfer' => '請完成下方的 VietQR 轉帳，以便門市即刻開始為您調製飲品。',
+            'success_desc_cash' => '門市已收到您的訂單，稍後將電話聯絡您確認並安排配送。',
+            'success_delivery_title' => '外送資料',
+            'success_recipient' => '收件人：',
+            'success_store_title' => '製作門市',
+            'success_call_branch' => '聯絡門市',
+            'success_order_items' => '訂購餐點明細',
+            'success_copy_code' => '複製單號',
+            'success_copied_code' => '已複製訂單編號',
+            'success_tracking_btn' => '查看付款進度',
+            'success_order_more' => '繼續選購飲品',
+            'success_cod_title' => '貨到付款（現金）',
+            'success_cod_desc' => '請在外送人員抵達時備妥現金付款。',
+            'success_order_note' => '備註：',
+        ],
+    ];
+}
+
+/**
+ * Translate a SePay or GPS key in the current language.
+ */
+function sepay_t(string $key, array $vars = []): string {
+    $lang = function_exists('current_lang') ? current_lang() : 'vi';
+    $dict = sepay_i18n_dictionary();
+    $text = $dict[$lang][$key] ?? $dict['vi'][$key] ?? $key;
+
+    foreach ($vars as $name => $value) {
+        $text = str_replace('{' . $name . '}', (string)$value, $text);
+    }
+    return $text;
+}
+
+/**
+ * Output JavaScript i18n object tag to synchronize frontend JS with active session language.
+ */
+function sepay_render_js_i18n(): string {
+    $lang = function_exists('current_lang') ? current_lang() : 'vi';
+    $dict = sepay_i18n_dictionary();
+    $payload = [
+        'lang' => $lang,
+        'sepay' => $dict[$lang] ?? $dict['vi'],
+    ];
+    return '<script>window.__HUIYI_I18N__ = ' . json_encode($payload, JSON_UNESCAPED_UNICODE) . ';</script>' . "\n";
+}

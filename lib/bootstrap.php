@@ -40,11 +40,13 @@ promotion_schema();
 require_once __DIR__ . '/dispatch.php';
 require_once __DIR__ . '/dispatch_i18n.php';
 hds_schema();
-require_once __DIR__.'/transfer_payments.php';
+require_once __DIR__ . '/transfer_payments.php';
 htp_schema();
-require_once __DIR__.'/order_workflow.php';
+require_once __DIR__ . '/order_workflow.php';
 htow_schema();
 hds_maintenance();
 
-require_once __DIR__.'/game_rewards.php';
+require_once __DIR__ . '/game_rewards.php';
 hgr_schema();
+require_once __DIR__ . '/sepay_i18n.php';
+require_once __DIR__ . '/sepay.php';

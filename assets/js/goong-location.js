@@ -9,6 +9,15 @@
 (function () {
   'use strict';
 
+  function t(key, fallback, vars = {}) {
+    const dict = (window.__HUIYI_I18N__ && window.__HUIYI_I18N__.sepay) ? window.__HUIYI_I18N__.sepay : {};
+    let text = dict[key] || fallback;
+    for (const [k, v] of Object.entries(vars)) {
+      text = text.replace(new RegExp(`\\{${k}\\}`, 'g'), v);
+    }
+    return text;
+  }
+
   class GoongMapService {
     constructor(config) {
       this.apiKey = (config.apiKey || '').trim();
@@ -371,14 +380,14 @@
         if (bannerIcon) bannerIcon.classList.add('is-spinning');
         if (bannerReasonWrap) bannerReasonWrap.style.display = 'none';
 
-        bannerStoreTitle.textContent = 'Đang tính toán khoảng cách và tìm chi nhánh gần nhất...';
+        bannerStoreTitle.textContent = t('gps_calculating_nearest', 'Đang tính toán khoảng cách và tìm chi nhánh gần nhất...');
         bannerDistanceWrap.style.display = 'inline-flex';
-        bannerDistanceText.textContent = 'Đang tính km...';
-        bannerDurationText.textContent = '⏱ Đang quét đường xe chạy';
+        bannerDistanceText.textContent = t('gps_calculating_distance', 'Đang tính km...');
+        bannerDurationText.textContent = t('gps_scanning_route', '⏱ Đang quét đường xe chạy');
         if (btnChangeStore) {
           btnChangeStore.disabled = true;
           btnChangeStore.style.opacity = '0.6';
-          btnChangeStore.textContent = 'Đang tính...';
+          btnChangeStore.textContent = t('gps_calculating', 'Đang tính...');
         }
       } else if (state.selectedStore) {
         bannerEl.classList.remove('is-loading');
@@ -386,7 +395,7 @@
         if (btnChangeStore) {
           btnChangeStore.disabled = false;
           btnChangeStore.style.opacity = '1';
-          btnChangeStore.textContent = 'Đổi chi nhánh';
+          btnChangeStore.textContent = t('gps_change_store', 'Đổi chi nhánh');
         }
 
         // Kích hoạt hiệu ứng reload lại component
@@ -402,7 +411,7 @@
         if (state.selectedStore.distance) {
           bannerDistanceWrap.style.display = 'inline-flex';
           bannerDistanceText.textContent = state.selectedStore.distance.text;
-          bannerDurationText.textContent = state.selectedStore.duration ? `(~${state.selectedStore.duration.text} di chuyển)` : '';
+          bannerDurationText.textContent = state.selectedStore.duration ? t('gps_travel_time', `(~${state.selectedStore.duration.text} di chuyển)`, { time: state.selectedStore.duration.text }) : '';
         } else {
           bannerDistanceWrap.style.display = 'none';
         }
@@ -412,9 +421,13 @@
         if (bannerReasonWrap && bannerReasonText) {
           bannerReasonWrap.style.display = 'block';
           if (isNearest && state.selectedStore.distance) {
-            bannerReasonText.innerHTML = `📍 <strong>Lý do chọn:</strong> Chi nhánh có khoảng cách gần bạn nhất (chỉ <strong>${state.selectedStore.distance.text}</strong>), giúp giao nhanh & giữ lạnh đồ uống tốt nhất.`;
+            const reasonTitle = t('gps_reason_selected', 'Lý do chọn:');
+            const reasonDesc = t('gps_reason_nearest_desc', 'Chi nhánh có khoảng cách gần bạn nhất (chỉ <strong>{distance}</strong>), giúp giao nhanh & giữ lạnh đồ uống tốt nhất.', { distance: state.selectedStore.distance.text });
+            bannerReasonText.innerHTML = `📍 <strong>${reasonTitle}</strong> ${reasonDesc}`;
           } else if (!isNearest) {
-            bannerReasonText.innerHTML = `👉 <strong>Đổi theo lựa chọn của bạn:</strong> Chi nhánh cách vị trí nhận <strong>${state.selectedStore.distance ? state.selectedStore.distance.text : 'N/A'}</strong>.`;
+            const manualTitle = t('gps_manual_choice', 'Đổi theo lựa chọn của bạn:');
+            const manualDesc = t('gps_reason_manual_desc', 'Chi nhánh cách vị trí nhận <strong>{distance}</strong>.', { distance: state.selectedStore.distance ? state.selectedStore.distance.text : 'N/A' });
+            bannerReasonText.innerHTML = `👉 <strong>${manualTitle}</strong> ${manualDesc}`;
           } else {
             bannerReasonWrap.style.display = 'none';
           }
@@ -426,9 +439,9 @@
         if (btnChangeStore) {
           btnChangeStore.disabled = false;
           btnChangeStore.style.opacity = '1';
-          btnChangeStore.textContent = 'Đổi chi nhánh';
+          btnChangeStore.textContent = t('gps_change_store', 'Đổi chi nhánh');
         }
-        bannerStoreTitle.textContent = 'Đang tự động chọn chi nhánh gần nhất...';
+        bannerStoreTitle.textContent = t('gps_auto_detecting', 'Đang tự động chọn chi nhánh gần nhất...');
         bannerDistanceWrap.style.display = 'none';
       }
 
@@ -442,7 +455,7 @@
         const textSpan = btnGps.querySelector('.btn-gps-text');
         btnGps.classList.add('is-detecting');
         if (textSpan) {
-          textSpan.textContent = 'Đang định vị...';
+          textSpan.textContent = t('gps_locating', 'Đang định vị...');
         }
 
         // Lập tức reload lại component sang trạng thái loading
@@ -466,7 +479,7 @@
         } finally {
           btnGps.classList.remove('is-detecting');
           if (textSpan) {
-            textSpan.textContent = 'Dùng vị trí hiện tại';
+            textSpan.textContent = t('gps_use_current', 'Dùng vị trí hiện tại');
           }
         }
       });
@@ -491,7 +504,7 @@
       addressInput.addEventListener('input', (e) => {
         const val = e.target.value.trim();
         if (val !== verifiedAddressText) {
-          setAddressUnverified('Bạn vừa thay đổi địa chỉ. Bắt buộc phải bấm chọn một gợi ý trong danh sách bên dưới hoặc bấm nút "Định vị GPS".');
+          setAddressUnverified(t('gps_address_changed_warning', 'Bạn vừa thay đổi địa chỉ. Bắt buộc phải bấm chọn một gợi ý trong danh sách bên dưới hoặc bấm nút "Dùng vị trí hiện tại".'));
           // Reload lại component sang trạng thái đang chờ địa chỉ mới
           manager.updateState({
             isLoading: true,
@@ -512,7 +525,7 @@
         setTimeout(() => {
           if (!isAddressVerified && addressInput.value.trim().length > 0) {
             addressInput.classList.add('has-location-error');
-            setAddressUnverified('Vui lòng bấm chọn một địa chỉ cụ thể từ danh sách gợi ý hoặc bấm nút "Định vị GPS" để xác định chi nhánh.');
+            setAddressUnverified(t('gps_select_hint', 'Vui lòng bấm chọn một địa chỉ cụ thể từ danh sách gợi ý hoặc bấm nút "Dùng vị trí hiện tại" để xác định chi nhánh.'));
           }
         }, 220);
       });
@@ -640,7 +653,7 @@
             }
           }
 
-          setAddressUnverified('Bắt buộc phải bấm chọn một địa chỉ cụ thể từ danh sách gợi ý bên dưới hoặc bấm nút "Định vị GPS" để hệ thống tính chi nhánh phục vụ gần nhất!');
+          setAddressUnverified(t('gps_submit_required_warning', 'Bắt buộc phải bấm chọn một địa chỉ cụ thể từ danh sách gợi ý bên dưới hoặc bấm nút "Dùng vị trí hiện tại" để hệ thống tính chi nhánh phục vụ gần nhất!'));
           if (addressWarning) {
             addressWarning.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
@@ -684,7 +697,7 @@
     function renderStoreModalList(stores, selectedStore) {
       if (!storeListContainer) return;
       if (!stores || stores.length === 0) {
-        storeListContainer.innerHTML = '<p class="muted" style="text-align:center;padding:20px;">Đang tải danh sách chi nhánh...</p>';
+        storeListContainer.innerHTML = `<p class="muted" style="text-align:center;padding:20px;">${t('gps_loading_stores', 'Đang tải danh sách chi nhánh...')}</p>`;
         return;
       }
 
@@ -698,11 +711,11 @@
             <div class="store-card-info">
               <div class="store-card-title">
                 ${store.name}
-                ${isNearest ? '<span class="store-badge-nearest">Gần bạn nhất</span>' : ''}
+                ${isNearest ? `<span class="store-badge-nearest">${t('gps_nearest_badge', 'Gần bạn nhất')}</span>` : ''}
               </div>
               <div class="store-card-address">${store.address}</div>
               <div class="store-card-metrics">
-                ${store.distance ? `<span class="store-metric-km">📍 Cách ${store.distance.text}</span>` : '<span class="store-metric-duration">Khoảng cách đang tính</span>'}
+                ${store.distance ? `<span class="store-metric-km">${t('gps_distance_away', `📍 Cách ${store.distance.text}`, { distance: store.distance.text })}</span>` : `<span class="store-metric-duration">${t('gps_distance_calculating', 'Khoảng cách đang tính')}</span>`}
                 ${store.duration ? `<span class="store-metric-duration">⏱ ${store.duration.text}</span>` : ''}
               </div>
             </div>
