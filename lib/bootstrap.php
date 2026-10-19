@@ -49,4 +49,5 @@ hds_maintenance();
 require_once __DIR__ . '/game_rewards.php';
 hgr_schema();
 require_once __DIR__ . '/sepay_i18n.php';
+require_once __DIR__ . '/admin_i18n.php';
 require_once __DIR__ . '/sepay.php';

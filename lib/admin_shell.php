@@ -62,7 +62,7 @@ function has_navigation(): array
             [
                 ['stores.php', '門市管理', 'Chi nhánh', 'Stores', 'store', ['stores.php']],
                 ['payment_accounts.php', '收款帳戶', 'Tài khoản thu', 'Payments', 'bank', ['payment_accounts.php']],
-                ['sepay_test.php', 'SePay 測試', 'Kiểm thử SePay', 'SePay Test', 'bank', ['sepay_test.php']],
+                ['transactions.php', '交易', 'Giao dịch', 'Transactions', 'bank', ['transactions.php']],
                 ['members.php', '會員管理', 'Thành viên', 'Members', 'users', ['members.php']],
                 ['member-settings.php', 'iPOS 匯入', 'Nhập iPOS', 'iPOS import', 'sync', ['member-settings.php']]
             ]
