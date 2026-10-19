@@ -703,3 +703,327 @@
       display: none;
     }
   }
+
+  /* 2-Step Cascade Address Mini Card (Shopee / GrabFood Style) */
+  .address-cascade-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 16px;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .address-cascade-container:focus-within {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  }
+
+  .address-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .address-box-header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .address-box-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.2px;
+  }
+
+  .address-box-sub {
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+
+  .address-two-col-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  @media (max-width: 640px) {
+    .address-two-col-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+  }
+
+  .address-field-group {
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Khắc phục việc checkout-form label { display: grid } đẩy dấu * xuống dòng */
+  .checkout-form label.address-sub-label,
+  .form-grid label.address-sub-label,
+  .address-cascade-container .address-sub-label,
+  .address-sub-label {
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    margin-bottom: 6px !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    line-height: 1.3 !important;
+    width: auto !important;
+  }
+
+  .checkout-form label.address-sub-label span,
+  .form-grid label.address-sub-label span,
+  .address-cascade-container .address-sub-label span {
+    display: inline !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .checkout-form label.address-sub-label .required-star,
+  .form-grid label.address-sub-label .required-star,
+  .address-cascade-container .address-sub-label .required-star,
+  .required-star {
+    display: inline !important;
+    color: #ef4444 !important;
+    font-weight: 700 !important;
+    margin-left: 2px !important;
+    line-height: 1 !important;
+  }
+
+  .address-input-relative {
+    position: relative;
+    width: 100%;
+  }
+
+  .address-cascade-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 9px;
+    font-size: 0.94rem;
+    color: #1e293b;
+    background-color: #f8fafc;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+
+  .address-cascade-input:focus {
+    outline: none;
+    background-color: #ffffff;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 3.5px rgba(22, 163, 74, 0.15);
+  }
+
+  .address-cascade-input:disabled {
+    background-color: #f1f5f9;
+    color: #94a3b8;
+    cursor: not-allowed;
+    border-color: #e2e8f0;
+  }
+
+  .address-cascade-input.has-location-error {
+    border-color: #ef4444 !important;
+    background-color: #fffafa !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18) !important;
+  }
+
+  .address-cascade-input.is-location-verified {
+    border-color: #22c55e !important;
+    background-color: #f0fdf4 !important;
+  }
+
+  /* Nút xác nhận & tìm chi nhánh gần nhất */
+  .address-find-store-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px dashed #e2e8f0;
+  }
+
+  .btn-trigger-find-store {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 18px;
+    background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.94rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+    user-select: none;
+  }
+
+  .btn-trigger-find-store:hover:not(:disabled) {
+    background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .btn-trigger-find-store:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+  }
+
+  .btn-trigger-find-store:disabled {
+    background: #e2e8f0;
+    color: #94a3b8;
+    cursor: not-allowed;
+    box-shadow: none;
+    opacity: 0.85;
+  }
+
+  .btn-trigger-find-store.is-ready {
+    animation: btnPulseGlow 2.5s infinite ease-in-out;
+  }
+
+  @keyframes btnPulseGlow {
+    0%, 100% {
+      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+    }
+    50% {
+      box-shadow: 0 4px 18px rgba(22, 163, 74, 0.55);
+    }
+  }
+
+  .btn-find-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+
+  .find-store-helper-text {
+    font-size: 0.78rem;
+    color: #64748b;
+    line-height: 1.45;
+  }
+
+  .autocomplete-item.autocomplete-no-result {
+    color: #9ca3af;
+    cursor: default;
+    font-style: italic;
+    justify-content: center;
+    background: #fafafa;
+  }
+
+  .autocomplete-item.autocomplete-no-result:hover {
+    background: #fafafa !important;
+    color: #9ca3af !important;
+  }
+
+  /* Tối ưu hiển thị hoàn hảo trên di động (Mobile Responsive < 640px) */
+  @media (max-width: 640px) {
+    .address-cascade-container {
+      padding: 13px 12px !important;
+      border-radius: 12px !important;
+      gap: 11px !important;
+      margin-bottom: 14px !important;
+    }
+
+    .address-box-header {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      padding-bottom: 8px !important;
+      gap: 6px !important;
+    }
+
+    .address-box-header-titles {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .address-box-header .btn-gps-trigger {
+      padding: 5px 9px !important;
+      font-size: 0.74rem !important;
+      flex-shrink: 0 !important;
+      gap: 5px !important;
+    }
+
+    .address-box-header .btn-gps-trigger .gps-icon-crosshair {
+      width: 13px !important;
+      height: 13px !important;
+    }
+
+    .address-box-badge {
+      font-size: 0.88rem !important;
+    }
+
+    .address-box-sub {
+      font-size: 0.72rem !important;
+      line-height: 1.35 !important;
+    }
+
+    .checkout-form label.address-sub-label,
+    .form-grid label.address-sub-label,
+    .address-cascade-container .address-sub-label {
+      font-size: 0.84rem !important;
+      margin-bottom: 5px !important;
+    }
+
+    .address-cascade-input {
+      font-size: 16px !important; /* Ngăn iOS Safari tự zoom viewport khi focus */
+      padding: 10px 12px !important;
+      border-radius: 8px !important;
+    }
+
+    .autocomplete-dropdown {
+      max-height: 230px !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
+    .autocomplete-item {
+      padding: 11px 12px !important;
+      font-size: 0.88rem !important;
+      min-height: 42px !important;
+    }
+
+    .address-find-store-wrap {
+      padding-top: 10px !important;
+      gap: 6px !important;
+    }
+
+    .btn-trigger-find-store {
+      padding: 11px 14px !important;
+      font-size: 0.9rem !important;
+      min-height: 44px !important;
+      border-radius: 9px !important;
+    }
+
+    .find-store-helper-text {
+      font-size: 0.74rem !important;
+      line-height: 1.4 !important;
+    }
+  }

@@ -125,7 +125,7 @@ front_header(t('order_info'));
     </div>
     <link rel="stylesheet" href="<?= e(base_url('assets/css/location-selector.css?v=1.2.0')) ?>">
     <div class="location-container" data-location-container
-      data-goong-key="<?= e(defined('GOONG_API_KEY') ? GOONG_API_KEY : '') ?>"
+      data-location-endpoint="<?= e(base_url('api/location.php')) ?>"
       data-stores-endpoint="<?= e(base_url('api/stores.php')) ?>">
       <form method="post" action="<?= e(base_url('actions/submit_order.php')) ?>" class="checkout-form"
         data-checkout-form data-submitting-label="<?= e(htp_ux('submitting')) ?>">
@@ -145,26 +145,90 @@ front_header(t('order_info'));
 
         <div class="address-input-wrap">
           <div class="address-input-action-bar">
-            <label for="delivery-address-field" class="address-input-label">
+            <label class="address-input-label">
               <span><?= e(t('delivery_address')) ?></span>
+              <!-- <span class="required-star">*</span> -->
             </label>
-            <button type="button" class="btn-gps-trigger" data-btn-gps
-              title="<?= e(sepay_t('gps_tooltip')) ?>">
-              <span class="gps-radar-dot" aria-hidden="true"></span>
-              <svg class="gps-icon-crosshair" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
-              </svg>
-              <span class="btn-gps-text"><?= e(sepay_t('gps_use_current')) ?></span>
-            </button>
           </div>
-          <textarea id="delivery-address-field" name="address" required maxlength="255" rows="3"
-            autocomplete="street-address" placeholder="<?= e(sepay_t('gps_address_placeholder')) ?>"
-            <?= hcq_field_attrs($fieldErrors, 'address') ?>><?= e($values['address']) ?></textarea>
-          <div class="autocomplete-dropdown" data-autocomplete-dropdown></div>
-          <div class="address-select-warning" data-address-warning role="alert"></div>
-          <input type="hidden" name="address_verified" value="0" data-address-verified-input>
-          <?= hcq_field_error($fieldErrors, 'address') ?>
+
+          <!-- Luồng chọn địa chỉ 2 cấp từ JSON cục bộ (Shopee style) trong Mini Card gọn gàng -->
+          <div class="address-cascade-container" data-address-cascade
+            data-json-url="<?= e(base_url('assets/data/vietnam-provinces.json?v=' . filemtime(__DIR__ . '/assets/data/vietnam-provinces.json'))) ?>">
+
+            <div class="address-box-header">
+              <div class="address-box-header-titles">
+                <span class="address-box-badge">📍 <?= e(sepay_t('addr_box_title')) ?></span>
+                <span class="address-box-sub"><?= e(sepay_t('addr_box_sub')) ?></span>
+              </div>
+              <button type="button" class="btn-gps-trigger" data-btn-gps title="<?= e(sepay_t('gps_tooltip')) ?>">
+                <span class="gps-radar-dot" aria-hidden="true"></span>
+                <svg class="gps-icon-crosshair" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" />
+                </svg>
+                <span class="btn-gps-text"><?= e(sepay_t('gps_use_current')) ?></span>
+              </button>
+            </div>
+
+            <!-- Hàng 2 cột: Tỉnh / Thành phố & Phường / Xã -->
+            <div class="address-two-col-grid">
+              <!-- Bước 1: Chọn Tỉnh / Thành phố -->
+              <div class="address-field-group">
+                <label for="address-province-input" class="address-sub-label">
+                  <span class="sub-label-title"><?= e(sepay_t('addr_province_label')) ?></span><span class="required-star">*</span>
+                </label>
+                <div class="address-input-relative">
+                  <input type="text" id="address-province-input" class="address-cascade-input"
+                    placeholder="<?= e(sepay_t('addr_province_placeholder')) ?>" autocomplete="off">
+                  <div class="autocomplete-dropdown" data-province-dropdown></div>
+                </div>
+                <input type="hidden" name="province_code" value="<?= e($values['province_code'] ?? '') ?>" data-province-code>
+                <input type="hidden" name="province_name" value="<?= e($values['province_name'] ?? '') ?>" data-province-name>
+              </div>
+
+              <!-- Bước 2: Chọn Phường / Xã (bị khóa cho đến khi chọn Tỉnh) -->
+              <div class="address-field-group">
+                <label for="address-ward-input" class="address-sub-label">
+                  <span class="sub-label-title"><?= e(sepay_t('addr_ward_label')) ?></span><span class="required-star">*</span>
+                </label>
+                <div class="address-input-relative">
+                  <input type="text" id="address-ward-input" class="address-cascade-input"
+                    placeholder="<?= e(sepay_t('addr_ward_placeholder_disabled')) ?>" autocomplete="off" disabled>
+                  <div class="autocomplete-dropdown" data-ward-dropdown></div>
+                </div>
+                <input type="hidden" name="ward_code" value="<?= e($values['ward_code'] ?? '') ?>" data-ward-code>
+                <input type="hidden" name="ward_name" value="<?= e($values['ward_name'] ?? '') ?>" data-ward-name>
+              </div>
+            </div>
+
+            <!-- Bước 3: Số nhà, tên đường -->
+            <div class="address-field-group">
+              <label for="address-street-input" class="address-sub-label">
+                <span class="sub-label-title"><?= e(sepay_t('addr_street_label')) ?></span><span class="required-star">*</span>
+              </label>
+              <input type="text" id="address-street-input" class="address-cascade-input"
+                placeholder="<?= e(sepay_t('addr_street_placeholder')) ?>" maxlength="150"
+                value="<?= e($values['street_address'] ?? '') ?>" data-street-address>
+            </div>
+
+            <!-- Nút xác nhận & tìm chi nhánh gần nhất (Hạn chế call API thừa) -->
+            <div class="address-find-store-wrap">
+              <button type="button" class="btn-trigger-find-store" data-btn-find-store disabled>
+                <span class="btn-find-icon">🎯</span>
+                <span class="btn-find-text"><?= e(sepay_t('addr_btn_confirm')) ?></span>
+              </button>
+              <div class="find-store-helper-text">
+                <?= e(sepay_t('addr_hint')) ?>
+              </div>
+            </div>
+
+            <!-- Trường address tổng hợp gửi lên backend để lưu vào đơn hàng -->
+            <textarea id="delivery-address-field" name="address" style="display:none;" required
+              <?= hcq_field_attrs($fieldErrors, 'address') ?>><?= e($values['address']) ?></textarea>
+
+            <div class="address-select-warning" data-address-warning role="alert"></div>
+            <input type="hidden" name="address_verified" value="0" data-address-verified-input>
+            <?= hcq_field_error($fieldErrors, 'address') ?>
+          </div>
         </div>
 
         <!-- Banner chi nhánh phục vụ tối ưu (nằm ngay dưới ô địa chỉ giao hàng) -->
@@ -197,7 +261,7 @@ front_header(t('order_info'));
           <?php if ($groupPayment): ?>
             <input type="hidden" name="payment_method" value="<?= e($groupPayCode) ?>">
             <p>
-              <?= e($hostCollect ? htp('merchant_host') : gt($groupPayment['mode'] === 'split' ? 'pay_split' : 'pay_together')) ?>  <?php if ($hostCollect || $groupPayment['mode'] === 'together'): ?>
+              <?= e($hostCollect ? htp('merchant_host') : gt($groupPayment['mode'] === 'split' ? 'pay_split' : 'pay_together')) ?> <?php if ($hostCollect || $groupPayment['mode'] === 'together'): ?>
                 · <?= e(payment_label($groupPayCode)) ?><?php endif; ?></p>
           <?php else: ?>
             <label class="inline-radio"><input type="radio" name="payment_method" value="transfer" data-payment-toggle
@@ -299,35 +363,36 @@ front_header(t('order_info'));
 
   <aside class="order-review">
     <?= promotion_summary($promotion) ?>
-    <?php if ($groupPayment): ?>  <?= hyg_render_payment_overview($groupPayment) ?><?php endif; ?>
-    <h2><?= e(t('order_details')) ?></h2>
-    <?php foreach ($cart as $r): ?>
-      <div class="review-row">
-        <div>
-          <?php if (!empty($r['group_member_name'])): ?><span
-              class="hyg-member-tag"><?= e(gt('ordered_by')) ?>：<?= e($r['group_member_name']) ?></span><?php endif; ?><strong><?= e($r['name']) ?><?php if (!empty($r['cup_size'])): ?>
+    <?php if ($groupPayment): ?> <?= hyg_render_payment_overview($groupPayment) ?><?php endif; ?>
+      <h2><?= e(t('order_details')) ?></h2>
+      <?php foreach ($cart as $r): ?>
+        <div class="review-row">
+          <div>
+            <?php if (!empty($r['group_member_name'])): ?><span
+                class="hyg-member-tag"><?= e(gt('ordered_by')) ?>：<?= e($r['group_member_name']) ?></span><?php endif; ?><strong><?= e($r['name']) ?><?php if (!empty($r['cup_size'])): ?>
               · <?= e($r['cup_size']) ?><?php endif; ?> × <?= $r['qty'] ?></strong>
-          <small><?= e($r['ice']) ?> /
-            <?= e($r['sugar']) ?></small><?php if (!empty($r['toppings'])): ?><small><?= e(t('toppings')) ?>：<?= e(implode('、', array_map(fn($top) => $top['display_name'] ?? $top['name'], $r['toppings']))) ?></small><?php endif; ?>
+            <small><?= e($r['ice']) ?> /
+              <?= e($r['sugar']) ?></small><?php if (!empty($r['toppings'])): ?><small><?= e(t('toppings')) ?>：<?= e(implode('、', array_map(fn($top) => $top['display_name'] ?? $top['name'], $r['toppings']))) ?></small><?php endif; ?>
+          </div>
+          <b><?= e(currency()) ?><?= money($r['unit_price'] * $r['qty']) ?></b>
         </div>
-        <b><?= e(currency()) ?><?= money($r['unit_price'] * $r['qty']) ?></b>
+      <?php endforeach; ?>
+      <div class="review-totals">
+        <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong>
+        </div><?php if ($coupon['discount'] > 0): ?>
+          <div class="discount-line"><span><?= e(t('coupon_discount')) ?> ·
+              <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div>
+        <?php endif; ?>
+        <div class="shipping-review-line" data-review-shipping-wrap style="display:none;">
+          <span><?= e(sepay_t('shipping_fee_label')) ?></span>
+          <strong data-review-shipping-text></strong>
+        </div>
+        <div class="review-total">
+          <span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong>
+        </div>
       </div>
-    <?php endforeach; ?>
-    <div class="review-totals">
-      <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong>
-      </div><?php if ($coupon['discount'] > 0): ?>
-        <div class="discount-line"><span><?= e(t('coupon_discount')) ?> ·
-            <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div>
-      <?php endif; ?>
-      <div class="shipping-review-line" data-review-shipping-wrap style="display:none;">
-        <span><?= e(sepay_t('shipping_fee_label')) ?></span>
-        <strong data-review-shipping-text></strong>
-      </div>
-      <div class="review-total">
-        <span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
-    </div>
   </aside>
 </div>
 <?= sepay_render_js_i18n() ?>
-<script src="<?= e(base_url('assets/js/goong-location.js?v=1.0.0')) ?>" defer></script>
+<script src="<?= e(base_url('assets/js/goong-location.js?v=' . filemtime(__DIR__ . '/assets/js/goong-location.js'))) ?>" defer></script>
 <?php front_footer(); ?>

@@ -72,6 +72,62 @@ if ($groupId === '' && $values['payment_method'] === 'split') {
 }
 if ($draft['errors'])
     hcq_fail($checkoutContext, $groupId, htp_ux('draft_error'));
+
+// Server-side validation: Kiểm tra ward_code có thuộc province_code không từ file JSON cục bộ
+function hcq_location_index(string $path): ?array
+{
+    static $index = null;
+    if ($index !== null) {
+        return $index;
+    }
+    if (!is_file($path)) {
+        error_log("Thiếu file địa chỉ: $path");
+        return null;
+    }
+    try {
+        $data = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+    } catch (JsonException $e) {
+        error_log('JSON địa chỉ lỗi: ' . $e->getMessage());
+        return null;
+    }
+    $built = [];
+    foreach ($data as $p) {
+        $pc = (string) ($p['code'] ?? '');
+        $built[$pc] = ['name' => (string) ($p['name'] ?? ''), 'wards' => []];
+        foreach (($p['wards'] ?? []) as $w) {
+            $built[$pc]['wards'][(string) $w['code']] = (string) $w['name'];
+        }
+    }
+    return $index = $built;
+}
+
+// --- trong luồng checkout ---
+$provinceCode = trim((string) ($_POST['province_code'] ?? ''));
+$wardCode     = trim((string) ($_POST['ward_code'] ?? ''));
+$provinceName = trim((string) ($_POST['province_name'] ?? ''));
+$wardName     = trim((string) ($_POST['ward_name'] ?? ''));
+
+// 1) Bắt buộc phải chọn đủ Tỉnh và Phường
+if ($provinceCode === '' || $wardCode === '') {
+    hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_prov_ward_req'));
+}
+
+// 2) Lỗi hệ thống tách khỏi lỗi dữ liệu của khách
+$index = hcq_location_index(__DIR__ . '/../assets/data/vietnam-provinces.json');
+if ($index === null) {
+    hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_system_address'));
+}
+
+// 3) Kiểm tra ward thuộc province
+$province = $index[$provinceCode] ?? null;
+if ($province === null || !isset($province['wards'][$wardCode])) {
+    hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_ward_mismatch'));
+}
+
+// 4) Lưu tên chuẩn từ JSON, không tin tên do client gửi
+$provinceName = $province['name'];
+$wardName     = $province['wards'][$wardCode];
+
 $name = $values['customer_name'];
 $phone = $values['phone'];
 $address = $values['address'];
