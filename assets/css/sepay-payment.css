@@ -59,6 +59,18 @@
   letter-spacing: 0.5px;
 }
 
+.sepay-timer-badge.is-expired {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+  font-weight: 700;
+}
+
+.sepay-timer-badge.is-expired .sepay-pulse-dot {
+  background-color: #dc2626;
+  animation: none;
+}
+
 .sepay-pulse-dot {
   width: 8px;
   height: 8px;
@@ -107,6 +119,23 @@
   padding: 16px;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.sepay-qr-box.is-expired {
+  background: #fff5f5;
+  border-color: #fecdd3;
+}
+
+.sepay-qr-wrapper {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .sepay-qr-img {
@@ -115,12 +144,56 @@
   object-fit: contain;
   cursor: pointer;
   border-radius: 8px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.3s ease;
 }
 
 .sepay-qr-img:hover {
   transform: scale(1.02);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.sepay-qr-box.is-expired .sepay-qr-img {
+  filter: grayscale(100%) opacity(25%) blur(1.5px);
+  pointer-events: none;
+}
+
+.sepay-qr-expired-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+  pointer-events: auto;
+}
+
+.sepay-qr-expired-overlay .sepay-expired-icon {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.sepay-qr-expired-overlay strong {
+  color: #b91c1c;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.sepay-qr-expired-overlay small {
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  font-weight: 500;
 }
 
 .sepay-qr-actions {
@@ -135,6 +208,16 @@
   padding: 6px 4px;
   text-align: center;
   white-space: nowrap;
+}
+
+.sepay-qr-box.is-expired .sepay-qr-actions .btn,
+.sepay-qr-actions .btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  border-color: #cbd5e1 !important;
 }
 
 .sepay-info-list {
@@ -207,6 +290,13 @@
   border: 1px solid #bbf7d0;
   font-size: 0.875rem;
   color: #166534;
+  transition: all 0.3s ease;
+}
+
+.sepay-live-status.is-expired {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
 }
 
 .sepay-spinner {
@@ -216,6 +306,13 @@
   border-top-color: #16a34a;
   border-radius: 50%;
   animation: sepaySpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.sepay-expired-status-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 @keyframes sepaySpin {
@@ -224,66 +321,336 @@
   }
 }
 
-/* Success Card */
-.sepay-success-card {
+/* Cancelled State Card (Modern Fintech Theme) */
+.sepay-cancelled-card {
   text-align: center;
-  padding: 32px 16px;
-  background: #f0fdf4;
-  border-radius: 14px;
-  border: 1px solid #bbf7d0;
-  animation: sepayFadeIn 0.3s ease;
+  padding: 40px 24px 34px;
+  background: linear-gradient(180deg, #ffffff 0%, #fff1f2 100%);
+  border-radius: 28px;
+  border: 1.5px solid #fecdd3;
+  box-shadow: 0 20px 45px -12px rgba(244, 63, 94, 0.15), 0 4px 16px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  max-width: 580px;
+  margin: 10px auto 24px;
+  animation: sepayCardEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes sepayFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.sepay-cancelled-card::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(244, 63, 94, 0.14) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
-.sepay-success-icon {
-  width: 56px;
-  height: 56px;
-  background: #22c55e;
+.sepay-cancelled-icon {
+  width: 68px;
+  height: 68px;
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
   color: #ffffff;
   border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  font-weight: 700;
+  margin-bottom: 18px;
+  box-shadow: 0 0 0 10px rgba(244, 63, 94, 0.12), 0 10px 24px rgba(225, 29, 72, 0.35);
+  animation: sepayIconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sepay-cancelled-title {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #881337;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.sepay-cancelled-desc {
+  font-size: 0.95rem;
+  color: #4b5563;
+  line-height: 1.55;
+  margin: 0 auto 24px;
+  max-width: 440px;
+}
+
+/* ==========================================================================
+   Modern Fintech Success Card (SePay VietQR & Cash COD)
+   ========================================================================== */
+.sepay-success-card {
+  text-align: center;
+  padding: 40px 24px 34px;
+  background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+  border-radius: 28px;
+  border: 1.5px solid #bbf7d0;
+  box-shadow: 0 20px 45px -12px rgba(16, 185, 129, 0.16), 0 4px 16px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+  max-width: 580px;
+  margin: 10px auto 24px;
+  animation: sepayCardEntrance 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes sepayCardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sepay-success-card::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.14) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.sepay-success-icon {
+  width: 68px;
+  height: 68px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 16px;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 0 0 10px rgba(16, 185, 129, 0.12), 0 10px 24px rgba(5, 150, 105, 0.35);
+  animation: sepayIconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sepayIconPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.sepay-success-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 9999px;
+  border: 1px solid #bbf7d0;
+  margin-bottom: 8px;
+}
+
+.sepay-tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 6px rgba(22, 163, 74, 0.6);
 }
 
 .sepay-success-title {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #15803d;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #064e3b;
   margin: 0 0 8px 0;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
 }
 
 .sepay-success-desc {
-  color: #166534;
-  margin: 0 0 16px 0;
+  color: #047857;
+  margin: 0 auto 24px auto;
+  font-size: 0.93rem;
+  line-height: 1.5;
+  max-width: 440px;
+  opacity: 0.92;
+}
+
+/* Receipt Details Box */
+.sepay-success-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #ffffff;
+  padding: 20px 22px;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+  text-align: left;
+  margin: 0 auto 10px auto;
+  width: 100%;
+}
+
+.sepay-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #f1f5f9;
+  font-size: 0.9rem;
+}
+
+.sepay-detail-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.sepay-detail-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.88rem;
+}
+
+.sepay-detail-label svg {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.sepay-detail-value {
+  font-weight: 600;
+  color: #0f172a;
+  text-align: right;
+}
+
+.sepay-code-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sepay-code-chip:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.sepay-code-chip code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sepay-code-chip svg {
+  color: #64748b;
+}
+
+/* Status Pill */
+.sepay-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.sepay-status-pill.success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.sepay-status-pill.cash {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.sepay-status-pill.danger {
+  background: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+
+/* Amount Highlight Row */
+.sepay-detail-row.sepay-detail-total {
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1.5px solid #f1f5f9;
+  border-bottom: none;
+}
+
+.sepay-detail-row.sepay-detail-total .sepay-detail-label {
+  font-weight: 700;
+  color: #334155;
   font-size: 0.95rem;
 }
 
-.sepay-success-details {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 6px;
-  background: #ffffff;
-  padding: 12px 20px;
-  border-radius: 10px;
-  border: 1px solid #dcfce7;
-  font-size: 0.9rem;
-  margin-bottom: 20px;
+.sepay-amount-highlight {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #059669;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.02em;
+}
+
+.sepay-amount-highlight.is-cash {
+  color: #0284c7;
+}
+
+.sepay-amount-highlight.is-cancelled-amount {
+  color: #e11d48;
+}
+
+/* Cash Success Theme */
+.sepay-success-card.is-cash-success {
+  background: linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%);
+  border-color: #bae6fd;
+  box-shadow: 0 20px 45px -12px rgba(2, 132, 199, 0.16), 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.sepay-success-card.is-cash-success::before {
+  background: radial-gradient(circle, rgba(2, 132, 199, 0.14) 0%, transparent 70%);
+}
+
+.sepay-success-icon.is-cash-icon {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  box-shadow: 0 0 0 10px rgba(2, 132, 199, 0.12), 0 10px 24px rgba(2, 132, 199, 0.35);
+}
+
+.sepay-success-badge-tag.is-cash-tag {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.sepay-tag-dot.is-cash-dot {
+  background: #0284c7;
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6);
+}
+
+.sepay-success-title.is-cash-title {
+  color: #0c4a6e;
+}
+
+.sepay-success-desc.is-cash-desc {
+  color: #0369a1;
 }
 
 .badge-success {
@@ -408,6 +775,14 @@
   background: linear-gradient(90deg, #10b981, #059669);
 }
 
+.payment-page-hero.is-cash::before {
+  background: linear-gradient(90deg, #10b981, #059669, #0284c7);
+}
+
+.payment-page-hero.is-cancelled::before {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
 .payment-hero-icon-wrap {
   width: 60px;
   height: 60px;
@@ -419,6 +794,18 @@
   justify-content: center;
   margin-bottom: 14px;
   box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.08);
+}
+
+.payment-hero-icon-wrap.is-cash {
+  background: #ecfdf5;
+  color: #059669;
+  box-shadow: 0 0 0 8px rgba(16, 185, 129, 0.1);
+}
+
+.payment-hero-icon-wrap.is-cancelled {
+  background: #fef2f2;
+  color: #dc2626;
+  box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.1);
 }
 
 .payment-hero-icon-wrap.is-success {
@@ -454,8 +841,13 @@
   margin-bottom: 6px;
 }
 
-.payment-hero-eyebrow.is-success {
+.payment-hero-eyebrow.is-success,
+.payment-hero-eyebrow.is-cash {
   color: #059669;
+}
+
+.payment-hero-eyebrow.is-cancelled {
+  color: #dc2626;
 }
 
 .payment-hero-title {
@@ -522,6 +914,20 @@
   pointer-events: none;
 }
 
+.payment-code-copy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  margin-left: 2px;
+  transition: all 0.2s ease;
+}
+
+.payment-code-badge:hover .payment-code-copy-icon {
+  color: #0284c7;
+  transform: scale(1.15);
+}
+
 .btn-order-copy {
   display: none !important;
 }
@@ -534,6 +940,273 @@
   box-shadow: none !important;
   margin: 0 !important;
   display: block !important;
+}
+
+/* 2.1 Modern Cash / Non-VietQR Payment Card */
+.payment-cash-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 26px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.02);
+  margin: 20px 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.payment-cash-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #059669, #0284c7);
+}
+
+.payment-cash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 16px;
+}
+
+.payment-cash-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.payment-cash-status-pill.is-unpaid {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.payment-cash-status-pill.is-paid {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.payment-cash-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.payment-cash-status-pill.is-unpaid .payment-cash-status-dot {
+  animation: sepayPulse 1.8s infinite;
+}
+
+.payment-cash-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Featured Amount Box */
+.payment-cash-amount-box {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  text-align: center;
+}
+
+.payment-cash-amount-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+.payment-cash-amount-val-wrap {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.payment-cash-currency {
+  font-size: 20px;
+  font-weight: 700;
+  color: #059669;
+}
+
+.payment-cash-amount-number {
+  font-size: 36px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.btn-copy-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0284c7;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.btn-copy-chip:hover {
+  background: #f0f9ff;
+  border-color: #0284c7;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.18);
+}
+
+.btn-copy-chip:active {
+  transform: scale(0.96);
+}
+
+/* Method badge & status val */
+.method-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.status-badge-val {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.badge-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.badge-status-dot.warning {
+  background-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.badge-status-dot.success {
+  background-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.badge-status-dot.danger {
+  background-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+/* Notice box */
+.payment-cash-notice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-top: 4px;
+}
+
+.payment-cash-notice-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.payment-cash-notice-main {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #166534;
+  margin: 0 0 4px;
+  line-height: 1.45;
+}
+
+.payment-cash-notice-sub {
+  font-size: 12.5px;
+  color: #15803d;
+  margin: 0;
+  display: block;
+  line-height: 1.4;
+}
+
+/* Payment Contact Button */
+.payment-contact-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0284c7;
+  font-weight: 700;
+  font-size: 13.5px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.payment-contact-btn:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+  transform: translateY(-1px);
+}
+
+/* Fallback legacy .hyg-person-total & .payment-copy */
+.hyg-person-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.payment-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.payment-copy-value {
+  font-weight: 800;
+  color: #0f172a;
 }
 
 /* 3. Important Tips / Notes Callout */
@@ -604,6 +1277,63 @@
   border-color: #94a3b8;
   color: #0f172a;
   transform: translateY(-1px);
+}
+
+.btn-payment-action.danger {
+  background: #ffffff;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.btn-payment-action.danger:hover {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+/* 4.1 Branch Support Hotline Line */
+.payment-support-contact {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 13.5px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.payment-support-store {
+  font-weight: 600;
+  color: #475569;
+}
+
+.payment-support-phone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #0284c7;
+  font-weight: 700;
+  text-decoration: none;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  padding: 4px 12px;
+  border-radius: 20px;
+  transition: all 0.2s ease;
+}
+
+.payment-support-phone svg {
+  color: #0284c7;
+}
+
+.payment-support-phone:hover {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.15);
 }
 
 /* 5. Session Orders History Chips */
@@ -800,6 +1530,28 @@
     font-size: 1.15rem;
   }
 
+  .payment-cash-card {
+    padding: 18px 14px;
+    border-radius: 18px;
+    margin: 14px 0;
+    gap: 16px;
+  }
+
+  .payment-cash-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding-bottom: 12px;
+  }
+
+  .payment-cash-amount-box {
+    padding: 16px 14px;
+  }
+
+  .payment-cash-amount-number {
+    font-size: 28px;
+  }
+
   .payment-info-callout {
     padding: 12px 14px;
     font-size: 13px;
@@ -819,5 +1571,168 @@
     min-height: 48px;
     padding: 12px 16px;
     font-size: 14px;
+  }
+
+  /* Fintech Card Mobile Polish (Confirmed & Cancelled) */
+  .sepay-success-card,
+  .sepay-cancelled-card {
+    padding: 28px 14px 22px;
+    border-radius: 20px;
+    margin: 6px auto 18px;
+    box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.08);
+  }
+
+  .sepay-success-card::before,
+  .sepay-cancelled-card::before {
+    width: 180px;
+    height: 180px;
+    top: -40px;
+  }
+
+  .sepay-success-icon,
+  .sepay-cancelled-icon {
+    width: 58px;
+    height: 58px;
+    margin-bottom: 12px;
+  }
+
+  .sepay-success-icon {
+    box-shadow: 0 0 0 7px rgba(16, 185, 129, 0.12), 0 8px 18px rgba(5, 150, 105, 0.25);
+  }
+
+  .sepay-cancelled-icon {
+    box-shadow: 0 0 0 7px rgba(244, 63, 94, 0.12), 0 8px 18px rgba(225, 29, 72, 0.25);
+  }
+
+  .sepay-success-icon svg,
+  .sepay-cancelled-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sepay-success-title,
+  .sepay-cancelled-title {
+    font-size: 1.25rem;
+    margin-bottom: 6px;
+    padding: 0 4px;
+    word-break: break-word;
+  }
+
+  .sepay-success-desc,
+  .sepay-cancelled-desc {
+    font-size: 0.86rem;
+    line-height: 1.45;
+    margin: 0 auto 16px auto;
+    padding: 0 6px;
+  }
+
+  .sepay-success-details {
+    padding: 14px 12px;
+    border-radius: 14px;
+    gap: 10px;
+    margin: 0 auto 6px auto;
+  }
+
+  .sepay-detail-row {
+    padding-bottom: 8px;
+    gap: 8px;
+    font-size: 0.84rem;
+  }
+
+  .sepay-detail-label {
+    font-size: 0.82rem;
+    gap: 6px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .sepay-detail-label svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .sepay-detail-value {
+    font-size: 0.84rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .sepay-code-chip {
+    padding: 3px 8px;
+    border-radius: 7px;
+    gap: 5px;
+    max-width: 100%;
+  }
+
+  .sepay-code-chip code {
+    font-size: 0.78rem;
+    letter-spacing: -0.01em;
+  }
+
+  .sepay-code-chip svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  .sepay-status-pill {
+    padding: 3px 8px;
+    font-size: 0.78rem;
+  }
+
+  .sepay-amount-highlight {
+    font-size: 1.15rem;
+  }
+
+  .payment-support-contact {
+    margin-top: 14px;
+    font-size: 12.5px;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .payment-support-phone {
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 9999px;
+  }
+
+  .payment-session-orders-wrap {
+    margin-top: 20px;
+    padding-top: 14px;
+  }
+
+  .payment-session-orders-wrap .payment-session-orders {
+    gap: 6px;
+  }
+
+  .payment-session-orders-wrap .payment-session-orders .btn {
+    font-size: 11.5px;
+    padding: 3px 8px;
+  }
+}
+
+/* Extra Small Phones (<= 380px) */
+@media (max-width: 380px) {
+  .sepay-detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .sepay-detail-value {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .sepay-detail-row.sepay-detail-total {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sepay-detail-row.sepay-detail-total .sepay-detail-value {
+    width: auto;
+    justify-content: flex-end;
   }
 }

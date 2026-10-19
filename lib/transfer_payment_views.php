@@ -205,7 +205,7 @@ function htp_contact(?array $order = null): string
   $dial = preg_replace('/[^0-9+]/', '', $phone);
   if ($phone === '' || !preg_match('/^\+?[0-9]{6,20}$/D', $dial))
     return '';
-  return '<a class="btn" href="tel:' . e($dial) . '">' . e(htp_ux('contact')) . ' · ' . e($phone) . '</a>';
+  return '<a class="payment-contact-btn" href="tel:' . e($dial) . '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg> ' . e(htp_ux('contact')) . ' · ' . e($phone) . '</a>';
 }
 function htp_render_session_orders(): string
 {
@@ -213,12 +213,15 @@ function htp_render_session_orders(): string
   if (!is_array($numbers) || !$numbers)
     return '';
   $links = [];
+  $currentOrderNo = $_GET['order'] ?? '';
   foreach (array_reverse(array_slice($numbers, -10)) as $number) {
     if (!is_string($number))
       continue;
     try {
-      $order = htp_customer_order($number);
-      $links[] = '<a class="btn small" href="' . e(base_url('payment.php?order=' . rawurlencode($number))) . '">' . e($number) . '</a>';
+      $isActive = ($number === $currentOrderNo);
+      $activeCls = $isActive ? ' is-active' : '';
+      $activeDot = $isActive ? ' <span class="active-badge-dot"></span>' : '';
+      $links[] = '<a class="btn small' . $activeCls . '" href="' . e(base_url('payment.php?order=' . rawurlencode($number))) . '">' . e($number) . $activeDot . '</a>';
     } catch (Throwable $e) {
     }
   }
@@ -245,10 +248,10 @@ function htp_render_account(array $a): string
           class="btn small" href="<?= e($a['qr_url']) ?>" download="payment-qr.png"><?= e(htp_ux('qr_save')) ?></a></div>
     <?php endif; ?>
   </article><?php return ob_get_clean();
-}
-function htp_render_group_fields(): string
-{
-  ob_start(); ?>
+          }
+          function htp_render_group_fields(): string
+          {
+            ob_start(); ?>
   <details class="hyg-card">
     <summary><?= e(htp('host_collect')) ?></summary>
     <p class="hyg-muted"><?= e(htp('host_help')) ?></p><label class="hyg-check"><input type="checkbox"
@@ -260,10 +263,10 @@ function htp_render_group_fields(): string
         type="file" name="host_qr"
         accept="image/jpeg,image/png,image/webp"><small><?= e(htp('qr_help')) ?></small></label>
   </details><?php return ob_get_clean();
-}
-function htp_render_store_fields(array $store): string
-{
-  ob_start(); ?>
+          }
+          function htp_render_store_fields(array $store): string
+          {
+            ob_start(); ?>
   <fieldset>
     <legend><?= e(htp('store_account')) ?></legend>
     <p class="hds-help"><?= e(htp('store_help')) ?></p><label class="hds-check"><input type="checkbox"
@@ -282,63 +285,66 @@ function htp_render_store_fields(array $store): string
         class="hds-check"><input type="checkbox" name="remove_transfer_qr"
           value="1"><span><?= e(htp('remove_qr')) ?></span></label><?php endif; ?>
   </fieldset><?php return ob_get_clean();
-}
-function htp_customer_version(array $order, array $r, ?array $accounts = null): string
-{
-  $accounts ??= (empty($r['recipient_json']) || ($r['report_state'] ?? '') === 'rejected') ? htp_order_accounts($order) : [];
-  $quotes = [];
-  foreach ($accounts as $a)
-    $quotes[] = htp_quote($order, $r, $a);
-  return hash('sha256', json_encode([(int) $r['version'], $order['status'], $r['status'], $r['financial_state'] ?? '', $r['received_amount'] ?? 0, $r['refunded_amount'] ?? 0, $r['report_state'] ?? '', (int) ($order['dispatch_revision'] ?? 0), $quotes], JSON_THROW_ON_ERROR));
-}
-function htp_payment_label(array $r): string
-{
-  return function_exists('pwf') ? pwf($r['financial_state'] ?? ($r['status'] === 'pending' ? 'unpaid' : $r['status'])) : htp($r['status']);
-}
-function htp_render_customer(array $order): string
-{
-  if (!htp_customer_allowed($order))
-    return '';
-  $r = htp_receipt((int) $order['id']);
-  if (!$r)
-    return '';
-  $summary = hyg_order_payment_summary($order);
-  $host = ($summary['collection_mode'] ?? 'store') === 'host';
-  $cancelled = $order['status'] === 'cancelled';
-  $legacy = !empty($r['ledger_only']);
-  $rejected = ($r['report_state'] ?? '') === 'rejected';
-  $accounts = $r['recipient_json'] && !$rejected ? [] : htp_order_accounts($order);
-  $version = htp_customer_version($order, $r, $accounts);
-  $canReport = !$cancelled && !$legacy && $r['status'] === 'pending' && (float) ($r['received_amount'] ?? 0) <= 0;
-  $financial = $r['financial_state'] ?? $r['status'];
-  $isConfirmed = in_array($financial, ['confirmed', 'not_required'], true) || ((float) ($r['received_amount'] ?? 0) >= (float) $r['amount'] && (float) $r['amount'] > 0);
-  $paymentUrl = base_url('payment.php?order=' . rawurlencode($order['order_no']));
+            }
+            function htp_customer_version(array $order, array $r, ?array $accounts = null): string
+            {
+              $accounts ??= (empty($r['recipient_json']) || ($r['report_state'] ?? '') === 'rejected') ? htp_order_accounts($order) : [];
+              $quotes = [];
+              foreach ($accounts as $a)
+                $quotes[] = htp_quote($order, $r, $a);
+              return hash('sha256', json_encode([(int) $r['version'], $order['status'], $r['status'], $r['financial_state'] ?? '', $r['received_amount'] ?? 0, $r['refunded_amount'] ?? 0, $r['report_state'] ?? '', (int) ($order['dispatch_revision'] ?? 0), $quotes], JSON_THROW_ON_ERROR));
+            }
+            function htp_payment_label(array $r): string
+            {
+              return function_exists('pwf') ? pwf($r['financial_state'] ?? ($r['status'] === 'pending' ? 'unpaid' : $r['status'])) : htp($r['status']);
+            }
+            function htp_render_customer(array $order): string
+            {
+              if (!htp_customer_allowed($order))
+                return '';
+              $r = htp_receipt((int) $order['id']);
+              if (!$r)
+                return '';
+              $summary = hyg_order_payment_summary($order);
+              $host = ($summary['collection_mode'] ?? 'store') === 'host';
+              $cancelled = $order['status'] === 'cancelled';
+              $legacy = !empty($r['ledger_only']);
+              $rejected = ($r['report_state'] ?? '') === 'rejected';
+              $accounts = $r['recipient_json'] && !$rejected ? [] : htp_order_accounts($order);
+              $version = htp_customer_version($order, $r, $accounts);
+              $canReport = !$cancelled && !$legacy && $r['status'] === 'pending' && (float) ($r['received_amount'] ?? 0) <= 0;
+              $financial = $r['financial_state'] ?? $r['status'];
+              $isTransfer = ($order['payment_method'] ?? '') === 'transfer';
+              $isCash = ($order['payment_method'] ?? '') === 'cash';
+              $isConfirmed = $isCash || in_array($financial, ['confirmed', 'not_required'], true) || ((float) ($r['received_amount'] ?? 0) >= (float) $r['amount'] && (float) $r['amount'] > 0);
+              $paymentUrl = base_url('payment.php?order=' . rawurlencode($order['order_no']));
 
-  // Resolve bank account details for SePay VietQR
-  $selectedAcc = null;
-  if (!empty($r['recipient_json']) && !$rejected) {
-    $selectedAcc = json_decode($r['recipient_json'], true);
-  }
-  if (!$selectedAcc && $accounts) {
-    $selectedAcc = $accounts[0];
-  }
-  if (!$selectedAcc) {
-    $selectedAcc = hyg_one('SELECT bank_name, account_number, account_name FROM bank_accounts WHERE active = 1 ORDER BY sort_order, id LIMIT 1');
-  }
-  $bankName = $selectedAcc['bank_name'] ?? '';
-  $accNum = $selectedAcc['account_number'] ?? '';
-  $accName = $selectedAcc['account_name'] ?? '';
-  $des = sepay_order_description($order['order_no']);
-  $vietQrUrl = ($accNum && $bankName) ? sepay_qr_url($accNum, $bankName, (float) $r['amount'], $des, 'compact') : '';
+              // Resolve bank account details for SePay VietQR
+              $selectedAcc = null;
+              if (!empty($r['recipient_json']) && !$rejected) {
+                $selectedAcc = json_decode($r['recipient_json'], true);
+              }
+              if (!$selectedAcc && $accounts) {
+                $selectedAcc = $accounts[0];
+              }
+              if (!$selectedAcc) {
+                $selectedAcc = hyg_one('SELECT bank_name, account_number, account_name FROM bank_accounts WHERE active = 1 ORDER BY sort_order, id LIMIT 1');
+              }
+              $bankName = $selectedAcc['bank_name'] ?? '';
+              $accNum = $selectedAcc['account_number'] ?? '';
+              $accName = $selectedAcc['account_name'] ?? '';
+              $des = sepay_order_description($order['order_no']);
+              $vietQrUrl = ($accNum && $bankName) ? sepay_qr_url($accNum, $bankName, (float) $r['amount'], $des, 'compact') : '';
 
-  // Tính thời gian giữ đơn thực tế dựa trên thời điểm tạo đơn trong DB (15 phút = 900 giây)
-  $createdAt = !empty($order['created_at']) ? strtotime($order['created_at'] . ' UTC') : time();
-  $holdSeconds = 15 * 60;
-  $remainingSeconds = max(0, ($createdAt + $holdSeconds) - time());
-  $countdownDisplay = sprintf('%02d:%02d', floor($remainingSeconds / 60), $remainingSeconds % 60);
+              // Tính thời gian giữ đơn thực tế dựa trên thời điểm tạo đơn trong DB (15 phút = 900 giây)
+              $createdAt = !empty($order['created_at']) ? strtotime($order['created_at'] . ' UTC') : time();
+              $holdSeconds = 15 * 60;
+              $remainingSeconds = max(0, ($createdAt + $holdSeconds) - time());
+              $countdownDisplay = sprintf('%02d:%02d', floor($remainingSeconds / 60), $remainingSeconds % 60);
+              $isExpired = ($remainingSeconds <= 0 && !$isConfirmed && !$cancelled);
 
-  ob_start(); ?>
-  <link rel="stylesheet" href="<?= e(base_url('assets/css/sepay-payment.css?v=1.0.0')) ?>">
+              ob_start(); ?>
+  <link rel="stylesheet" href="<?= e(base_url('assets/css/sepay-payment.css?v=' . filemtime(__DIR__ . '/../assets/css/sepay-payment.css'))) ?>">
   <section class="transfer-payment-panel sepay-payment-container" id="merchant-payment" data-sepay-panel
     data-is-confirmed="<?= $isConfirmed ? '1' : '0' ?>" data-order-no="<?= e($order['order_no']) ?>" data-payment-panel
     data-payment-version="<?= e($version) ?>"
@@ -350,19 +356,212 @@ function htp_render_customer(array $order): string
     data-payment-login-label="<?= e(htp_ux('login')) ?>" data-payment-copied="<?= e(htp_ux('copied')) ?>"
     data-payment-copy-manual="<?= e(htp_ux('copy_manual')) ?>" data-payment-close="<?= e(htp_ux('qr_close')) ?>">
 
-    <?php if ($isConfirmed): ?>
-      <div class="sepay-success-card">
-        <div class="sepay-success-icon" aria-hidden="true">✓</div>
-        <h3 class="sepay-success-title"><?= e(sepay_t('sepay_success_title')) ?></h3>
-        <p class="sepay-success-desc"><?= e(sepay_t('sepay_success_desc_order')) ?></p>
-        <div class="sepay-success-details">
-          <div><span><?= e(sepay_t('sepay_order_number')) ?></span> <strong><?= e($order['order_no']) ?></strong></div>
-          <div><span><?= e(sepay_t('sepay_status')) ?></span> <b class="badge-success"><?= e(htp_payment_label($r)) ?></b></div>
-          <div><span><?= e(sepay_t('sepay_received')) ?></span> <strong><?= e(currency()) ?><?= money($r['received_amount']) ?></strong></div>
+    <?php if ($cancelled): ?>
+      <div class="sepay-cancelled-card">
+        <div class="sepay-cancelled-icon" aria-hidden="true">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </div>
+        <h2 class="sepay-cancelled-title"><?= e(client_t('order_cancelled_title')) ?></h2>
+        <p class="sepay-cancelled-desc"><?= e(client_t('order_cancelled_desc')) ?></p>
+
+        <div class="sepay-success-details sepay-cancelled-details">
+          <div class="sepay-detail-row">
+            <span class="sepay-detail-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+              <?= e(t('order_number')) ?>
+            </span>
+            <span class="sepay-detail-value sepay-code-chip" data-sepay-copy="<?= e($order['order_no']) ?>" title="<?= e(sepay_t('success_copy_code')) ?>" role="button" tabindex="0">
+              <code><?= e($order['order_no']) ?></code>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+            </span>
+          </div>
+
+          <div class="sepay-detail-row">
+            <span class="sepay-detail-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+              <?= e(htp_ux('payment_method')) ?>
+            </span>
+            <span class="sepay-detail-value"><?= e(($order['payment_method'] ?? '') === 'transfer' ? (t('transfer') ?: 'Chuyển khoản VietQR') : (t('cash') ?: 'Tiền mặt khi nhận hàng')) ?></span>
+          </div>
+
+          <div class="sepay-detail-row">
+            <span class="sepay-detail-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
+              <?= e(sepay_t('sepay_status')) ?>
+            </span>
+            <span class="sepay-detail-value">
+              <span class="sepay-status-pill danger">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                <?= e(t('cancelled') ?: 'Đã hủy') ?>
+              </span>
+            </span>
+          </div>
+
+          <div class="sepay-detail-row sepay-detail-total">
+            <span class="sepay-detail-label"><?= e(t('grand_total')) ?></span>
+            <span class="sepay-detail-value sepay-amount-highlight is-cancelled-amount">
+              <?= e(currency()) ?><?= money((float)($order['total_amount'] ?? 0)) ?>
+            </span>
+          </div>
         </div>
       </div>
+    <?php elseif ($isConfirmed): ?>
+      <?php if ($isTransfer): ?>
+        <!-- TH 1: Chuyển khoản thành công (Transfer Confirmed) -->
+        <div class="sepay-success-card">
+          <div class="sepay-success-icon" aria-hidden="true">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <h2 class="sepay-success-title"><?= e(sepay_t('sepay_success_title')) ?></h2>
+          <p class="sepay-success-desc"><?= e(sepay_t('sepay_success_desc_order')) ?></p>
+
+          <div class="sepay-success-details">
+            <div class="sepay-detail-row">
+              <span class="sepay-detail-label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <?= e(t('order_number')) ?>
+              </span>
+              <span class="sepay-detail-value sepay-code-chip" data-sepay-copy="<?= e($order['order_no']) ?>" title="<?= e(sepay_t('success_copy_code')) ?>" role="button" tabindex="0">
+                <code><?= e($order['order_no']) ?></code>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </span>
+            </div>
+
+            <div class="sepay-detail-row">
+              <span class="sepay-detail-label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                  <line x1="2" y1="10" x2="22" y2="10"></line>
+                </svg>
+                <?= e(htp_ux('payment_method')) ?>
+              </span>
+              <span class="sepay-detail-value"><?= e(t('transfer') ?: 'Chuyển khoản VietQR') ?></span>
+            </div>
+
+            <div class="sepay-detail-row">
+              <span class="sepay-detail-label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <?= e(sepay_t('sepay_status')) ?>
+              </span>
+              <span class="sepay-detail-value">
+                <span class="sepay-status-pill success">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <?= e(htp_payment_label($r)) ?>
+                </span>
+              </span>
+            </div>
+
+            <div class="sepay-detail-row sepay-detail-total">
+              <span class="sepay-detail-label"><?= e(sepay_t('sepay_received')) ?></span>
+              <span class="sepay-detail-value sepay-amount-highlight">
+                <?= e(currency()) ?><?= money((float)($r['received_amount'] ?? 0) > 0 ? $r['received_amount'] : ($order['total_amount'] ?? 0)) ?>
+              </span>
+            </div>
+          </div>
+        </div>
+      <?php else: ?>
+        <!-- TH 2: Tiền mặt khi nhận hàng (Cash / COD Confirmed) -->
+        <div class="sepay-success-card is-cash-success">
+          <div class="sepay-success-icon is-cash-icon" aria-hidden="true">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+              <circle cx="12" cy="12" r="2.5"></circle>
+              <path d="M6 12h.01M18 12h.01"></path>
+            </svg>
+          </div>
+          <h2 class="sepay-success-title is-cash-title"><?= e(sepay_t('payment_cash_title')) ?></h2>
+          <p class="sepay-success-desc is-cash-desc"><?= e(sepay_t('payment_cash_desc')) ?></p>
+
+          <div class="sepay-success-details">
+            <div class="sepay-detail-row">
+              <span class="sepay-detail-label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <?= e(t('order_number')) ?>
+              </span>
+              <span class="sepay-detail-value sepay-code-chip" data-sepay-copy="<?= e($order['order_no']) ?>" title="<?= e(sepay_t('success_copy_code')) ?>" role="button" tabindex="0">
+                <code><?= e($order['order_no']) ?></code>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </span>
+            </div>
+
+            <div class="sepay-detail-row">
+              <span class="sepay-detail-label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                  <circle cx="12" cy="12" r="2.5"></circle>
+                </svg>
+                <?= e(htp_ux('payment_method')) ?>
+              </span>
+              <span class="sepay-detail-value"><?= e(t('cash') ?: 'Tiền mặt khi nhận hàng (COD)') ?></span>
+            </div>
+
+            <div class="sepay-detail-row">
+              <span class="sepay-detail-label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <?= e(sepay_t('sepay_status')) ?>
+              </span>
+              <span class="sepay-detail-value">
+                <span class="sepay-status-pill cash">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <?= e(status_label($order['status'])) ?>
+                </span>
+              </span>
+            </div>
+
+            <div class="sepay-detail-row sepay-detail-total">
+              <span class="sepay-detail-label"><?= e(t('grand_total')) ?></span>
+              <span class="sepay-detail-value sepay-amount-highlight is-cash">
+                <?= e(currency()) ?><?= money($order['total_amount'] ?? 0) ?>
+              </span>
+            </div>
+          </div>
+        </div>
+      <?php endif; ?>
     <?php elseif ($order['payment_method'] === 'transfer' && $vietQrUrl): ?>
-      <article class="sepay-payment-card">
+      <article class="sepay-payment-card <?= $isExpired ? 'is-expired' : '' ?>">
         <div class="sepay-header">
           <h3 class="sepay-title">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -371,20 +570,27 @@ function htp_render_customer(array $order): string
             </svg>
             <?= e(sepay_t('sepay_card_title')) ?>
           </h3>
-          <span class="sepay-timer-badge">
+          <span class="sepay-timer-badge <?= $isExpired ? 'is-expired' : '' ?>">
             <span class="sepay-pulse-dot"></span>
-            <?= e(sepay_t('sepay_timer_label')) ?> <span data-sepay-countdown><?= e($countdownDisplay) ?></span>
+            <span data-sepay-timer-text><?= $isExpired ? e(client_t('sepay_qr_expired_badge')) : (e(sepay_t('sepay_timer_label')) . ' <span data-sepay-countdown>' . e($countdownDisplay) . '</span>') ?></span>
           </span>
         </div>
 
         <div class="sepay-grid">
-          <div class="sepay-qr-box">
-            <img src="<?= e($vietQrUrl) ?>" alt="VietQR" class="sepay-qr-img" data-sepay-qr-modal
-              data-sepay-qr-src="<?= e($vietQrUrl) ?>" title="VietQR">
+          <div class="sepay-qr-box <?= $isExpired ? 'is-expired' : '' ?>">
+            <div class="sepay-qr-wrapper">
+              <img src="<?= e($vietQrUrl) ?>" alt="VietQR" class="sepay-qr-img" data-sepay-qr-modal
+                data-sepay-qr-src="<?= e($vietQrUrl) ?>" title="VietQR">
+              <div class="sepay-qr-expired-overlay" <?= $isExpired ? '' : 'style="display:none;"' ?>>
+                <div class="sepay-expired-icon" aria-hidden="true">⏳</div>
+                <strong><?= e(client_t('sepay_qr_expired_title')) ?></strong>
+                <small><?= e(client_t('sepay_qr_expired_sub')) ?></small>
+              </div>
+            </div>
             <div class="sepay-qr-actions">
-              <button type="button" class="btn small" data-sepay-qr-modal data-sepay-qr-src="<?= e($vietQrUrl) ?>"><?= e(sepay_t('sepay_qr_zoom')) ?></button>
-              <a class="btn small" href="<?= e($vietQrUrl) ?>&download=true"
-                download="VietQR-<?= e($order['order_no']) ?>.png"><?= e(sepay_t('sepay_qr_download')) ?></a>
+              <button type="button" class="btn small <?= $isExpired ? 'disabled' : '' ?>" data-sepay-qr-modal data-sepay-qr-src="<?= e($vietQrUrl) ?>" <?= $isExpired ? 'disabled' : '' ?>><?= e(sepay_t('sepay_qr_zoom')) ?></button>
+              <a class="btn small <?= $isExpired ? 'disabled' : '' ?>" href="<?= $isExpired ? 'javascript:void(0)' : e($vietQrUrl) . '&download=true' ?>"
+                download="<?= $isExpired ? '' : 'VietQR-' . e($order['order_no']) . '.png' ?>" <?= $isExpired ? 'tabindex="-1" aria-disabled="true"' : '' ?>><?= e(sepay_t('sepay_qr_download')) ?></a>
             </div>
           </div>
 
@@ -426,96 +632,136 @@ function htp_render_customer(array $order): string
           </div>
         </div>
 
-        <div class="sepay-live-status">
-          <div class="sepay-spinner"></div>
-          <span data-sepay-status-note><?= e(sepay_t('sepay_waiting_status')) ?></span>
+        <div class="sepay-live-status <?= $isExpired ? 'is-expired' : '' ?>">
+          <div class="sepay-spinner" <?= $isExpired ? 'style="display:none;"' : '' ?>></div>
+          <div class="sepay-expired-status-icon" <?= $isExpired ? '' : 'style="display:none;"' ?> aria-hidden="true">⚠️</div>
+          <span data-sepay-status-note><?= e($isExpired ? client_t('sepay_qr_expired_notice') : sepay_t('sepay_waiting_status')) ?></span>
         </div>
       </article>
     <?php endif; ?>
 
     <?php if (!$isConfirmed && !$vietQrUrl): ?>
-      <div class="hyg-person-total">
-        <strong><?= e(htp('merchant_total')) ?></strong><?= htp_copy((string) (int) round((float) $r['amount']), t('total'), money($r['amount'])) ?>
-        <span><?= e(currency()) ?></span></div>
-      <p><?= e(htp_ux('payment_method')) ?>：<?= e(payment_label($order['payment_method'])) ?></p><?php if ($host): ?>
-        <p><?= e(htp('merchant_host')) ?></p>
-        <p class="muted"><?= e(htp('collected_hint')) ?></p><?php endif; ?>
-      <p role="status"><strong><?= e($cancelled ? htp('cancelled') : htp_payment_label($r)) ?></strong></p>
-      <?php if ($legacy): ?>
-        <p class="alert info"><?= e(htp('legacy')) ?></p><?php elseif ($financial === 'not_required'): ?>
-        <p><?= e(htp_ux('not_required_hint')) ?></p><?php else: ?>
-        <p class="muted"><?= e(htp('confirmed_hint')) ?></p><?php endif; ?>
-    <?php endif; ?>
+      <article class="sepay-payment-card payment-cash-card">
+        <div class="sepay-header payment-cash-header">
+          <h3 class="sepay-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+              <circle cx="12" cy="12" r="2.5"></circle>
+              <path d="M6 12h.01M18 12h.01"></path>
+            </svg>
+            <?= e(sepay_t('payment_cash_card_title')) ?>
+          </h3>
+        </div>
 
-    <?php if (!$isConfirmed && ((float) ($r['received_amount'] ?? 0) > 0 || ($r['report_state'] ?? '') === 'rejected')): ?>
-      <div class="payment-financial-summary">
-        <?php foreach (['received_amount', 'refunded_amount', 'balance_due', 'refund_due'] as $key): ?>
-          <div><span><?= e(pwf($key)) ?></span><b><?= e(currency()) ?><?= money($r[$key] ?? 0) ?></b></div>
-        <?php endforeach; ?>
-      </div>
-      <p class="alert info"><?= e(htp_ux('reconcile')) ?></p>
-    <?php endif; ?>
+        <div class="payment-cash-body">
+          <div class="payment-cash-amount-box">
+            <span class="payment-cash-amount-label"><?= e(sepay_t('payment_cash_amount_due')) ?></span>
+            <div class="payment-cash-amount-val-wrap">
+              <span class="payment-cash-currency"><?= e(currency()) ?></span>
+              <strong class="payment-cash-amount-number"><?= money($r['amount']) ?></strong>
+            </div>
+          </div>
 
-    <?php if ($canReport && $order['payment_method'] === 'transfer' && !$isConfirmed): ?>
-      <details class="sepay-manual-report">
-        <summary><?= e(sepay_t('sepay_help_toggle')) ?></summary>
-        <p class="muted"><?= e(sepay_t('sepay_help_desc')) ?></p>
-        <?php foreach ($accounts as $a): ?>
-          <form method="post" action="<?= e($paymentUrl) ?>" data-payment-report
-            data-confirm="<?= e(htp('report_prompt')) ?>"><?= csrf_field() ?><input type="hidden" name="action"
-              value="report"><input type="hidden" name="account_code" value="<?= e($a['code']) ?>"><input type="hidden"
-              name="payment_quote" value="<?= e(htp_quote($order, $r, $a)) ?>"><button class="btn secondary"
-              type="submit"><?= e(htp('report')) ?></button></form><?php endforeach; ?>
-      </details>
-    <?php endif; ?>
+          <div class="sepay-info-list payment-cash-info-list">
+            <div class="sepay-info-item">
+              <span class="sepay-info-label"><?= e(htp_ux('payment_method')) ?></span>
+              <div class="sepay-info-val-wrap">
+                <span class="sepay-info-val method-badge">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                    <circle cx="12" cy="12" r="2.5"></circle>
+                    <path d="M6 12h.01M18 12h.01"></path>
+                  </svg>
+                  <?= e(payment_label($order['payment_method'])) ?>
+                </span>
+              </div>
+            </div>
 
-    <?php if (!$vietQrUrl): ?>
-    <div class="payment-actions"><a class="btn" href="<?= e($paymentUrl) ?>"
-        data-payment-refresh><?= e(htp('refresh')) ?></a><?= htp_contact($order) ?></div>
+            <?php if (!empty($order['dispatch_store_id'])):
+                  $st = hyg_one('SELECT name, phone FROM dispatch_stores WHERE id=?', [(int)$order['dispatch_store_id']]);
+                  if ($st):
+            ?>
+                <div class="sepay-info-item">
+                  <span class="sepay-info-label"><?= e(sepay_t('success_store_title')) ?></span>
+                  <div class="sepay-info-val-wrap">
+                    <span class="sepay-info-val"><?= e($st['name']) ?></span>
+                  </div>
+                </div>
+            <?php endif;
+                endif; ?>
+
+            <?php if ($host): ?>
+              <div class="sepay-info-item">
+                <span class="sepay-info-label"><?= e(htp('merchant_host')) ?></span>
+                <div class="sepay-info-val-wrap">
+                  <span class="sepay-info-val"><?= e(htp('collected_hint')) ?></span>
+                </div>
+              </div>
+            <?php endif; ?>
+          </div>
+
+          <?php if (((float) ($r['received_amount'] ?? 0) > 0 || ($r['report_state'] ?? '') === 'rejected')): ?>
+            <div class="payment-financial-summary">
+              <?php foreach (['received_amount', 'refunded_amount', 'balance_due', 'refund_due'] as $key): ?>
+                <div><span><?= e(pwf($key)) ?></span><b><?= e(currency()) ?><?= money($r[$key] ?? 0) ?></b></div>
+              <?php endforeach; ?>
+            </div>
+            <p class="alert info"><?= e(htp_ux('reconcile')) ?></p>
+          <?php endif; ?>
+
+          <div class="payment-cash-notice-box">
+            <div class="payment-cash-notice-icon" aria-hidden="true">🛵</div>
+            <div class="payment-cash-notice-text">
+              <p class="payment-cash-notice-main"><?= e(sepay_t('payment_cash_notice')) ?></p>
+            </div>
+          </div>
+        </div>
+      </article>
     <?php endif; ?>
   </section>
+  <?= client_render_js_i18n() ?>
   <?= sepay_render_js_i18n() ?>
-  <script src="<?= e(base_url('assets/js/sepay-payment.js?v=1.0.0')) ?>" defer></script>
-  <?php return ob_get_clean();
-}
+  <script src="<?= e(base_url('assets/js/sepay-payment.js?v=' . filemtime(__DIR__ . '/../assets/js/sepay-payment.js'))) ?>" defer></script>
+<?php return ob_get_clean();
+            }
 
-function htp_render_staff(array $order): string
-{
-  $r = htp_receipt((int) $order['id']);
-  if (!$r) {
-    $r = htp_financial_summary($order, null);
-    $r += ['recipient_json' => null, 'reported_at' => null, 'confirmed_at' => null, 'confirmed_by_admin_id' => null];
-    $r['version'] = 1;
-  }
-  $accounts = htp_staff_accounts($order);
-  $events = htp_events((int) $order['id']);
-  $cancelled = $order['status'] === 'cancelled';
-  ob_start(); ?>
+            function htp_render_staff(array $order): string
+            {
+              $r = htp_receipt((int) $order['id']);
+              if (!$r) {
+                $r = htp_financial_summary($order, null);
+                $r += ['recipient_json' => null, 'reported_at' => null, 'confirmed_at' => null, 'confirmed_by_admin_id' => null];
+                $r['version'] = 1;
+              }
+              $accounts = htp_staff_accounts($order);
+              $events = htp_events((int) $order['id']);
+              $cancelled = $order['status'] === 'cancelled';
+              ob_start(); ?>
   <section class="panel ma-panel" id="merchant-payment">
     <h2><?= e(htp('merchant_title')) ?></h2>
     <p><strong><?= e(htp_payment_label($r)) ?></strong> · <?= e(currency()) ?><?= money($r['amount']) ?></p>
     <p class="muted"><?= e(htp('confirmed_hint')) ?></p>
     <div class="payment-financial-summary">
       <?php foreach (['received_amount', 'refunded_amount', 'net_received', 'balance_due', 'overpaid_amount', 'refund_due'] as $key):
-        $value = $key === 'overpaid_amount' ? ($r['overpaid'] ?? 0) : ($r[$key] ?? 0); ?>
+                $value = $key === 'overpaid_amount' ? ($r['overpaid'] ?? 0) : ($r[$key] ?? 0); ?>
         <div><span><?= e(pwf($key)) ?></span><b><?= e(currency()) ?><?= money($value) ?></b></div><?php endforeach; ?>
     </div>
     <?php if ($r['recipient_json']):
-      $a = json_decode($r['recipient_json'], true);
-      if (is_array($a)): ?>
+                $a = json_decode($r['recipient_json'], true);
+                if (is_array($a)): ?>
         <p class="payment-history-value"><?= e(htp('recipient')) ?>：<?= e($a['recipient'] ?? '') ?> ·
           <?= e($a['bank_name'] ?? '') ?> · <?= e($a['account_number'] ?? '') ?> · <?= e($a['account_name'] ?? '') ?></p>
-      <?php endif;
-    endif; ?>
+    <?php endif;
+              endif; ?>
     <p><?= e(htp('reported_at')) ?>：<?= e($r['reported_at'] ?? '—') ?></p>
     <p><?= e(htp('confirmed_at')) ?>：<?= e($r['confirmed_at'] ?? '—') ?> ·
       <?= e(htp('confirmed_by')) ?>：<?= e($r['confirmed_by_admin_id'] ?? '—') ?></p>
     <div class="payment-staff-actions">
       <?php foreach (['payment_receive', 'payment_correct', 'payment_reject', 'payment_refund'] as $action):
-        if ($action === 'payment_reject' && ($r['report_state'] ?? '') !== 'requested' && $r['status'] !== 'requested')
-          continue;
-        if ($action === 'payment_refund' && (float) ($r['net_received'] ?? 0) <= 0)
-          continue; ?>
+                if ($action === 'payment_reject' && ($r['report_state'] ?? '') !== 'requested' && $r['status'] !== 'requested')
+                  continue;
+                if ($action === 'payment_refund' && (float) ($r['net_received'] ?? 0) <= 0)
+                  continue; ?>
         <details>
           <summary><?= e(pwf($action)) ?></summary>
           <form method="post" class="payment-staff-form" onsubmit="return confirm(this.dataset.confirm)"
@@ -550,26 +796,26 @@ function htp_render_staff(array $order): string
     <details class="payment-history">
       <summary><?= e(pwf('history')) ?> (<?= count($events) ?>)</summary><?php foreach ($events as $event): ?>
         <article><strong><?= e(pwf($event['event_type'])) ?></strong><span><?= e($event['created_at']) ?> ·
-            <?= e(pwf('staff')) ?>     <?= e($event['admin_id'] ?? '—') ?></span>
-          <p><?= e(pwf('received_amount')) ?>     <?= e(currency()) ?>    <?= money($event['amount_delta'] ?? 0) ?> ·
-            <?= e(pwf('refunded_amount')) ?>     <?= e(currency()) ?>    <?= money($event['refund_delta'] ?? 0) ?></p>
+            <?= e(pwf('staff')) ?> <?= e($event['admin_id'] ?? '—') ?></span>
+          <p><?= e(pwf('received_amount')) ?> <?= e(currency()) ?> <?= money($event['amount_delta'] ?? 0) ?> ·
+            <?= e(pwf('refunded_amount')) ?> <?= e(currency()) ?> <?= money($event['refund_delta'] ?? 0) ?></p>
           <?php if (!empty($event['transaction_reference'])): ?>
             <p class="payment-history-value"><?= e(pwf('transaction_reference')) ?>：<?= e($event['transaction_reference']) ?>
             </p><?php endif; ?>
           <p class="payment-history-value"><?= e($event['reason'] ?? '') ?></p>
           <?php foreach (['before_json' => 'before', 'after_json' => 'after'] as $json => $label):
-            $state = json_decode((string) ($event[$json] ?? ''), true);
-            if (!is_array($state))
-              continue; ?>
+                                                                              $state = json_decode((string) ($event[$json] ?? ''), true);
+                                                                              if (!is_array($state))
+                                                                                continue; ?>
             <p>
               <?= e(pwf($label)) ?>：<?php foreach (['received_amount', 'refunded_amount'] as $key):
-                  if (isset($state[$key])): ?><?= e(pwf($key)) ?>
-                  <?= e(currency()) ?>          <?= money($state[$key]) ?>
-                <?php endif;
-                endforeach; ?>
+                                                                                if (isset($state[$key])): ?><?= e(pwf($key)) ?>
+              <?= e(currency()) ?> <?= money($state[$key]) ?>
+          <?php endif;
+                                                                              endforeach; ?>
             </p><?php endforeach; ?>
         </article><?php endforeach; ?>
     </details>
   </section>
-  <?php return ob_get_clean();
-}
+<?php return ob_get_clean();
+            }

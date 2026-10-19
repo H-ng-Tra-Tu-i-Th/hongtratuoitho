@@ -86,3 +86,115 @@ function htp_csv_safe(mixed $value): string {
     // Spreadsheet formula/control prefixes must remain plain text even after leading spaces.
     if(preg_match('/^[\x00-\x20]*[=+\-@]/',$text)||preg_match('/^[\t\r\n]/',$text))return "'".$text;return $text;
 }
+
+/**
+ * Automatically cancel unpaid pending orders that have exceeded the 15-minute hold time.
+ * Can be run from CLI cron job (bin/auto-cancel-expired-orders.php) or lazily during checkout checks.
+ *
+ * @param int $limit Maximum number of expired orders to process in one execution.
+ * @return int Number of orders successfully cancelled.
+ */
+function htow_cancel_expired_orders(int $limit = 50): int {
+    $pdo = db();
+    // Orders with status 'new', payment_method = 'transfer', created > 15 mins ago,
+    // where transfer_order_receipts has received_amount <= 0 or receipt status in ('pending', 'requested')
+    $sql = "SELECT o.id, o.order_no, o.status_version 
+            FROM orders o
+            LEFT JOIN transfer_order_receipts r ON r.order_id = o.id
+            WHERE o.status = 'new'
+              AND o.payment_method = 'transfer'
+              AND o.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE)
+              AND COALESCE(r.received_amount, 0) <= 0
+              AND COALESCE(r.status, 'pending') NOT IN ('confirmed', 'overpaid')
+            ORDER BY o.id ASC
+            LIMIT " . max(1, min(500, (int)$limit));
+    
+    $expiredOrders = hyg_all($sql);
+    if (!$expiredOrders) {
+        return 0;
+    }
+
+    $cancelledCount = 0;
+    $reason = 'Tự động hủy đơn do quá hạn thời gian thanh toán (15 phút)';
+
+    foreach ($expiredOrders as $item) {
+        $orderId = (int)$item['id'];
+        $expectedVersion = (int)$item['status_version'];
+
+        $inTx = $pdo->inTransaction();
+        if (!$inTx) {
+            $pdo->beginTransaction();
+        }
+
+        try {
+            $order = hyg_one('SELECT * FROM orders WHERE id = ? FOR UPDATE', [$orderId]);
+            if ($order && $order['status'] === 'new' && (int)$order['status_version'] === $expectedVersion) {
+                $r = hyg_one('SELECT * FROM transfer_order_receipts WHERE order_id = ? FOR UPDATE', [$orderId]);
+                if (!$r || ((float)($r['received_amount'] ?? 0) <= 0 && !in_array($r['status'] ?? '', ['confirmed', 'overpaid'], true))) {
+                    $newVersion = $expectedVersion + 1;
+                    $pdo->prepare('UPDATE orders SET status = "cancelled", status_version = ? WHERE id = ? AND status_version = ?')
+                        ->execute([$newVersion, $orderId, $expectedVersion]);
+
+                    $pdo->prepare('INSERT INTO order_status_events(order_id, from_status, to_status, from_version, to_version, admin_id, reason, created_at) VALUES(?, "new", "cancelled", ?, ?, 0, ?, UTC_TIMESTAMP())')
+                        ->execute([$orderId, $expectedVersion, $newVersion, $reason]);
+
+                    if ($r) {
+                        $pdo->prepare('UPDATE transfer_order_receipts SET version = version + 1 WHERE order_id = ?')->execute([$orderId]);
+                    }
+
+                    $cancelledCount++;
+                }
+            }
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->commit();
+            }
+        } catch (Throwable $e) {
+            if (!$inTx && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+        }
+    }
+
+    return $cancelledCount;
+}
+
+/**
+ * Automated in-app cron: Runs on background web requests every 60 seconds without blocking.
+ * Cancels pending transfer orders older than 15 minutes automatically like Node.js.
+ */
+function htow_auto_maintenance(): void {
+    $now = time();
+    $lastRun = (int)setting('htow_expired_orders_last_run', '0');
+    // Run at most once every 60 seconds
+    if ($now - $lastRun < 60) {
+        return;
+    }
+
+    $pdo = db();
+    if ($pdo->inTransaction()) {
+        return;
+    }
+
+    // Non-blocking named lock (0-second wait) so concurrent web requests never wait
+    $lockName = 'htow-auto-maintenance:' . substr(hash('sha256', (string)$pdo->query('SELECT DATABASE()')->fetchColumn()), 0, 32);
+    $guard = $pdo->prepare('SELECT GET_LOCK(?, 0)');
+    $guard->execute([$lockName]);
+    if ((int)$guard->fetchColumn() !== 1) {
+        return;
+    }
+
+    try {
+        $lastRun = (int)setting('htow_expired_orders_last_run', '0');
+        if ($now - $lastRun < 60) {
+            return;
+        }
+
+        set_setting('htow_expired_orders_last_run', (string)$now);
+        htow_cancel_expired_orders(50);
+    } catch (Throwable $ignored) {
+    } finally {
+        $pdo->prepare('SELECT RELEASE_LOCK(?)')->execute([$lockName]);
+    }
+}
+
+

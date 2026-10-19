@@ -73,6 +73,17 @@ $fieldErrors = $draft['errors'];
 $values += ['customer_name' => $memberDefaults['name'], 'phone' => $memberDefaults['phone'], 'address' => $memberDefaults['address'], 'payment_method' => 'transfer', 'invoice_required' => '0'];
 foreach (hcq_fields() as $field => $max)
   $values[$field] ??= '';
+
+$sessionOrders = $_SESSION['customer_payment_orders'] ?? [];
+if (!is_array($sessionOrders)) $sessionOrders = [];
+if (!empty($_SESSION['last_order_no'])) $sessionOrders[] = $_SESSION['last_order_no'];
+$checkPhone = !empty($values['phone']) ? $values['phone'] : ($memberDefaults['phone'] ?? '');
+
+$pendingPaymentOrder = customer_find_pending_payment_order(
+  $checkoutMember ? (int)$checkoutMember['id'] : null,
+  $checkPhone,
+  $sessionOrders
+);
 $checkoutError = $_SESSION['checkout_errors'][$checkoutContext] ?? '';
 unset($_SESSION['checkout_errors'][$checkoutContext]);
 $checkoutSignature = $groupCheckout ? (string) $groupCheckout['room']['lock_signature'] : promotion_quote_signature($cart);
@@ -112,6 +123,40 @@ front_header(t('order_info'));
   <section>
     <span class="eyebrow"><?= e(t('checkout')) ?></span>
     <h1><?= e(t('order_info')) ?></h1>
+    <!-- Toast Alert nổi 3 giây thông báo lỗi và tự động cuộn lên xem (Cả Mobile & Desktop) -->
+    <div id="pending-toast-alert" class="pending-toast-alert" role="alert" aria-live="assertive" style="<?= $pendingPaymentOrder ? '' : 'display:none;' ?>">
+      <div class="pending-toast-content">
+        <span class="pending-toast-icon" aria-hidden="true">⚠️</span>
+        <div class="pending-toast-text">
+          <strong id="pending-toast-title"><?= e(client_t('pending_order_toast_title')) ?></strong>
+          <span id="pending-toast-desc"><?= $pendingPaymentOrder ? client_t('pending_order_toast_desc', ['order_no' => e($pendingPaymentOrder['order_no'])]) : '' ?></span>
+        </div>
+        <button type="button" class="pending-toast-close" id="pending-toast-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="pending-toast-progress-bar">
+        <div class="pending-toast-progress-fill" id="pending-toast-progress"></div>
+      </div>
+    </div>
+
+    <div class="alert danger checkout-error-summary" id="pending-order-alert" role="alert" tabindex="-1" style="<?= $pendingPaymentOrder ? '' : 'display:none;' ?>">
+      <p>
+        <strong id="pending-alert-title"><?= e(client_t('pending_order_exists_title')) ?></strong><br>
+        <span id="pending-alert-desc">
+          <?php if ($pendingPaymentOrder): ?>
+            <?= client_t('pending_order_exists_desc', [
+              'order_no' => e($pendingPaymentOrder['order_no']),
+              'amount' => e(currency()) . money($pendingPaymentOrder['total_amount']),
+            ]) ?>
+          <?php endif; ?>
+        </span>
+      </p>
+      <div style="margin-top: 10px;">
+        <a class="btn primary" id="pending-alert-pay-btn" href="<?= $pendingPaymentOrder ? e(base_url('payment.php?order=' . rawurlencode($pendingPaymentOrder['order_no']))) : '#' ?>">
+          <?= e(client_t('pending_order_pay_now')) ?>
+        </a>
+      </div>
+    </div>
+
     <?php if ($checkoutUnknown): ?>
       <div class="alert danger checkout-error-summary" role="alert">
         <p><?= e(htp_ux('unknown')) ?></p><a class="btn"
@@ -339,7 +384,9 @@ front_header(t('order_info'));
           <p><?= e(t('checkout_data_usage_notice')) ?></p>
         </div>
 
-        <button class="btn primary block checkout-submit" type="submit" <?= $checkoutUnknown ? 'disabled' : '' ?>><?= e(t('submit_order')) ?></button>
+        <div class="checkout-submit-wrapper <?= $pendingPaymentOrder ? 'has-pending-order' : '' ?>" id="checkout-submit-wrapper" data-blocked="<?= $pendingPaymentOrder ? '1' : '0' ?>">
+          <button class="btn primary block checkout-submit <?= $pendingPaymentOrder ? 'is-blocked' : '' ?>" id="checkout-submit-button" type="submit" aria-disabled="<?= $pendingPaymentOrder ? 'true' : 'false' ?>"><?= e(t('submit_order')) ?></button>
+        </div>
       </form>
 
       <!-- Modal chọn chi nhánh / Bottom Sheet -->
@@ -393,6 +440,328 @@ front_header(t('order_info'));
       </div>
   </aside>
 </div>
+<?= client_render_js_i18n() ?>
 <?= sepay_render_js_i18n() ?>
 <script src="<?= e(base_url('assets/js/goong-location.js?v=' . filemtime(__DIR__ . '/assets/js/goong-location.js'))) ?>" defer></script>
+
+<style>
+/* Toast Alert 3s nổi thông báo lỗi và tự động cuộn lên xem (Tối ưu cho cả Mobile & Desktop) */
+.pending-toast-alert {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top, 16px));
+  left: 50%;
+  transform: translateX(-50%) translateY(-35px);
+  background: #ffffff;
+  border-left: 5px solid #dc2626;
+  border-radius: 12px;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(220, 38, 38, 0.2);
+  padding: 14px 16px 12px 14px;
+  z-index: 2147483647;
+  width: calc(100% - 24px);
+  max-width: 440px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+.pending-toast-alert.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+.pending-toast-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pending-toast-icon {
+  font-size: 24px;
+  line-height: 1.1;
+  flex-shrink: 0;
+}
+.pending-toast-text {
+  flex: 1;
+  min-width: 0;
+}
+.pending-toast-text strong {
+  display: block;
+  font-size: 15px;
+  color: #991b1b;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+.pending-toast-text span {
+  display: block;
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.45;
+}
+.pending-toast-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0 6px;
+  line-height: 1;
+  touch-action: manipulation;
+}
+.pending-toast-close:hover,
+.pending-toast-close:active {
+  color: #111827;
+}
+.pending-toast-progress-bar {
+  margin-top: 10px;
+  height: 3.5px;
+  background: #fee2e2;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pending-toast-progress-fill {
+  height: 100%;
+  background: #dc2626;
+  width: 100%;
+  transition: width 3s linear;
+}
+.pending-toast-progress-fill.animating {
+  width: 0% !important;
+}
+
+/* Hiệu ứng nhấp nháy làm nổi bật khối đơn pending khi cuộn lên xem */
+@keyframes pendingAlertPulse {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.85); }
+  50% { box-shadow: 0 0 0 14px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+.pending-pulse-target {
+  animation: pendingAlertPulse 1.2s ease-in-out 2;
+  border: 2px solid #dc2626 !important;
+}
+.checkout-submit.is-blocked {
+  opacity: 0.55 !important;
+  filter: grayscale(0.3);
+  cursor: not-allowed !important;
+  touch-action: manipulation;
+}
+.checkout-submit-wrapper.has-pending-order {
+  cursor: not-allowed;
+  touch-action: manipulation;
+}
+</style>
+
+<script>
+(function() {
+  window.__HAS_PENDING_ORDER = <?= $pendingPaymentOrder ? 'true' : 'false' ?>;
+  const checkPendingEndpoint = <?= json_encode(base_url('api/check_pending_order.php')) ?>;
+
+  const toast = document.getElementById('pending-toast-alert');
+  const progressFill = document.getElementById('pending-toast-progress');
+  const alertTarget = document.getElementById('pending-order-alert');
+  const alertTitle = document.getElementById('pending-alert-title');
+  const alertDesc = document.getElementById('pending-alert-desc');
+  const alertPayBtn = document.getElementById('pending-alert-pay-btn');
+  const toastTitle = document.getElementById('pending-toast-title');
+  const toastDesc = document.getElementById('pending-toast-desc');
+  const closeBtn = document.getElementById('pending-toast-close');
+  const submitWrap = document.getElementById('checkout-submit-wrapper');
+  const submitBtn = document.getElementById('checkout-submit-button');
+  const checkoutForm = document.querySelector('form[data-checkout-form]');
+  const phoneInput = document.querySelector('input[name="phone"]');
+
+  let toastTimer = null;
+  let checkTimer = null;
+
+  function showToastAndScroll() {
+    if (!toast || !alertTarget) return;
+
+    // 1. Đảm bảo container alert đang hiển thị
+    alertTarget.style.display = '';
+
+    // 2. Ẩn bàn phím ảo trên mobile để không bị che khuất tầm nhìn
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+
+    // 3. Cuộn mượt màn hình kéo lên đúng vị trí banner cảnh báo (hoạt động hoàn hảo trên cả Mobile & Desktop)
+    try {
+      const rect = alertTarget.getBoundingClientRect();
+      const targetY = window.pageYOffset + rect.top - 80;
+      window.scrollTo({
+        top: Math.max(0, targetY),
+        behavior: 'smooth'
+      });
+    } catch (e) {
+      alertTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // Hiệu ứng pulse highlight khối cảnh báo
+    alertTarget.classList.add('pending-pulse-target');
+    setTimeout(function() {
+      alertTarget.classList.remove('pending-pulse-target');
+    }, 3000);
+
+    // 4. Bật Toast Alert nổi bật
+    clearTimeout(toastTimer);
+    toast.style.display = '';
+    if (progressFill) {
+      progressFill.classList.remove('animating');
+      progressFill.style.width = '100%';
+    }
+
+    toast.classList.add('is-visible');
+
+    // Chạy thanh tiến trình đếm ngược 3 giây
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        if (progressFill) {
+          progressFill.classList.add('animating');
+        }
+      });
+    });
+
+    // 5. Tự động ẩn sau đúng 3 giây (3000ms)
+    toastTimer = setTimeout(function() {
+      hideToast();
+    }, 3000);
+  }
+
+  function hideToast() {
+    if (toast) {
+      toast.classList.remove('is-visible');
+    }
+  }
+
+  if (closeBtn) {
+    ['click', 'touchend'].forEach(function(evt) {
+      closeBtn.addEventListener(evt, function(e) {
+        e.preventDefault();
+        hideToast();
+      });
+    });
+  }
+
+  // Cập nhật trạng thái giao diện khi phát hiện có hoặc không có đơn pending
+  function updatePendingState(data) {
+    if (data && data.has_pending) {
+      window.__HAS_PENDING_ORDER = true;
+
+      // Cập nhật text trong Banner cảnh báo
+      if (alertTitle) alertTitle.textContent = data.title || 'Bạn đang có đơn hàng chờ thanh toán!';
+      if (alertDesc) alertDesc.textContent = data.desc || '';
+      if (alertPayBtn) {
+        alertPayBtn.href = data.payment_url || '#';
+        alertPayBtn.textContent = data.pay_now_text || 'Đi tới trang thanh toán';
+      }
+      if (alertTarget) alertTarget.style.display = '';
+
+      // Cập nhật text trong Toast 3s
+      if (toastTitle) toastTitle.textContent = data.toast_title || 'Đang có đơn hàng chờ thanh toán!';
+      if (toastDesc) toastDesc.textContent = data.toast_desc || '';
+
+      // Khóa nút Đặt hàng
+      if (submitBtn) {
+        submitBtn.classList.add('is-blocked');
+        submitBtn.setAttribute('aria-disabled', 'true');
+      }
+      if (submitWrap) {
+        submitWrap.classList.add('has-pending-order');
+        submitWrap.setAttribute('data-blocked', '1');
+      }
+
+      // Bật Toast Alert 3s và cuộn lên xem ngay lập tức mà KHÔNG CẦN F5!
+      showToastAndScroll();
+    } else {
+      window.__HAS_PENDING_ORDER = false;
+      if (alertTarget) alertTarget.style.display = 'none';
+      if (submitBtn) {
+        submitBtn.classList.remove('is-blocked');
+        submitBtn.removeAttribute('aria-disabled');
+      }
+      if (submitWrap) {
+        submitWrap.classList.remove('has-pending-order');
+        submitWrap.setAttribute('data-blocked', '0');
+      }
+      hideToast();
+    }
+  }
+
+  // Kiểm tra Realtime số điện thoại khi người dùng nhập/thay đổi mà KHÔNG CẦN F5
+  function checkPhoneRealtime(phoneVal) {
+    clearTimeout(checkTimer);
+    checkTimer = setTimeout(function() {
+      const clean = (phoneVal || '').replace(/\D+/g, '');
+      if (clean.length < 8) return;
+
+      fetch(checkPendingEndpoint + '?phone=' + encodeURIComponent(phoneVal), {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(res) {
+        if (res && res.ok) {
+          updatePendingState(res);
+        }
+      })
+      .catch(function(err) {
+        console.warn('[checkout] Lỗi kiểm tra pending order:', err);
+      });
+    }, 350);
+  }
+
+  if (phoneInput) {
+    ['input', 'change', 'blur', 'paste'].forEach(function(evt) {
+      phoneInput.addEventListener(evt, function() {
+        checkPhoneRealtime(phoneInput.value);
+      });
+    });
+  }
+
+  // Xử lý sự kiện chặn bấm Đặt hàng (Hỗ trợ 100% Mobile Touch & Desktop Click)
+  function handleBlockedAttempt(e) {
+    if (window.__HAS_PENDING_ORDER) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      showToastAndScroll();
+      return false;
+    }
+  }
+
+  if (submitBtn) {
+    ['click', 'touchstart', 'touchend', 'pointerdown'].forEach(function(evt) {
+      submitBtn.addEventListener(evt, function(e) {
+        if (window.__HAS_PENDING_ORDER) {
+          handleBlockedAttempt(e);
+        }
+      }, { passive: false });
+    });
+  }
+
+  if (submitWrap) {
+    ['click', 'touchstart', 'touchend'].forEach(function(evt) {
+      submitWrap.addEventListener(evt, function(e) {
+        if (window.__HAS_PENDING_ORDER) {
+          handleBlockedAttempt(e);
+        }
+      }, { passive: false });
+    });
+  }
+
+  if (checkoutForm) {
+    checkoutForm.addEventListener('submit', function(e) {
+      if (window.__HAS_PENDING_ORDER) {
+        handleBlockedAttempt(e);
+      }
+    });
+  }
+
+  // Nếu ngay từ lúc tải trang đã có đơn pending, tự động cuộn lên xem sau 300ms
+  if (window.__HAS_PENDING_ORDER) {
+    window.addEventListener('load', function() {
+      setTimeout(showToastAndScroll, 300);
+    });
+  }
+})();
+</script>
 <?php front_footer(); ?>

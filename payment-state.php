@@ -11,6 +11,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
     exit;
 }
 try {
+    require_once __DIR__ . '/lib/order_workflow.php';
+    if (function_exists('htow_cancel_expired_orders')) {
+        try {
+            htow_cancel_expired_orders(10);
+        } catch (Throwable $ignored) {
+        }
+    }
     $order = htp_customer_order($_GET['order'] ?? '');
     $receipt = htp_receipt((int) $order['id']);
     if (!$receipt)
@@ -19,7 +26,20 @@ try {
     $html = htp_render_customer($order);
     $status = $receipt['financial_state'] ?? $receipt['status'];
     $isPaid = in_array($status, ['confirmed', 'not_required', 'overpaid'], true) || ((float) ($receipt['amount'] ?? 0) > 0 && (float) ($receipt['received_amount'] ?? 0) >= (float) ($receipt['amount'] ?? 0));
-    echo json_encode(['ok' => true, 'signature' => $signature, 'html' => $html, 'status' => $status, 'financial_state' => $status, 'paid' => $isPaid, 'received_amount' => (float) ($receipt['received_amount'] ?? 0), 'balance_due' => (float) ($receipt['balance_due'] ?? 0), 'message' => htp_ux('updated')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_THROW_ON_ERROR);
+    $isCancelled = ($order['status'] ?? '') === 'cancelled';
+    echo json_encode([
+        'ok' => true,
+        'signature' => $signature,
+        'html' => $html,
+        'status' => $status,
+        'order_status' => $order['status'],
+        'cancelled' => $isCancelled,
+        'financial_state' => $status,
+        'paid' => $isPaid,
+        'received_amount' => (float) ($receipt['received_amount'] ?? 0),
+        'balance_due' => (float) ($receipt['balance_due'] ?? 0),
+        'message' => htp_ux('updated')
+    ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_THROW_ON_ERROR);
 } catch (Throwable $e) {
     http_response_code($e instanceof TransferPaymentError && $e->getMessage() === 'forbidden' ? 403 : 409);
     echo json_encode(['ok' => false, 'message' => htp_error($e)], JSON_UNESCAPED_UNICODE);

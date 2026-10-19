@@ -42,3 +42,12 @@ function hym_checkout_defaults(?array $member): array {
     }
     return ['name'=>$name, 'phone'=>(string)$member['phone'], 'address'=>(string)($member['delivery_address'] ?? '')];
 }
+
+function hym_find_pending_payment_order(int $memberId, bool $forUpdate = false): ?array {
+    return customer_find_pending_payment_order($memberId, null, [], $forUpdate);
+}
+
+function hym_assert_no_pending_order(int $memberId, bool $forUpdate = true): void {
+    customer_assert_no_pending_order($memberId, null, [], $forUpdate);
+}
+

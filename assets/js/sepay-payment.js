@@ -97,7 +97,9 @@
       this.isPolling = false;
       this.pollTimer = null;
       this.countdownTimer = null;
-      this.remainingSeconds = options.durationSeconds || 900; // 15 mins default
+      this.remainingSeconds = typeof options.durationSeconds === 'number' && !isNaN(options.durationSeconds)
+        ? Math.max(0, options.durationSeconds)
+        : 900;
       this.isDestroyed = false;
       this.lastSignature = null;
     }
@@ -167,9 +169,22 @@
 
     handleOrderState(res) {
       const isPaid = res.status === 'confirmed' || res.financial_state === 'confirmed' || res.status === 'overpaid' || res.paid === true;
+      const isCancelled = res.cancelled || res.order_status === 'cancelled' || res.status === 'cancelled';
 
       if (typeof this.options.onPaymentUpdated === 'function') {
         this.options.onPaymentUpdated(res);
+      }
+
+      if (isCancelled) {
+        this.stopPolling();
+        this.stopCountdown();
+        if (res.html) {
+          const panel = document.querySelector('[data-sepay-panel]');
+          if (panel) {
+            panel.outerHTML = res.html;
+          }
+        }
+        return;
       }
 
       if (isPaid) {
@@ -213,10 +228,47 @@
         if (this.remainingSeconds <= 0) {
           this.stopCountdown();
           countdownEl.textContent = '00:00';
-          const statusNote = document.querySelector('[data-sepay-status-note]');
-          if (statusNote) {
-            statusNote.textContent = t('sepay_qr_expired', 'Mã QR đã hết thời gian chờ. Vui lòng tải lại trang để tạo mã mới.');
-            statusNote.classList.add('is-expired');
+          const card = document.querySelector('.sepay-payment-card');
+          if (card) card.classList.add('is-expired');
+
+          const timerBadge = document.querySelector('.sepay-timer-badge');
+          if (timerBadge) {
+            timerBadge.classList.add('is-expired');
+            const timerText = timerBadge.querySelector('[data-sepay-timer-text]');
+            const expiredLabel = (window.__CLIENT_I18N__?.client?.sepay_qr_expired_badge) || 'Thời gian giữ đơn: Đã hết hạn (00:00)';
+            if (timerText) {
+              timerText.textContent = expiredLabel;
+            } else {
+              timerBadge.innerHTML = `<span class="sepay-pulse-dot"></span> <span>${expiredLabel}</span>`;
+            }
+          }
+
+          const qrBox = document.querySelector('.sepay-qr-box');
+          if (qrBox) {
+            qrBox.classList.add('is-expired');
+            const overlay = qrBox.querySelector('.sepay-qr-expired-overlay');
+            if (overlay) overlay.style.display = 'flex';
+            qrBox.querySelectorAll('.btn').forEach(btn => {
+              btn.classList.add('disabled');
+              btn.setAttribute('disabled', 'true');
+              if (btn.tagName.toLowerCase() === 'a') {
+                btn.removeAttribute('href');
+                btn.setAttribute('aria-disabled', 'true');
+              }
+            });
+          }
+
+          const liveStatus = document.querySelector('.sepay-live-status');
+          if (liveStatus) {
+            liveStatus.classList.add('is-expired');
+            const spinner = liveStatus.querySelector('.sepay-spinner');
+            if (spinner) spinner.style.display = 'none';
+            const expIcon = liveStatus.querySelector('.sepay-expired-status-icon');
+            if (expIcon) expIcon.style.display = 'block';
+            const statusNote = liveStatus.querySelector('[data-sepay-status-note]');
+            if (statusNote) {
+              statusNote.textContent = (window.__CLIENT_I18N__?.client?.sepay_qr_expired_notice) || 'Đơn hàng đã hết thời gian giữ chỗ thanh toán (15 phút). Hệ thống sẽ tự động hủy đơn để bạn có thể đặt lại đồ uống mới bất cứ lúc nào.';
+            }
           }
           return;
         }
@@ -227,11 +279,13 @@
 
       updateDisplay();
 
-      this.countdownTimer = setInterval(() => {
-        if (this.isDestroyed) return;
-        this.remainingSeconds--;
-        updateDisplay();
-      }, 1000);
+      if (this.remainingSeconds > 0) {
+        this.countdownTimer = setInterval(() => {
+          if (this.isDestroyed) return;
+          this.remainingSeconds--;
+          updateDisplay();
+        }, 1000);
+      }
     }
 
     stopCountdown() {

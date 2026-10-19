@@ -147,6 +147,19 @@ if (!$invoice)
 $walletToken = customer_game_wallet_token(true);
 $orderMember = hym_current_member();
 $orderMemberId = $orderMember ? (int) $orderMember['id'] : null;
+
+$sessionOrders = $_SESSION['customer_payment_orders'] ?? [];
+if (!is_array($sessionOrders)) $sessionOrders = [];
+if (!empty($_SESSION['last_order_no'])) $sessionOrders[] = $_SESSION['last_order_no'];
+
+// Kiểm tra trước: Mỗi người dùng (user) chỉ được phép có tối đa DUY NHẤT 1 đơn hàng chờ thanh toán (PENDING_PAYMENT)
+// Áp dụng cho cả Member đã đăng nhập và Khách vãng lai qua SĐT/Session
+try {
+    customer_assert_no_pending_order($orderMemberId, $phone, $sessionOrders, false);
+} catch (\Lib\Exceptions\ExistingPendingOrderException $e) {
+    hcq_fail($checkoutContext, $groupId, $e->getMessage());
+}
+
 if ($groupId === '') {
     $given = $_POST['promotion_signature'] ?? null;
     $choice = promotion_cart_choice($cart);
@@ -204,6 +217,8 @@ if (!$reopenedRequest || ($reopenedRequest['state'] ?? '') !== 'unknown' || ($re
 $pdo = db();
 try {
     $pdo->beginTransaction();
+    // Bắt buộc: Ràng buộc duy nhất 1 đơn pending - Kiểm tra có Lock cho cả Member và Khách vãng lai
+    customer_assert_no_pending_order($orderMemberId, $phone, $sessionOrders, true);
     if ($groupId !== '') {
         $groupCheckout = hyg_checkout($groupId, true);
         if ($groupCheckout['already']) {
@@ -278,6 +293,15 @@ try {
     $commitStarted = true;
     $pdo->commit();
 } catch (Throwable $e) {
+    if ($e instanceof \Lib\Exceptions\ExistingPendingOrderException) {
+        try {
+            if ($pdo->inTransaction())
+                $pdo->rollBack();
+        } catch (Throwable $ignored) {
+        }
+        hcq_saved($checkoutToken, '', 'open');
+        hcq_fail($checkoutContext, $groupId, $e->getMessage());
+    }
     if ($commitStarted && $no !== '') {
         if ($orderMemberId === null)
             htp_remember_customer_order($no);

@@ -11,25 +11,25 @@ $savedOrder = hge_last_order();
 
 $paramOrder = is_string($_GET['order'] ?? null) ? trim($_GET['order']) : '';
 if (!$savedOrder && $paramOrder !== '' && preg_match('/^[A-Za-z0-9_-]{1,80}$/D', $paramOrder)) {
-    $found = hyg_one('SELECT * FROM orders WHERE order_no = ? LIMIT 1', [$paramOrder]);
-    if ($found && htp_customer_allowed($found)) {
-        $savedOrder = $found;
-        $no = $paramOrder;
-    }
+  $found = hyg_one('SELECT * FROM orders WHERE order_no = ? LIMIT 1', [$paramOrder]);
+  if ($found && htp_customer_allowed($found)) {
+    $savedOrder = $found;
+    $no = $paramOrder;
+  }
 }
 
 $promotion = $_SESSION['last_order_promotion'] ?? null;
 $gameEntry = hge_order_state($savedOrder);
 
 if ($gameEntry['state'] === 'ready') {
-    header('Location: ' . $gameEntry['url'], true, 303);
-    exit;
+  header('Location: ' . $gameEntry['url'], true, 303);
+  exit;
 }
 
 // Fetch order items if order exists
 $orderItems = [];
 if ($savedOrder && !empty($savedOrder['id'])) {
-    $orderItems = hyg_all('SELECT * FROM order_items WHERE order_id = ? ORDER BY id ASC', [(int)$savedOrder['id']]);
+  $orderItems = hyg_all('SELECT * FROM order_items WHERE order_id = ? ORDER BY id ASC', [(int)$savedOrder['id']]);
 }
 
 // Check payment receipt state
@@ -40,8 +40,8 @@ $orderNo = $no ?: ($savedOrder['order_no'] ?? '');
 
 // If customer has an unconfirmed transfer order, send them to payment.php to pay first
 if ($savedOrder && $isTransfer && !$isConfirmed) {
-    header('Location: ' . base_url('payment.php?order=' . rawurlencode($savedOrder['order_no'])), true, 303);
-    exit;
+  header('Location: ' . base_url('payment.php?order=' . rawurlencode($savedOrder['order_no'])), true, 303);
+  exit;
 }
 
 front_header(t('order_sent'));
@@ -211,8 +211,8 @@ front_header(t('order_sent'));
                     </h4>
                     <div class="order-item-meta">
                       <?php
-                        $opts = array_filter([$item['ice_choice'] ?? '', $item['sugar_choice'] ?? '']);
-                        if ($opts) echo e(implode(' / ', $opts));
+                      $opts = array_filter([$item['ice_choice'] ?? '', $item['sugar_choice'] ?? '']);
+                      if ($opts) echo e(implode(' / ', $opts));
                       ?>
                       <?php if (!empty($item['toppings_text'])): ?>
                         <div>+ <?= e($item['toppings_text']) ?></div>

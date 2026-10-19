@@ -1,13 +1,12 @@
 <?php
+
 /** Store receipts remain separate from host collection and order fulfillment. */
 if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
     http_response_code(404);
     exit;
 }
 require_once __DIR__ . '/payment_workflow_i18n.php';
-class TransferPaymentError extends RuntimeException
-{
-}
+class TransferPaymentError extends RuntimeException {}
 function htp_fail(string $key): never
 {
     throw new TransferPaymentError($key);

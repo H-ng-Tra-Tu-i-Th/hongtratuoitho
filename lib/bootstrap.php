@@ -2,6 +2,10 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/Exceptions/ExistingPendingOrderException.php';
+if (!class_exists('ExistingPendingOrderException', false)) {
+    class_alias(\Lib\Exceptions\ExistingPendingOrderException::class, 'ExistingPendingOrderException');
+}
 require_once __DIR__ . '/i18n.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/auth.php';
@@ -31,6 +35,7 @@ require_once __DIR__ . '/member.php';
 require_once __DIR__ . '/member_sync.php';
 require_once __DIR__ . '/member_i18n.php';
 require_once __DIR__ . '/member_admin_i18n.php';
+require_once __DIR__ . '/customer_checkout.php';
 require_once __DIR__ . '/member_orders.php';
 hym_schema();
 hym_orders_schema();
@@ -44,10 +49,12 @@ require_once __DIR__ . '/transfer_payments.php';
 htp_schema();
 require_once __DIR__ . '/order_workflow.php';
 htow_schema();
+htow_auto_maintenance();
 hds_maintenance();
 
 require_once __DIR__ . '/game_rewards.php';
 hgr_schema();
+require_once __DIR__ . '/client_i18n.php';
 require_once __DIR__ . '/sepay_i18n.php';
 require_once __DIR__ . '/admin_i18n.php';
 require_once __DIR__ . '/sepay.php';
