@@ -97,7 +97,10 @@ if (!$checkoutUnknown) {
   $gameChances = $promotion['mode'] === 'draw' && (float)$coupon['discount'] <= 0 ? (int)$promotion['expected_chances'] : 0;
   $gameSession = hcgs_open((int)$promotion['eligible_qty'], $gameChances, (string)($groupCheckout['room']['public_id'] ?? ''));
   // A prize from an earlier, already paid order must not show up in this session's game.
-  try { hcgs_forget_old_board($gameSession); } catch (Throwable $ignored) {}
+  try {
+    hcgs_forget_old_board($gameSession);
+  } catch (Throwable $ignored) {
+  }
 }
 // Money prizes won in this session are summed and taken off the bill straight away.
 $gameCash = hcgs_cash_discount($cart, $coupon, $gameSession);
@@ -139,7 +142,12 @@ front_header(t('order_info'));
             const left = Math.max(0, Math.round((end - Date.now()) / 1000));
             clock.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
             // Expiry is fixed on the server; reload slightly after it so the session is already undone.
-            if (left === 0) { clearInterval(timer); setTimeout(function() { location.reload(); }, 1500); }
+            if (left === 0) {
+              clearInterval(timer);
+              setTimeout(function() {
+                location.reload();
+              }, 1500);
+            }
           };
           const timer = setInterval(tick, 1000);
           tick();
@@ -270,10 +278,30 @@ front_header(t('order_info'));
     </div>
   </dialog>
   <style>
-    .kyuc-confirm{border:none;border-radius:16px;padding:24px;max-width:420px;width:calc(100vw - 32px);box-shadow:0 10px 30px rgba(0,0,0,.3)}
-    .kyuc-confirm::backdrop{background:rgba(0,0,0,.55)}
-    .kyuc-confirm h3{margin:0 0 8px}
-    .kyuc-confirm-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}
+    .kyuc-confirm {
+      border: none;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 420px;
+      width: calc(100vw - 32px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .3)
+    }
+
+    .kyuc-confirm::backdrop {
+      background: rgba(0, 0, 0, .55)
+    }
+
+    .kyuc-confirm h3 {
+      margin: 0 0 8px
+    }
+
+    .kyuc-confirm-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px
+    }
   </style>
   <script>
     (function() {
@@ -290,8 +318,15 @@ front_header(t('order_info'));
         ask.querySelector('[data-forfeit-count]').textContent = String(left);
         ask.showModal();
       });
-      ask.querySelector('[data-forfeit-play]').addEventListener('click', function() { ask.close(); openMinigameModal(); });
-      ask.querySelector('[data-forfeit-submit]').addEventListener('click', function() { confirmed = true; ask.close(); form.requestSubmit(); });
+      ask.querySelector('[data-forfeit-play]').addEventListener('click', function() {
+        ask.close();
+        openMinigameModal();
+      });
+      ask.querySelector('[data-forfeit-submit]').addEventListener('click', function() {
+        confirmed = true;
+        ask.close();
+        form.requestSubmit();
+      });
     })();
   </script>
 <?php endif; ?>
