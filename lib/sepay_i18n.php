@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SePay VietQR Payment & GPS Delivery Multilingual (i18n) Service.
  * Provides unified, synchronized translations for Vietnamese (vi), English (en), and Traditional Chinese (zh).
@@ -9,7 +10,8 @@ if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
     exit;
 }
 
-function sepay_i18n_dictionary(): array {
+function sepay_i18n_dictionary(): array
+{
     return [
         'vi' => [
             // SePay VietQR Payment
@@ -135,6 +137,16 @@ function sepay_i18n_dictionary(): array {
             'addr_err_prov_ward_req' => 'Vui lòng chọn đầy đủ Tỉnh/Thành và Phường/Xã.',
             'addr_err_system_address' => 'Hệ thống tạm thời không kiểm tra được địa chỉ, vui lòng thử lại sau.',
             'addr_err_ward_mismatch' => 'Địa chỉ giao hàng không hợp lệ (Phường/Xã không thuộc Tỉnh/Thành đã chọn).',
+            'addr_mode_saved' => 'Giao tới địa chỉ đã lưu',
+            'addr_mode_new' => 'Giao tới địa chỉ khác',
+            'addr_btn_edit' => 'Sửa',
+            'addr_save_default_profile' => 'Cập nhật làm địa chỉ mặc định của tôi',
+            'addr_save_new_profile' => 'Lưu địa chỉ này vào hồ sơ của tôi',
+            'addr_guest_login_hint' => 'Đăng nhập hoặc tạo tài khoản để lưu địa chỉ cho lần sau.',
+            'addr_err_saved_empty' => 'Không tìm thấy địa chỉ đã lưu trong tài khoản.',
+            'addr_err_saved_unreachable' => 'Không thể định vị chi nhánh phục vụ cho địa chỉ đã lưu. Đã chuyển sang chế độ chọn địa chỉ mới để bạn kiểm tra lại.',
+            'addr_err_empty' => 'Vui lòng cung cấp địa chỉ giao hàng.',
+            'addr_saved_verified_badge' => 'Địa chỉ mặc định',
         ],
         'en' => [
             // SePay VietQR Payment
@@ -260,6 +272,16 @@ function sepay_i18n_dictionary(): array {
             'addr_err_prov_ward_req' => 'Please select both Province/City and Ward/Commune.',
             'addr_err_system_address' => 'The system cannot verify the address right now. Please try again later.',
             'addr_err_ward_mismatch' => 'Invalid delivery address (Ward/Commune does not belong to selected Province/City).',
+            'addr_mode_saved' => 'Deliver to saved address',
+            'addr_mode_new' => 'Deliver to a different address',
+            'addr_btn_edit' => 'Edit',
+            'addr_save_default_profile' => 'Update as my default delivery address',
+            'addr_save_new_profile' => 'Save this address to my profile',
+            'addr_guest_login_hint' => 'Log in or create an account to save your address for next time.',
+            'addr_err_saved_empty' => 'No saved address found in your account.',
+            'addr_err_saved_unreachable' => 'Unable to find a branch serving your saved address. Switched to different address mode for you to verify.',
+            'addr_err_empty' => 'Please provide a delivery address.',
+            'addr_saved_verified_badge' => 'Default Address',
         ],
         'zh' => [
             // SePay VietQR Payment
@@ -385,6 +407,16 @@ function sepay_i18n_dictionary(): array {
             'addr_err_prov_ward_req' => '請完整選擇省/市與坊/社。',
             'addr_err_system_address' => '系統暫時無法驗證地址，請稍後再試。',
             'addr_err_ward_mismatch' => '外送地址無效（所選坊/社不屬於該省/市）。',
+            'addr_mode_saved' => '送至已保存地址',
+            'addr_mode_new' => '送至其他地址',
+            'addr_btn_edit' => '修改',
+            'addr_save_default_profile' => '更新為我的預設地址',
+            'addr_save_new_profile' => '儲存此地址到我的個人資料',
+            'addr_guest_login_hint' => '登入或註冊以儲存地址以便下次訂購。',
+            'addr_err_saved_empty' => '您的帳戶中未找到已儲存的地址。',
+            'addr_err_saved_unreachable' => '無法為已儲存的地址定位服務門市，已切換至其他地址供您核對。',
+            'addr_err_empty' => '請提供外送地址。',
+            'addr_saved_verified_badge' => '預設地址',
         ],
     ];
 }
@@ -392,7 +424,8 @@ function sepay_i18n_dictionary(): array {
 /**
  * Translate a SePay or GPS key in the current language.
  */
-function sepay_t(string $key, array $vars = []): string {
+function sepay_t(string $key, array $vars = []): string
+{
     $lang = function_exists('current_lang') ? current_lang() : 'vi';
     $dict = sepay_i18n_dictionary();
     $text = $dict[$lang][$key] ?? $dict['vi'][$key] ?? $key;
@@ -406,7 +439,8 @@ function sepay_t(string $key, array $vars = []): string {
 /**
  * Output JavaScript i18n object tag to synchronize frontend JS with active session language.
  */
-function sepay_render_js_i18n(): string {
+function sepay_render_js_i18n(): string
+{
     $lang = function_exists('current_lang') ? current_lang() : 'vi';
     $dict = sepay_i18n_dictionary();
     $payload = [
@@ -419,7 +453,8 @@ function sepay_render_js_i18n(): string {
 /**
  * Kiểm tra chính sách phí ship theo số km tính từ Goong Maps (≤ 3km: freeship, > 3km: tính theo Grab).
  */
-function sepay_shipping_policy(float $distanceKm): array {
+function sepay_shipping_policy(float $distanceKm): array
+{
     $isFree = ($distanceKm <= 3.0);
     return [
         'is_free' => $isFree,

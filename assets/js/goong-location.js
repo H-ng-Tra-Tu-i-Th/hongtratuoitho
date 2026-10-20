@@ -192,7 +192,11 @@
 
     // Giai đoạn 2: Tính khoảng cách & Chọn chi nhánh tối ưu
     async calculateNearestStore(userCoords, storesList) {
-      const stores = storesList || this.state.storesWithDistance;
+      let stores = storesList || this.state.storesWithDistance;
+      if ((!stores || stores.length === 0) && this.storesPromise) {
+        const fetched = await this.storesPromise;
+        stores = (fetched && fetched.length > 0) ? fetched : this.state.storesWithDistance;
+      }
       if (!stores || stores.length === 0)
         return { nearest: null, sortedStores: [] };
 
@@ -373,7 +377,7 @@
       if (verifiedInput) verifiedInput.value = "1";
       if (addressWarning) {
         addressWarning.classList.remove("is-visible");
-        addressWarning.innerHTML = "";
+        addressWarning.textContent = "";
       }
       if (addressInput) {
         addressInput.classList.remove("has-location-error");
@@ -388,7 +392,7 @@
         addressInput.classList.remove("is-location-verified");
       }
       if (customMessage && addressWarning) {
-        addressWarning.innerHTML = "⚠️ " + customMessage;
+        addressWarning.textContent = "⚠️ " + customMessage;
         addressWarning.classList.add("is-visible");
       }
     }
@@ -405,22 +409,22 @@
       : null;
 
     // Load stores from API
-    fetch(wrap.getAttribute("data-stores-endpoint") || "/api/stores.php")
+    const storesPromise = fetch(
+      wrap.getAttribute("data-stores-endpoint") || "/api/stores.php",
+    )
       .then((r) => r.json())
       .then((res) => {
         if (res.success && Array.isArray(res.data)) {
           manager.setStores(res.data);
-          // DISABLED: dùng JSON cục bộ (không tự động tra cứu khoảng cách qua Goong API khi tải trang)
-          /*
-          if (addressInput && addressInput.value.trim().length > 5 && apiKey) {
-            handleAddressLookup(addressInput.value.trim()).then((ok) => {
-              if (ok) setAddressVerified(addressInput.value.trim());
-            });
-          }
-          */
+          return res.data;
         }
+        return [];
       })
-      .catch((e) => console.warn("[Location] Failed to fetch stores:", e));
+      .catch((e) => {
+        console.warn("[Location] Failed to fetch stores:", e);
+        return [];
+      });
+    manager.storesPromise = storesPromise;
 
     // Subscribe to state updates to render banner & modal
     manager.subscribe((state) => {
@@ -809,6 +813,18 @@
       const jsonUrl =
         cascadeWrap.getAttribute("data-json-url") ||
         "/assets/data/vietnam-provinces.json";
+      const savedAddress = (
+        cascadeWrap.getAttribute("data-saved-address") || ""
+      ).trim();
+      const hasSaved =
+        cascadeWrap.getAttribute("data-has-saved") === "1" &&
+        savedAddress.length > 0;
+      const modeRadios = document.querySelectorAll("[data-mode-radio]");
+      const btnEditSaved = document.querySelector("[data-btn-edit-saved]");
+      const deliveryAddressAlias = document.getElementById(
+        "delivery-address-alias",
+      );
+
       const provinceInput = document.getElementById("address-province-input");
       const provinceDropdown = cascadeWrap.querySelector(
         "[data-province-dropdown]",
@@ -836,6 +852,173 @@
       let provincesData = null;
       let selectedProvinceObj = null;
       let selectedWardObj = null;
+
+      function getCurrentAddressMode() {
+        if (!hasSaved) return "new";
+        const checked = document.querySelector(
+          'input[name="address_mode"]:checked',
+        );
+        return checked ? checked.value : "saved";
+      }
+
+      function setAddressMode(mode, options = {}) {
+        const isSaved = mode === "saved" && hasSaved;
+        modeRadios.forEach((r) => {
+          r.checked = r.value === (isSaved ? "saved" : "new");
+        });
+        document.querySelectorAll(".address-mode-card").forEach((card) => {
+          const radio = card.querySelector('input[name="address_mode"]');
+          if (radio && radio.checked) {
+            card.classList.add("is-selected");
+          } else {
+            card.classList.remove("is-selected");
+          }
+        });
+
+        if (isSaved) {
+          cascadeWrap.style.display = "none";
+          if (fullAddressField) {
+            fullAddressField.value = savedAddress;
+            fullAddressField.removeAttribute("required");
+          }
+          if (deliveryAddressAlias) {
+            deliveryAddressAlias.value = savedAddress;
+          }
+          if (options.autoConfirm !== false) {
+            findNearestBranchForAddress(savedAddress);
+          }
+        } else {
+          cascadeWrap.style.display = "";
+          if (fullAddressField) {
+            fullAddressField.setAttribute("required", "required");
+          }
+          syncFullDeliveryAddress();
+        }
+      }
+
+      function parseAddressIntoCascade(rawAddress) {
+        if (!rawAddress) return;
+        const raw = rawAddress.trim();
+        const normRaw = normalizeVietnamese(raw);
+
+        if (!provincesData || !Array.isArray(provincesData)) {
+          if (streetInput) {
+            streetInput.value = raw;
+            streetInput.classList.remove("has-location-error");
+          }
+          syncFullDeliveryAddress();
+          return;
+        }
+
+        let matchedProv = null;
+        const sortedProvs = [...provincesData].sort(
+          (a, b) => b.name.length - a.name.length,
+        );
+        for (const p of sortedProvs) {
+          const normName = normalizeVietnamese(p.name);
+          const cleanName = normName.replace(/^(tinh|thanh pho|tp)\s+/, "");
+          if (normRaw.includes(cleanName) || normRaw.includes(normName)) {
+            matchedProv = p;
+            break;
+          }
+        }
+
+        let matchedWard = null;
+        if (matchedProv) {
+          selectedProvinceObj = matchedProv;
+          if (provinceInput) {
+            provinceInput.value = matchedProv.name;
+            provinceInput.classList.remove("has-location-error");
+            provinceInput.classList.add("is-location-verified");
+          }
+          if (provinceCodeHidden) provinceCodeHidden.value = matchedProv.code;
+          if (provinceNameHidden) provinceNameHidden.value = matchedProv.name;
+
+          if (wardInput) {
+            wardInput.disabled = false;
+            wardInput.placeholder = t(
+              "addr_ward_placeholder",
+              "Nhập tìm Phường / Xã...",
+            );
+          }
+
+          if (Array.isArray(matchedProv.wards)) {
+            const sortedWards = [...matchedProv.wards].sort(
+              (a, b) => b.name.length - a.name.length,
+            );
+            for (const w of sortedWards) {
+              const normWName = normalizeVietnamese(w.name);
+              const cleanWName = normWName.replace(
+                /^(phuong|xa|thi tran)\s+/,
+                "",
+              );
+              if (normRaw.includes(cleanWName) || normRaw.includes(normWName)) {
+                matchedWard = w;
+                break;
+              }
+            }
+          }
+
+          if (matchedWard) {
+            selectedWardObj = matchedWard;
+            if (wardInput) {
+              wardInput.value = matchedWard.name;
+              wardInput.classList.remove("has-location-error");
+              wardInput.classList.add("is-location-verified");
+            }
+            if (wardCodeHidden) wardCodeHidden.value = matchedWard.code;
+            if (wardNameHidden) wardNameHidden.value = matchedWard.name;
+          } else {
+            selectedWardObj = null;
+            if (wardInput) {
+              wardInput.value = "";
+              wardInput.classList.remove("is-location-verified");
+            }
+            if (wardCodeHidden) wardCodeHidden.value = "";
+            if (wardNameHidden) wardNameHidden.value = "";
+          }
+
+          const parts = raw
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const nonMatchedParts = [];
+          for (const part of parts) {
+            const normPart = normalizeVietnamese(part);
+            const isProv = normPart.includes(
+              normalizeVietnamese(matchedProv.name).replace(
+                /^(tinh|thanh pho|tp)\s+/,
+                "",
+              ),
+            );
+            const isWard =
+              matchedWard &&
+              normPart.includes(
+                normalizeVietnamese(matchedWard.name).replace(
+                  /^(phuong|xa|thi tran)\s+/,
+                  "",
+                ),
+              );
+            if (!isProv && !isWard) {
+              nonMatchedParts.push(part);
+            }
+          }
+          if (streetInput) {
+            streetInput.value =
+              nonMatchedParts.length > 0
+                ? nonMatchedParts.join(", ")
+                : parts[0] || "";
+            streetInput.classList.remove("has-location-error");
+          }
+        } else {
+          if (streetInput) {
+            streetInput.value = raw;
+            streetInput.classList.remove("has-location-error");
+          }
+        }
+
+        syncFullDeliveryAddress();
+      }
 
       // 1. Tải JSON một lần và cache ở client
       fetch(jsonUrl)
@@ -912,7 +1095,7 @@
         .catch((err) => {
           console.error("[Address Cascade] Lỗi tải file JSON tỉnh thành:", err);
           if (addressWarning) {
-            addressWarning.innerHTML = t(
+            addressWarning.textContent = t(
               "addr_err_load_provinces",
               "⚠️ Không thể tải danh sách tỉnh thành cục bộ. Vui lòng thử tải lại trang!",
             );
@@ -920,136 +1103,209 @@
           }
         });
 
+      let activeBranchSearchPromise = null;
+
       // Tìm chi nhánh gần nhất có áp dụng Client Cache & Fallback thông minh
       async function findNearestBranchForAddress(customAddress) {
-        const provName = provinceNameHidden
-          ? provinceNameHidden.value.trim()
-          : "";
-        const wardName = wardNameHidden ? wardNameHidden.value.trim() : "";
-        const street = streetInput ? streetInput.value.trim() : "";
-        const fullStr =
-          customAddress ||
-          [street, wardName, provName].filter(Boolean).join(", ");
-
-        if (!provName || !wardName || !street) {
-          setAddressUnverified(
-            t(
-              "addr_err_incomplete",
-              "Vui lòng nhập đầy đủ Tỉnh/Thành, Phường/Xã và Số nhà trước khi tìm chi nhánh!",
-            ),
-          );
-          return false;
+        if (activeBranchSearchPromise) {
+          return await activeBranchSearchPromise;
         }
 
-        if (isFindingStore) return false;
-        isFindingStore = true;
+        activeBranchSearchPromise = (async () => {
+          if (storesPromise) {
+            await storesPromise;
+          }
+          const isSavedMode = getCurrentAddressMode() === "saved";
+          const provName = provinceNameHidden
+            ? provinceNameHidden.value.trim()
+            : "";
+          const wardName = wardNameHidden ? wardNameHidden.value.trim() : "";
+          const street = streetInput ? streetInput.value.trim() : "";
+          const fullStr = (
+            customAddress ||
+            (isSavedMode
+              ? savedAddress
+              : [street, wardName, provName].filter(Boolean).join(", "))
+          ).trim();
 
-        if (btnFindStore) {
-          btnFindStore.disabled = true;
-          const textEl = btnFindStore.querySelector(".btn-find-text");
-          if (textEl)
-            textEl.textContent = t(
-              "addr_btn_finding",
-              "Đang tìm kiếm chi nhánh tối ưu...",
+          if (!fullStr) {
+            setAddressUnverified(
+              t("addr_err_empty", "Vui lòng nhập địa chỉ giao hàng!"),
             );
-        }
+            return false;
+          }
 
-        manager.updateState({ isLoading: true, selectedStore: null });
+          if (!isSavedMode && (!provName || !wardName || !street)) {
+            setAddressUnverified(
+              t(
+                "addr_err_incomplete",
+                "Vui lòng nhập đầy đủ Tỉnh/Thành, Phường/Xã và Số nhà trước khi tìm chi nhánh!",
+              ),
+            );
+            return false;
+          }
 
-        try {
-          // KỸ THUẬT 1: KIỂM TRA CACHE TRONG SESSIONSTORAGE (0 API call nếu đã tìm địa chỉ này)
-          const cacheKey = "hds_geo_" + encodeURIComponent(fullStr);
-          let coords = null;
+          if (btnFindStore) {
+            btnFindStore.disabled = true;
+            const textEl = btnFindStore.querySelector(".btn-find-text");
+            if (textEl)
+              textEl.textContent = t(
+                "addr_btn_finding",
+                "Đang tìm kiếm chi nhánh tối ưu...",
+              );
+          }
+
+          manager.updateState({ isLoading: true, selectedStore: null });
+
           try {
-            const cached = sessionStorage.getItem(cacheKey);
-            if (cached) {
-              coords = JSON.parse(cached);
-              console.log(
-                "[Goong Map] Sử dụng tọa độ từ Cache (0 API request):",
-                coords,
-              );
-            }
-          } catch (e) {}
-
-          // Nếu chưa có trong cache thì mới gọi Geocode qua proxy
-          if (!coords && goong && goong.endpoint) {
+            // KỸ THUẬT 1: KIỂM TRA CACHE TRONG SESSIONSTORAGE (0 API call nếu đã tìm địa chỉ này)
+            const cacheKey = "hds_geo_" + encodeURIComponent(fullStr);
+            let coords = null;
             try {
-              // Thử Geocode địa chỉ cụ thể đầy đủ
-              const geo = await goong.forwardGeocode(fullStr);
-              coords = geo.coordinates;
-            } catch (err1) {
-              console.warn(
-                "[Geocode] Không tìm thấy số nhà cụ thể, thử tìm theo Phường/Xã:",
-                err1.message,
-              );
-              // Fallback: Geocode theo Phường/Xã + Tỉnh/Thành
-              if (wardName && provName) {
-                const fallbackQuery = `${wardName}, ${provName}`;
-                const geoFallback = await goong.forwardGeocode(fallbackQuery);
-                coords = geoFallback.coordinates;
+              const cached = sessionStorage.getItem(cacheKey);
+              if (cached) {
+                coords = JSON.parse(cached);
+                console.log(
+                  "[Goong Map] Sử dụng tọa độ từ Cache (0 API request):",
+                  coords,
+                );
+              }
+            } catch (e) {}
+
+            // Nếu chưa có trong cache thì mới gọi Geocode qua proxy
+            if (!coords && goong && goong.endpoint) {
+              try {
+                // Thử Geocode địa chỉ cụ thể đầy đủ
+                const geo = await goong.forwardGeocode(fullStr);
+                coords = geo.coordinates;
+              } catch (err1) {
+                console.warn(
+                  "[Geocode] Không tìm thấy số nhà cụ thể, thử tìm theo Phường/Xã:",
+                  err1.message,
+                );
+                // Fallback: Geocode theo Phường/Xã + Tỉnh/Thành
+                if (wardName && provName) {
+                  const fallbackQuery = `${wardName}, ${provName}`;
+                  const geoFallback = await goong.forwardGeocode(fallbackQuery);
+                  coords = geoFallback.coordinates;
+                }
+              }
+
+              // Lưu tọa độ vào cache để lần sau không tốn request
+              if (coords) {
+                try {
+                  sessionStorage.setItem(cacheKey, JSON.stringify(coords));
+                } catch (e) {}
               }
             }
 
-            // Lưu tọa độ vào cache để lần sau không tốn request
             if (coords) {
-              try {
-                sessionStorage.setItem(cacheKey, JSON.stringify(coords));
-              } catch (e) {}
+              await manager.calculateNearestStore(coords);
+              lastCalculatedAddress = fullStr;
+              setAddressVerified(fullStr);
+              if (btnFindStore) {
+                const textEl = btnFindStore.querySelector(".btn-find-text");
+                if (textEl)
+                  textEl.textContent = t(
+                    "addr_btn_confirmed",
+                    "✅ Đã xác định chi nhánh phục vụ",
+                  );
+              }
+              return true;
+            } else {
+              // Không có Goong Key hoặc không tìm thấy tọa độ -> Chọn chi nhánh đầu tiên mặc định
+              const stores = manager.getState().storesWithDistance;
+              if (stores && stores.length > 0) {
+                manager.selectStore(stores[0].id);
+                setAddressVerified(fullStr);
+                return true;
+              }
+              throw new Error(
+                t(
+                  "addr_err_saved_unreachable",
+                  "Không thể xác định chi nhánh phục vụ cho địa chỉ này.",
+                ),
+              );
             }
-          }
-
-          if (coords) {
-            await manager.calculateNearestStore(coords);
-            lastCalculatedAddress = fullStr;
-            setAddressVerified(fullStr);
-            if (btnFindStore) {
-              const textEl = btnFindStore.querySelector(".btn-find-text");
-              if (textEl)
-                textEl.textContent = t(
-                  "addr_btn_confirmed",
-                  "✅ Đã xác định chi nhánh phục vụ",
-                );
-            }
-            return true;
-          } else {
-            // Không có Goong Key hoặc không tìm thấy tọa độ -> Chọn chi nhánh đầu tiên mặc định
-            const stores = manager.getState().storesWithDistance;
-            if (stores && stores.length > 0) {
-              manager.selectStore(stores[0].id);
+          } catch (err) {
+            console.error("[Location] Lỗi tìm chi nhánh:", err);
+            manager.updateState({ isLoading: false });
+            if (isSavedMode) {
+              setAddressUnverified(
+                t(
+                  "addr_err_saved_unreachable",
+                  "Không thể xác định chi nhánh phục vụ cho địa chỉ đã lưu. Vui lòng kiểm tra lại!",
+                ),
+              );
+              setAddressMode("new", { autoConfirm: false });
+              parseAddressIntoCascade(savedAddress);
+            } else {
+              const stores = manager.getState().storesWithDistance;
+              if (
+                stores &&
+                stores.length > 0 &&
+                !manager.getState().selectedStore
+              ) {
+                manager.selectStore(stores[0].id);
+              }
               setAddressVerified(fullStr);
             }
-            return true;
-          }
-        } catch (err) {
-          console.error("[Location] Lỗi tìm chi nhánh:", err);
-          manager.updateState({ isLoading: false });
-          // Vẫn cho phép chọn chi nhánh thủ công nếu có lỗi
-          const stores = manager.getState().storesWithDistance;
-          if (
-            stores &&
-            stores.length > 0 &&
-            !manager.getState().selectedStore
-          ) {
-            manager.selectStore(stores[0].id);
-          }
-          setAddressVerified(fullStr);
-        } finally {
-          isFindingStore = false;
-          if (btnFindStore) {
-            btnFindStore.disabled = false;
-            const textEl = btnFindStore.querySelector(".btn-find-text");
-            if (textEl && !manager.getState().selectedStore) {
-              textEl.textContent = t("addr_btn_confirm", "Xác nhận địa chỉ");
+          } finally {
+            if (btnFindStore) {
+              btnFindStore.disabled = false;
+              const textEl = btnFindStore.querySelector(".btn-find-text");
+              if (textEl && !manager.getState().selectedStore) {
+                textEl.textContent = t("addr_btn_confirm", "Xác nhận địa chỉ");
+              }
             }
           }
+          return false;
+        })();
+
+        try {
+          return await activeBranchSearchPromise;
+        } finally {
+          activeBranchSearchPromise = null;
         }
-        return false;
       }
 
       if (btnFindStore) {
         btnFindStore.addEventListener("click", (e) => {
           e.preventDefault();
           findNearestBranchForAddress();
+        });
+      }
+
+      if (hasSaved && getCurrentAddressMode() === "saved") {
+        if (fullAddressField) {
+          fullAddressField.value = savedAddress;
+          fullAddressField.removeAttribute("required");
+        }
+        if (deliveryAddressAlias) {
+          deliveryAddressAlias.value = savedAddress;
+        }
+        storesPromise.then(() => {
+          if (getCurrentAddressMode() === "saved") {
+            findNearestBranchForAddress(savedAddress);
+          }
+        });
+      }
+
+      modeRadios.forEach((radio) => {
+        radio.addEventListener("change", () => {
+          setAddressMode(radio.value);
+        });
+      });
+
+      if (btnEditSaved) {
+        btnEditSaved.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setAddressMode("new", { autoConfirm: false });
+          parseAddressIntoCascade(savedAddress);
+          if (streetInput) {
+            streetInput.focus();
+          }
         });
       }
 
@@ -1567,11 +1823,74 @@
         });
       }
 
+      let isSubmittingDirectly = false;
+
+      function showPageLoading(show) {
+        const overlay = document.getElementById("checkout-loading-overlay");
+        if (!overlay) return;
+        if (show) {
+          overlay.style.display = "flex";
+          void overlay.offsetWidth;
+          overlay.classList.add("is-active");
+        } else {
+          overlay.classList.remove("is-active");
+          setTimeout(() => {
+            if (!overlay.classList.contains("is-active")) {
+              overlay.style.display = "none";
+            }
+          }, 220);
+        }
+      }
+
       // --- BẢO VỆ KHI SUBMIT FORM: KHÔNG CHO SUBMIT NẾU CHƯA ĐỦ ĐỊA CHỈ HỢP LỆ ---
       if (checkoutForm) {
         checkoutForm.addEventListener(
           "submit",
           async (e) => {
+            if (isSubmittingDirectly) return true;
+
+            const currentMode = getCurrentAddressMode();
+
+            if (currentMode === "saved") {
+              if (fullAddressField) {
+                fullAddressField.value = savedAddress;
+              }
+              if (deliveryAddressAlias) {
+                deliveryAddressAlias.value = savedAddress;
+              }
+
+              if (!manager.getState().selectedStore || activeBranchSearchPromise) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                showPageLoading(true);
+
+                try {
+                  const ok = await findNearestBranchForAddress(savedAddress);
+                  if (ok && manager.getState().selectedStore) {
+                    isSubmittingDirectly = true;
+                    checkoutForm.submit();
+                    return false;
+                  } else {
+                    showPageLoading(false);
+                    setAddressUnverified(
+                      t(
+                        "addr_err_saved_unreachable",
+                        "Không thể xác định chi nhánh phục vụ cho địa chỉ đã lưu. Vui lòng kiểm tra lại!",
+                      ),
+                    );
+                    setAddressMode("new", { autoConfirm: false });
+                    parseAddressIntoCascade(savedAddress);
+                  }
+                } catch (err) {
+                  showPageLoading(false);
+                  console.error(err);
+                }
+                return false;
+              }
+              return true;
+            }
+
             const provCode = provinceCodeHidden
               ? provinceCodeHidden.value.trim()
               : "";
@@ -1640,15 +1959,28 @@
 
             syncFullDeliveryAddress();
 
-            // Nếu chưa xác định chi nhánh phục vụ, tự động tìm chi nhánh 1 lần duy nhất trước khi submit
-            if (!manager.getState().selectedStore) {
+            // Nếu chưa xác định chi nhánh phục vụ:
+            if (!manager.getState().selectedStore || activeBranchSearchPromise) {
               e.preventDefault();
               e.stopPropagation();
-              const ok = await findNearestBranchForAddress(
-                fullAddressField.value,
-              );
-              if (ok) {
-                checkoutForm.submit();
+
+              showPageLoading(true);
+
+              try {
+                const ok = await findNearestBranchForAddress(
+                  fullAddressField.value,
+                );
+                if (ok && manager.getState().selectedStore) {
+                  isSubmittingDirectly = true;
+                  checkoutForm.submit();
+                  return false;
+                }
+              } catch (err) {
+                console.error(err);
+              } finally {
+                if (!isSubmittingDirectly) {
+                  showPageLoading(false);
+                }
               }
               return false;
             }

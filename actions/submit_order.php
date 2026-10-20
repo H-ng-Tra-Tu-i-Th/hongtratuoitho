@@ -64,6 +64,24 @@ $groupCheckout = null;
 $cart = $_SESSION['cart'] ?? [];
 if (!$groupId && !$cart)
     redirect(base_url('index.php'));
+
+$orderMember = hym_current_member();
+$orderMemberId = $orderMember ? (int) $orderMember['id'] : null;
+
+$addressMode = trim((string) ($_POST['address_mode'] ?? 'new'));
+if ($addressMode === 'saved') {
+    if (!$orderMember || trim((string) ($orderMember['delivery_address'] ?? '')) === '') {
+        hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_saved_empty'));
+    }
+    // Bỏ qua delivery_address trong POST, tự đọc members.delivery_address theo session
+    $_POST['address'] = trim((string) $orderMember['delivery_address']);
+} else {
+    $addressMode = 'new';
+    $rawAddress = trim((string) ($_POST['address'] ?? $_POST['delivery_address'] ?? ''));
+    $cleanAddress = preg_replace('/\s+/', ' ', $rawAddress);
+    $_POST['address'] = mb_substr($cleanAddress, 0, 255, 'UTF-8');
+}
+
 $draft = hcq_capture($checkoutContext, $_POST);
 $values = $draft['values'];
 if ($groupId === '' && $values['payment_method'] === 'split') {
@@ -101,36 +119,41 @@ function hcq_location_index(string $path): ?array
     return $index = $built;
 }
 
-// --- trong luồng checkout ---
-$provinceCode = trim((string) ($_POST['province_code'] ?? ''));
-$wardCode     = trim((string) ($_POST['ward_code'] ?? ''));
-$provinceName = trim((string) ($_POST['province_name'] ?? ''));
-$wardName     = trim((string) ($_POST['ward_name'] ?? ''));
+// Chỉ bắt buộc chọn Tỉnh / Phường đối với địa chỉ mới (mode=new)
+if ($addressMode !== 'saved') {
+    $provinceCode = trim((string) ($_POST['province_code'] ?? ''));
+    $wardCode     = trim((string) ($_POST['ward_code'] ?? ''));
+    $provinceName = trim((string) ($_POST['province_name'] ?? ''));
+    $wardName     = trim((string) ($_POST['ward_name'] ?? ''));
 
-// 1) Bắt buộc phải chọn đủ Tỉnh và Phường
-if ($provinceCode === '' || $wardCode === '') {
-    hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_prov_ward_req'));
+    // 1) Bắt buộc phải chọn đủ Tỉnh và Phường
+    if ($provinceCode === '' || $wardCode === '') {
+        hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_prov_ward_req'));
+    }
+
+    // 2) Lỗi hệ thống tách khỏi lỗi dữ liệu của khách
+    $index = hcq_location_index(__DIR__ . '/../assets/data/vietnam-provinces.json');
+    if ($index === null) {
+        hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_system_address'));
+    }
+
+    // 3) Kiểm tra ward thuộc province
+    $province = $index[$provinceCode] ?? null;
+    if ($province === null || !isset($province['wards'][$wardCode])) {
+        hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_ward_mismatch'));
+    }
+
+    // 4) Lưu tên chuẩn từ JSON, không tin tên do client gửi
+    $provinceName = $province['name'];
+    $wardName     = $province['wards'][$wardCode];
 }
-
-// 2) Lỗi hệ thống tách khỏi lỗi dữ liệu của khách
-$index = hcq_location_index(__DIR__ . '/../assets/data/vietnam-provinces.json');
-if ($index === null) {
-    hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_system_address'));
-}
-
-// 3) Kiểm tra ward thuộc province
-$province = $index[$provinceCode] ?? null;
-if ($province === null || !isset($province['wards'][$wardCode])) {
-    hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_ward_mismatch'));
-}
-
-// 4) Lưu tên chuẩn từ JSON, không tin tên do client gửi
-$provinceName = $province['name'];
-$wardName     = $province['wards'][$wardCode];
 
 $name = $values['customer_name'];
 $phone = $values['phone'];
-$address = $values['address'];
+$address = preg_replace('/\s+/', ' ', trim((string) $values['address']));
+if ($address === '') {
+    hcq_fail($checkoutContext, $groupId, sepay_t('addr_err_empty'));
+}
 $pay = $values['payment_method'];
 $invoice = (int) $values['invoice_required'];
 $orderNote = $values['order_note'];
@@ -290,6 +313,14 @@ try {
     // This server-generated reference also authorizes recovery if COMMIT loses its reply.
     if ($orderMemberId === null)
         htp_remember_customer_order($no);
+
+    // Cập nhật địa chỉ mặc định vào hồ sơ thành viên nếu có yêu cầu
+    $saveToProfile = !empty($_POST['save_to_profile']) && in_array((string) $_POST['save_to_profile'], ['1', 'true', 'on'], true);
+    if ($orderMemberId !== null && $addressMode === 'new' && $saveToProfile && $address !== '') {
+        $stUpdateMember = $pdo->prepare('UPDATE members SET delivery_address = ?, updated_at = UTC_TIMESTAMP() WHERE id = ?');
+        $stUpdateMember->execute([$address, $orderMemberId]);
+    }
+
     $commitStarted = true;
     $pdo->commit();
 } catch (Throwable $e) {

@@ -68,15 +68,10 @@ try {
                 throw $e;
             }
 
-            // Remove from session pending tracking
+            // Remove from last_order_no but keep in customer_payment_orders
+            // so the customer can still view their cancelled order details on this page
             if (isset($_SESSION['last_order_no']) && $_SESSION['last_order_no'] === $order['order_no']) {
                 unset($_SESSION['last_order_no']);
-            }
-            if (isset($_SESSION['customer_payment_orders']) && is_array($_SESSION['customer_payment_orders'])) {
-                $_SESSION['customer_payment_orders'] = array_values(array_filter(
-                    $_SESSION['customer_payment_orders'],
-                    fn($no) => $no !== $order['order_no']
-                ));
             }
 
             $shouldReorder = !empty($_POST['reorder']);
@@ -106,8 +101,11 @@ try {
                 exit;
             }
 
-            $_SESSION['cart_flash'] = client_t('cancel_order_success');
-            header('Location: ' . base_url('index.php'), true, 303);
+            if (!is_array($_SESSION['transfer_payment_flash'] ?? null)) {
+                $_SESSION['transfer_payment_flash'] = [];
+            }
+            $_SESSION['transfer_payment_flash'][$order['order_no']] = 'order_cancelled';
+            header('Location: ' . base_url('payment.php?order=' . rawurlencode($order['order_no'])), true, 303);
             exit;
         }
         htp_fail('changed');
@@ -118,6 +116,8 @@ try {
     }
     if ($flash === 'report_saved') {
         $message = htp($flash);
+    } elseif ($flash === 'order_cancelled') {
+        $message = client_t('cancel_order_success');
     }
 } catch (Throwable $e) {
     $key = $e instanceof TransferPaymentError ? $e->getMessage() : 'storage';

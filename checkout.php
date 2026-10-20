@@ -164,11 +164,25 @@ front_header(t('order_info'));
       </div><?php elseif ($checkoutError || $fieldErrors): ?>
       <div class="alert danger checkout-error-summary" role="alert" tabindex="-1" data-checkout-errors>
         <?= e($checkoutError ?: htp_ux('draft_error')) ?></div><?php endif; ?>
-    <div class="member-checkout-note">
-      <p><?= e(mt($checkoutMember ? 'checkout_member_notice' : 'checkout_member_guest')) ?></p><a
-        href="<?= e(base_url('member/index.php')) ?>"><?= e(mt('member_entry')) ?></a>
-    </div>
-    <link rel="stylesheet" href="<?= e(base_url('assets/css/location-selector.css?v=1.2.0')) ?>">
+    <?php
+    $isMember = (bool)$checkoutMember;
+    $savedDeliveryAddress = $isMember ? trim((string)($checkoutMember['delivery_address'] ?? '')) : '';
+    $hasSavedAddress = ($savedDeliveryAddress !== '');
+    $addressMode = $hasSavedAddress ? 'saved' : 'new';
+    if (!empty($_POST['address_mode']) && in_array($_POST['address_mode'], ['saved', 'new'], true)) {
+      $addressMode = $_POST['address_mode'];
+    } elseif (!empty($_SESSION['checkout_drafts'][$checkoutContext]['values']['address_mode'])) {
+      $addressMode = $_SESSION['checkout_drafts'][$checkoutContext]['values']['address_mode'];
+    }
+    ?>
+
+    <?php if (!$isMember): ?>
+      <div class="member-checkout-note">
+        <p><?= e(sepay_t('addr_guest_login_hint')) ?></p><a
+          href="<?= e(base_url('member/index.php')) ?>"><?= e(mt('member_entry')) ?></a>
+      </div>
+    <?php endif; ?>
+    <link rel="stylesheet" href="<?= e(base_url('assets/css/location-selector.css?v=1.2.2')) ?>">
     <div class="location-container" data-location-container
       data-location-endpoint="<?= e(base_url('api/location.php')) ?>"
       data-stores-endpoint="<?= e(base_url('api/stores.php')) ?>">
@@ -192,13 +206,54 @@ front_header(t('order_info'));
           <div class="address-input-action-bar">
             <label class="address-input-label">
               <span><?= e(t('delivery_address')) ?></span>
-              <!-- <span class="required-star">*</span> -->
             </label>
           </div>
 
+          <?php if ($hasSavedAddress): ?>
+            <div class="address-mode-selector" data-address-mode-selector>
+              <!-- (a) Giao tới địa chỉ đã lưu -->
+              <label class="address-mode-card <?= $addressMode === 'saved' ? 'is-selected' : '' ?>" for="address-mode-saved">
+                <div class="mode-radio-header">
+                  <input type="radio" id="address-mode-saved" name="address_mode" value="saved" <?= $addressMode === 'saved' ? 'checked' : '' ?> class="mode-radio-input" data-mode-radio>
+                  <span class="mode-radio-title"><?= e(sepay_t('addr_mode_saved')) ?></span>
+                  <span class="mode-badge-saved">✓ <?= e(sepay_t('addr_saved_verified_badge')) ?></span>
+                </div>
+                <div class="saved-address-content">
+                  <div class="saved-address-info">
+                    <svg class="saved-address-pin-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                    </svg>
+                    <p class="saved-address-text" data-saved-address-display><?= e($savedDeliveryAddress) ?></p>
+                  </div>
+                  <button type="button" class="btn-edit-saved-addr" id="btn-edit-saved-addr" title="<?= e(sepay_t('addr_btn_edit')) ?>" data-btn-edit-saved>
+                    <svg class="btn-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    <span><?= e(sepay_t('addr_btn_edit')) ?></span>
+                  </button>
+                </div>
+              </label>
+
+              <!-- (b) Giao tới địa chỉ khác -->
+              <label class="address-mode-card <?= $addressMode === 'new' ? 'is-selected' : '' ?>" for="address-mode-new">
+                <div class="mode-radio-header">
+                  <input type="radio" id="address-mode-new" name="address_mode" value="new" <?= $addressMode === 'new' ? 'checked' : '' ?> class="mode-radio-input" data-mode-radio>
+                  <span class="mode-radio-title"><?= e(sepay_t('addr_mode_new')) ?></span>
+                </div>
+              </label>
+            </div>
+          <?php else: ?>
+            <input type="hidden" name="address_mode" value="new" data-mode-hidden>
+          <?php endif; ?>
+
           <!-- Luồng chọn địa chỉ 2 cấp từ JSON cục bộ (Shopee style) trong Mini Card gọn gàng -->
           <div class="address-cascade-container" data-address-cascade
-            data-json-url="<?= e(base_url('assets/data/vietnam-provinces.json?v=' . filemtime(__DIR__ . '/assets/data/vietnam-provinces.json'))) ?>">
+            data-json-url="<?= e(base_url('assets/data/vietnam-provinces.json?v=' . filemtime(__DIR__ . '/assets/data/vietnam-provinces.json'))) ?>"
+            data-saved-address="<?= e($savedDeliveryAddress) ?>"
+            data-has-saved="<?= $hasSavedAddress ? '1' : '0' ?>"
+            data-address-mode="<?= e($addressMode) ?>"
+            style="<?= ($hasSavedAddress && $addressMode === 'saved') ? 'display:none;' : '' ?>">
 
             <div class="address-box-header">
               <div class="address-box-header-titles">
@@ -266,9 +321,19 @@ front_header(t('order_info'));
               </div>
             </div>
 
+            <?php if ($isMember): ?>
+              <div class="save-profile-checkbox-wrap" id="save-profile-wrap">
+                <label class="save-profile-label">
+                  <input type="checkbox" name="save_to_profile" value="1" <?= (!$hasSavedAddress) ? 'checked' : '' ?> class="save-profile-checkbox" data-save-profile-checkbox>
+                  <span class="save-profile-text"><?= e(sepay_t($hasSavedAddress ? 'addr_save_default_profile' : 'addr_save_new_profile')) ?></span>
+                </label>
+              </div>
+            <?php endif; ?>
+
             <!-- Trường address tổng hợp gửi lên backend để lưu vào đơn hàng -->
-            <textarea id="delivery-address-field" name="address" style="display:none;" required
+            <textarea id="delivery-address-field" name="address" style="display:none;"
               <?= hcq_field_attrs($fieldErrors, 'address') ?>><?= e($values['address']) ?></textarea>
+            <input type="hidden" name="delivery_address" id="delivery-address-alias" value="<?= e($values['address']) ?>">
 
             <div class="address-select-warning" data-address-warning role="alert"></div>
             <input type="hidden" name="address_verified" value="0" data-address-verified-input>
@@ -277,7 +342,7 @@ front_header(t('order_info'));
         </div>
 
         <!-- Banner chi nhánh phục vụ tối ưu (nằm ngay dưới ô địa chỉ giao hàng) -->
-        <!-- <div class="location-store-banner" data-location-banner>
+        <div class="location-store-banner" data-location-banner>
           <div class="location-banner-main">
             <div class="location-banner-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -299,7 +364,7 @@ front_header(t('order_info'));
             </div>
           </div>
           <button type="button" class="location-banner-btn-change" data-btn-change-store><?= e(sepay_t('gps_change_store')) ?></button>
-        </div> -->
+        </div>
 
         <fieldset>
           <legend><?= e(t('payment_method')) ?></legend>
@@ -440,6 +505,23 @@ front_header(t('order_info'));
       </div>
   </aside>
 </div>
+
+<!-- App Native Style Centered Loading Overlay -->
+<div class="app-loading-overlay" id="checkout-loading-overlay" aria-hidden="true" style="display: none;">
+  <div class="app-loading-box">
+    <svg class="app-loading-spinner" viewBox="0 0 100 100" width="56" height="56" aria-hidden="true">
+      <circle cx="61.1" cy="15.8" r="8.2" fill="#555555" />
+      <circle cx="79.1" cy="28.8" r="9.8" fill="#444444" />
+      <circle cx="79.1" cy="71.2" r="4.2" fill="#dcdcdc" />
+      <circle cx="61.1" cy="84.2" r="5.2" fill="#c4c4c4" />
+      <circle cx="35.4" cy="82.9" r="6.0" fill="#a8a8a8" />
+      <circle cx="16.6" cy="63.5" r="6.8" fill="#888888" />
+      <circle cx="16.8" cy="35.9" r="7.4" fill="#707070" />
+      <circle cx="35.9" cy="16.8" r="7.8" fill="#606060" />
+    </svg>
+  </div>
+</div>
+
 <?= client_render_js_i18n() ?>
 <?= sepay_render_js_i18n() ?>
 <script src="<?= e(base_url('assets/js/goong-location.js?v=' . filemtime(__DIR__ . '/assets/js/goong-location.js'))) ?>" defer></script>
