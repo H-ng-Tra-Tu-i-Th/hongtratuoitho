@@ -50,8 +50,12 @@ function hgr_items(): ?array {
 function hgr_money_text(int $amount,string $lang): string { return number_format($amount,0,'.',$lang==='vi'?'.':',').'đ'; }
 /** Resolve the current catalog once into terms that can be saved with a board. */
 function hgr_reward_template(array $prize): array {
-    $item=hgr_config_catalog_item($prize);$names=$item?hgr_names($item):[];$size=$prize['cup_size']!==''?' ('.$prize['cup_size'].')':'';
-    $cups=$prize['min_paid_cups'];$spend=$prize['min_spend'];$name=[];$terms=[];
+    // Every selected item is gifted, each named with its own cup size, e.g. "Hồng trà (L) + Trà sữa (XL)".
+    $names=[];$all=[];$ids=$prize['item_ids']??[$prize['item_id']];
+    foreach(hgr_config_catalog_items($prize) as $i=>$item){$label=hgr_names($item);$cup=hgr_item_size($prize,(int)$ids[$i]);
+        if($cup!=='')foreach($label as $lang=>$text)$label[$lang]=$text.' ('.$cup.')';$all[]=$label;}
+    foreach(['vi','zh','en'] as $lang)$names[$lang]=implode(' + ',array_column($all,$lang));$size='';$each=count($all)>1;
+    $cups=$prize['min_paid_cups'];$spend=$prize['min_spend'];$gift=max(1,(int)($prize['gift_qty']??1));$name=[];$terms=[];
     foreach(['vi','zh','en'] as $lang){
         if($prize['kind']==='discount'){
             $amount=hgr_money_text($prize['amount'],$lang);
@@ -60,15 +64,15 @@ function hgr_reward_template(array $prize): array {
                 'zh'=>'下一筆訂單滿'.hgr_money_text($spend,'zh').'，至少'.$cups.'杯付費飲品。',
                 'en'=>'Next order: at least '.hgr_money_text($spend,'en').' and '.$cups.' paid drink(s).'][$lang];
         }elseif($prize['kind']==='topping'){
-            $name[$lang]=['vi'=>'Tặng 1 topping: '.$names['vi'],'zh'=>'免費加料1份：'.$names['zh'],'en'=>'One free topping: '.$names['en']][$lang];
-            $terms[$lang]=['vi'=>'Đơn tiếp theo mua ít nhất '.$cups.' ly trả phí và thêm '.$names['vi'].' vào ly. Giảm giá 1 phần topping.',
-                'zh'=>'下一筆訂單至少買'.$cups.'杯付費飲品，並加選'.$names['zh'].'。折抵1份加料。',
-                'en'=>'Next order: buy at least '.$cups.' paid drink(s) with '.$names['en'].'. One attached topping is free.'][$lang];
+            $name[$lang]=['vi'=>'Tặng '.$gift.' topping'.($each?' mỗi món':'').': '.$names['vi'],'zh'=>($each?'每項':'').'免費加料'.$gift.'份：'.$names['zh'],'en'=>$gift.' free topping(s)'.($each?' each':'').': '.$names['en']][$lang];
+            $terms[$lang]=['vi'=>'Đơn tiếp theo mua ít nhất '.$cups.' ly trả phí và thêm '.$names['vi'].' vào ly. Giảm '.$gift.' phần mỗi topping.',
+                'zh'=>'下一筆訂單至少買'.$cups.'杯付費飲品，並加選'.$names['zh'].'。每項加料折抵'.$gift.'份。',
+                'en'=>'Next order: buy at least '.$cups.' paid drink(s) with '.$names['en'].'. '.$gift.' of each topping is free.'][$lang];
         }else{
-            $name[$lang]=['vi'=>'Tặng 1 ly: '.$names['vi'].$size,'zh'=>'免費飲品1杯：'.$names['zh'].$size,'en'=>'One free drink: '.$names['en'].$size][$lang];
-            $terms[$lang]=['vi'=>'Đơn tiếp theo mua '.$cups.' ly trả phí và thêm 1 ly '.$names['vi'].$size.'. Chỉ miễn tiền đồ uống, không gồm topping.',
-                'zh'=>'下一筆訂單買'.$cups.'杯付費飲品，另加1杯'.$names['zh'].$size.'。只折抵飲品本體，不含加料。',
-                'en'=>'Next order: buy '.$cups.' paid drink(s) and add one '.$names['en'].$size.'. Drink base only; toppings cost extra.'][$lang];
+            $name[$lang]=['vi'=>'Tặng '.$gift.' ly'.($each?' mỗi món':'').': '.$names['vi'],'zh'=>($each?'每項':'').'免費飲品'.$gift.'杯：'.$names['zh'],'en'=>$gift.' free drink(s)'.($each?' each':'').': '.$names['en']][$lang];
+            $terms[$lang]=['vi'=>'Đơn tiếp theo mua '.$cups.' ly trả phí và thêm '.$gift.' ly '.($each?'mỗi món ':'').$names['vi'].'. Chỉ miễn tiền đồ uống, không gồm topping.',
+                'zh'=>'下一筆訂單買'.$cups.'杯付費飲品，另加'.($each?'每項':'').$gift.'杯'.$names['zh'].'。只折抵飲品本體，不含加料。',
+                'en'=>'Next order: buy '.$cups.' paid drink(s) and add '.$gift.' '.($each?'of each: ':'').$names['en'].'. Drink base only; toppings cost extra.'][$lang];
         }
         if($prize['kind']!=='discount'&&$spend>0)$terms[$lang].=['vi'=>' Đơn từ '.hgr_money_text($spend,'vi').'.','zh'=>' 訂單須滿'.hgr_money_text($spend,'zh').'。','en'=>' Order subtotal must reach '.hgr_money_text($spend,'en').'.'][$lang];
         $terms[$lang].=['vi'=>' Không cộng ưu đãi khác. Đặt nhóm: chỉ áp dụng cho món do trưởng nhóm tự trả hoặc trả hộ; phải giảm đủ giá trị phiếu.',
@@ -77,7 +81,7 @@ function hgr_reward_template(array $prize): array {
         if($prize['name'][$lang]!=='')$name[$lang]=$prize['name'][$lang];
     }
     return ['id'=>$prize['id'],'kind'=>$prize['kind'],'weight'=>$prize['weight'],'valid_days'=>$prize['valid_days'],
-        'item_id'=>$prize['item_id'],'cup_size'=>$prize['cup_size'],'amount'=>$prize['amount'],'min_spend'=>$spend,'min_paid_cups'=>$cups,'name'=>$name,'terms'=>$terms];
+        'item_id'=>$prize['item_id'],'item_ids'=>$prize['item_ids']??[$prize['item_id']],'gift_qty'=>$prize['kind']==='discount'?0:$gift,'item_sizes'=>$prize['item_sizes']??[],'cup_size'=>$prize['cup_size'],'amount'=>$prize['amount'],'min_spend'=>$spend,'min_paid_cups'=>$cups,'name'=>$name,'terms'=>$terms];
 }
 function hgr_reward_pool(?array $config=null): ?array {
     try{
@@ -99,6 +103,19 @@ function hgr_odds_text(?array $pool=null): string {
     return implode(' · ',$parts);
 }
 function hgr_ready(): bool { return hgr_reward_pool()!==null; }
+/** A 0đ prize: a money prize set to 0, so the customer wins nothing. */
+function hgr_reward_is_zero(array $reward): bool {
+    return ($reward['kind']??'')==='discount'&&(float)($reward['amount']??0)<=0;
+}
+/** The pool without 0đ prizes, rescaled to 100%, so a share replay always wins. */
+function hgr_winning_pool(array $pool): ?array {
+    $pool=array_values(array_filter($pool,fn($prize)=>is_array($prize)&&!hgr_reward_is_zero($prize)));
+    $total=array_sum(array_map(fn($prize)=>(int)($prize['weight']??0),$pool));if(!$pool||$total<1)return null;
+    $left=10000;$top=0;
+    foreach($pool as $i=>$prize){$pool[$i]['weight']=intdiv((int)$prize['weight']*10000,$total);$left-=$pool[$i]['weight'];if($pool[$i]['weight']>$pool[$top]['weight'])$top=$i;}
+    $pool[$top]['weight']+=$left;
+    return $pool;
+}
 /** Supplied board pools stay immutable even after campaign or catalog settings change. */
 function hgr_issue_reward_locked(string $token,?array $pool=null): array {
     if(!db()->inTransaction())throw new RuntimeException('game_reward_requires_transaction');
@@ -114,6 +131,8 @@ function hgr_issue_reward_locked(string $token,?array $pool=null): array {
     $draw=random_int(1,10000);$reward=null;
     foreach($pool as $prize){$draw-=$prize['weight'];if($draw<=0){$reward=$prize;break;}}
     if(!$reward)throw new RuntimeException('rewards_unavailable');
+    // A 0đ prize is not saved as a coupon; the board keeps it only to offer the share replay.
+    if(hgr_reward_is_zero($reward)){$reward['coupon_code']='';$reward['coupon_amount']=0;$reward['expires_at']='';return $reward;}
     do{$code='GAME-'.strtoupper(bin2hex(random_bytes(6)));$st=db()->prepare('SELECT COUNT(*) FROM customer_coupons WHERE code=?');$st->execute([$code]);}while((int)$st->fetchColumn()>0);
     db()->prepare("INSERT INTO customer_coupons(wallet_token,code,coupon_type,amount) VALUES(?,?,'game_reward',?)")->execute([$token,$code,$reward['amount']]);
     $couponId=(int)db()->lastInsertId();$expires=gmdate('Y-m-d H:i:s',time()+$reward['valid_days']*86400);
@@ -131,26 +150,36 @@ function hgr_coupon_record(array $row): ?array {
 function hgr_label(array $reward,string $field='name'): string {
     $data=$reward['reward']??$reward;$lang=current_lang();return (string)($data[$field][$lang]??$data[$field]['vi']??'');
 }
+/** Escaped prize label with money amounts (e.g. 46.000đ) wrapped in <b class="kyuc-money">. */
+function hgr_label_html(array $reward): string {
+    return preg_replace('/\d[\d.,]*\s?(?:đ|₫)/u','<b class="kyuc-money">$0</b>',e(hgr_label($reward)))??e(hgr_label($reward));
+}
 function hgr_expiry(string $utc): string {
     return (new DateTimeImmutable($utc,new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Asia/Ho_Chi_Minh'))->format('Y-m-d H:i').' (UTC+7)';
 }
-/** Pure cart calculation. Tea requires four paid cups plus the separate gift cup. */
+/** Pure cart calculation. Every gift item is free (gift_qty each) on top of the minimum paid cups. */
 function hgr_calculate(array $cart,array $record,array $result,?array $giftLineKeys=null): array {
     $reward=$record['reward']??null;if(!is_array($reward)){$result['valid']=false;return $result;}
-    $drinkTotal=0.0;$qty=0;$candidate=null;
+    $qty=0;$candidates=[];$giftIds=array_map('intval',$reward['item_ids']??[$reward['item_id']]);$gift=max(1,(int)($reward['gift_qty']??1));
+    // The cheapest matching line of each gift item carries its free units.
+    $offer=static function(int $id,string $key,float $price,int $count)use(&$candidates){if($price>0&&(!isset($candidates[$id])||$price<$candidates[$id]['price']))$candidates[$id]=['key'=>$key,'price'=>$price,'qty'=>$count];};
     foreach($cart as $key=>$row){
         if(empty($row['product_id'])||!empty($row['standalone_topping_id']))continue;
         $count=max(0,(int)($row['qty']??0));if($count<1)continue;
-        $base=max(0,(float)($row['base_price']??0));if($base<=0)continue;$qty+=$count;$drinkTotal+=$base*$count;
-        $giftEligible=$giftLineKeys===null||in_array((string)$key,$giftLineKeys,true);
-        if($giftEligible&&$reward['kind']==='tea'&&(int)$row['product_id']===(int)$reward['item_id']&&(string)($row['cup_size']??'')===(string)$reward['cup_size']&&$base>0&&($candidate===null||$base<$candidate['price']))$candidate=['key'=>(string)$key,'price'=>$base];
-        if($giftEligible&&$reward['kind']==='topping')foreach($row['toppings']??[] as $top){$price=max(0,(float)($top['price']??0));if((int)($top['id']??0)===(int)$reward['item_id']&&$price>0&&($candidate===null||$price<$candidate['price']))$candidate=['key'=>(string)$key,'price'=>$price];}
+        $base=max(0,(float)($row['base_price']??0));if($base<=0)continue;$qty+=$count;
+        if($giftLineKeys!==null&&!in_array((string)$key,$giftLineKeys,true))continue;
+        $id=(int)$row['product_id'];
+        if($reward['kind']==='tea'&&in_array($id,$giftIds,true)&&(string)($row['cup_size']??'')===hgr_item_size($reward,$id))$offer($id,(string)$key,$base,$count);
+        if($reward['kind']==='topping')foreach($row['toppings']??[] as $top){$tid=(int)($top['id']??0);if(in_array($tid,$giftIds,true))$offer($tid,(string)$key,max(0,(float)($top['price']??0)),$count);}
     }
     $result['eligible_qty']=$qty;
-    $required=max(1,(int)$reward['min_paid_cups'])+($reward['kind']==='tea'?1:0);
-    if($qty<$required||cart_subtotal($cart)<(float)$reward['min_spend'])return $result;
+    $free=0;foreach($candidates as $c)$free+=min($gift,$c['qty']);
+    $paid=$qty-($reward['kind']==='tea'?$free:0);
+    if($paid<max(1,(int)$reward['min_paid_cups'])||cart_subtotal($cart)<(float)$reward['min_spend'])return $result;
     if($reward['kind']==='discount'){
         $remaining=max(0,(float)$record['amount']);foreach($cart as $key=>$row){$take=min($remaining,max(0,(float)($row['unit_price']??0)*(int)($row['qty']??0)));if($take>0){$result['line_discounts'][(string)$key]=$take;$result['discount']+=$take;$remaining-=$take;}}
-    }elseif($candidate){$result['line_discounts'][$candidate['key']]=$candidate['price'];$result['discount']=$candidate['price'];$result['free_qty']=1;}
+        return $result;
+    }
+    foreach($candidates as $c){$n=min($gift,$c['qty']);$take=$c['price']*$n;$result['line_discounts'][$c['key']]=($result['line_discounts'][$c['key']]??0)+$take;$result['discount']+=$take;$result['free_qty']+=$n;}
     return $result;
 }

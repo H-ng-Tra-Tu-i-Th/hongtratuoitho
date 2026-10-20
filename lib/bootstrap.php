@@ -48,3 +48,7 @@ hds_maintenance();
 
 require_once __DIR__.'/game_rewards.php';
 hgr_schema();
+
+require_once __DIR__.'/checkout_game_session.php';
+hcgs_schema();
+hcgs_sweep();

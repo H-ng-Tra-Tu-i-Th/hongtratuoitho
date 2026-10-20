@@ -2,6 +2,7 @@
 require __DIR__.'/lib/bootstrap.php';
 require __DIR__.'/lib/layout.php';
 require_once __DIR__.'/lib/promotion_views.php';
+hcgs_guard_cart();
 
 if(!promotion_cart_choice()['valid']){clear_coupon();$_SESSION['coupon_error']=pt('selection_changed');}
 front_header(t('cart'));
@@ -9,8 +10,10 @@ $cart = $_SESSION['cart'] ?? [];
 $coupon = cart_coupon_summary();
 $couponMsg = $_SESSION['coupon_message'] ?? '';
 $couponErr = $_SESSION['coupon_error'] ?? '';
-unset($_SESSION['coupon_message'], $_SESSION['coupon_error']);
+$gameFlash = $_SESSION['hcgs_flash'] ?? '';
+unset($_SESSION['coupon_message'], $_SESSION['coupon_error'], $_SESSION['hcgs_flash']);
 ?>
+<?php if($gameFlash):?><div class="alert danger" role="alert"><?=e($gameFlash)?></div><?php endif;?>
 <div class="section-head"><div><span class="eyebrow"><?=e(t('your_order'))?></span><h1><?=e(t('cart'))?></h1></div></div>
 <section class="hyg-entry"><div><strong><?=e(gt('share_cart'))?></strong><p><?=e(gt('copy_hint'))?></p></div><a class="btn primary" href="<?=e(base_url('group/'))?>"><?=e(gt('create'))?></a></section>
 <?php if(!$cart): ?>
@@ -48,6 +51,6 @@ unset($_SESSION['coupon_message'], $_SESSION['coupon_error']);
   <?php if(cart_discount()>0):?><div class="discount-line"><span><?=e(t('coupon_discount'))?><?php if($coupon['code']):?> · <?=e($coupon['code'])?><?php endif;?></span><strong>-<?=e(currency())?><?=money(cart_discount())?></strong></div><?php endif;?>
   <div class="total-line"><span><?=e(t('total'))?></span><strong><?=e(currency())?><?=money(cart_total())?></strong></div>
 </div>
-<div class="cart-actions checkout-action"><a class="btn primary" href="<?=e(base_url('checkout.php'))?>"><?=e(t('checkout_info'))?></a></div>
+<div class="cart-actions checkout-action"><button class="btn primary" type="submit" form="cart-promotion-selector" name="continue_to_checkout" value="1"><?=e(t('checkout_info'))?></button></div>
 <?php endif; ?>
 <?php front_footer(); ?>
