@@ -274,7 +274,7 @@ front_header(t('order_sent'));
         <span><?= e(sepay_t('success_order_more')) ?></span>
       </a>
 
-      <?php if (!empty($savedOrder['phone'])): ?>
+      <!-- <?php if (!empty($savedOrder['phone'])): ?>
         <a class="btn-payment-action secondary" href="<?= e(base_url('member/orders.php')) ?>">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -282,7 +282,7 @@ front_header(t('order_sent'));
           </svg>
           <span><?= e(t('my_orders') ?? 'Đơn hàng của tôi') ?></span>
         </a>
-      <?php endif; ?>
+      <?php endif; ?> -->
     </div>
 
     <!-- 4. Guest Session Orders (exact same classes and styles as payment.php) -->
