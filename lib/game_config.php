@@ -29,9 +29,15 @@ function hgr_normalize_config(array $input,bool $allowEmpty=false): array {
         if(!is_string($id)||preg_match('/^[A-Za-z0-9_-]{1,64}$/D',$id)!==1||isset($ids[$id])||!is_string($kind)||!in_array($kind,['topping','tea','discount'],true)||!is_bool($enabled))hgr_config_invalid();
         $ids[$id]=true;$size=$prize['cup_size']??'';if(!is_string($size)||!in_array($size,['','L','XL'],true))hgr_config_invalid();
         $name=$prize['name']??[];if(!is_array($name))hgr_config_invalid();$names=[];foreach(['vi','zh','en'] as $lang)$names[$lang]=hgr_config_name($name[$lang]??'');
-        $item=hgr_config_integer($prize['item_id']??0,0,4294967295);$amount=hgr_config_integer($prize['amount']??0,0,100000000);
+        // A prize may list several gift items; item_id stays the first one for older readers.
+        $list=$prize['item_ids']??[$prize['item_id']??0];if(!is_array($list)||count($list)>50)hgr_config_invalid();
+        $items=[];foreach($list as $value){$value=hgr_config_integer($value,0,4294967295);if($value>0)$items[$value]=$value;}
+        $items=$kind==='discount'?[]:array_values($items);$amount=hgr_config_integer($prize['amount']??0,0,100000000);
+        // Each gift drink keeps its own cup size; older settings fall back to the prize-wide cup_size.
+        $sizes=[];$map=$prize['item_sizes']??[];if(!is_array($map))hgr_config_invalid();
+        if($kind==='tea')foreach($items as $item){$value=$map[$item]??$size;if(!is_string($value)||!in_array($value,['','L','XL'],true))hgr_config_invalid();$sizes[(string)$item]=$value;}
         $config['prizes'][]=['id'=>$id,'kind'=>$kind,'enabled'=>$enabled,'weight'=>hgr_config_integer($prize['weight']??0,0,10000),
-            'item_id'=>$kind==='discount'?0:$item,'cup_size'=>$kind==='tea'?$size:'','amount'=>$kind==='discount'?$amount:0,
+            'item_id'=>$items[0]??0,'item_ids'=>$items,'gift_qty'=>$kind==='discount'?0:hgr_config_integer($prize['gift_qty']??1,1,20),'item_sizes'=>$sizes,'cup_size'=>$kind==='tea'?($sizes[(string)($items[0]??'')]??$size):'','amount'=>$kind==='discount'?$amount:0,
             'min_spend'=>hgr_config_integer($prize['min_spend']??0,0,100000000),'min_paid_cups'=>hgr_config_integer($prize['min_paid_cups']??1,1,100),
             'valid_days'=>hgr_config_integer($prize['valid_days']??7,1,365),'name'=>$names];
     }
@@ -50,13 +56,22 @@ function hgr_config_catalog_item(array $prize): ?array {
     if(!isset($prices[$prize['cup_size']])||$prices[$prize['cup_size']]<=0)hgr_config_invalid();
     return $item;
 }
+/** Every gift item of a prize, validated against the current catalog. */
+function hgr_config_catalog_items(array $prize): array {
+    if($prize['kind']==='discount')return [];
+    $ids=$prize['item_ids']??[$prize['item_id']];if(!$ids)hgr_config_invalid();
+    return array_map(fn($id)=>hgr_config_catalog_item(array_merge($prize,['item_id'=>(int)$id,'cup_size'=>hgr_item_size($prize,(int)$id)])),$ids);
+}
+/** Cup size of one gift drink of a prize. */
+function hgr_item_size(array $prize,int $id): string {
+    return $prize['kind']==='tea'?(string)($prize['item_sizes'][$id]??$prize['item_sizes'][(string)$id]??$prize['cup_size']??''):'';
+}
 function hgr_validate_config(array $input): array {
     $config=hgr_normalize_config($input);$total=0;
     foreach($config['prizes'] as $prize){
         if(!$prize['enabled'])continue;
-        if($prize['kind']==='discount'){
-            if($prize['amount']<1)hgr_config_invalid();
-        }else hgr_config_catalog_item($prize);
+        // A money prize may be 0đ: winning it offers a guaranteed replay for sharing the website.
+        if($prize['kind']!=='discount')hgr_config_catalog_items($prize);
         if($prize['weight']>0)$total+=$prize['weight'];
     }
     if($total!==10000)hgr_config_invalid();return $config;
@@ -67,7 +82,7 @@ function hgr_default_config(): array {
     if($tea>0){$item=hym_reward_one('SELECT * FROM products WHERE id=?',[$tea]);if($item&&!product_has_sizes($item))$size='';}
     $prizes=[];
     foreach([['topping',5000,$top,'',0,0,1],['discount',3500,0,'',5000,50000,1],['tea',1500,$tea,$size,0,0,4]] as [$kind,$weight,$item,$cup,$amount,$spend,$cups])
-        $prizes[]=['id'=>$kind,'kind'=>$kind,'enabled'=>true,'weight'=>$weight,'item_id'=>$item,'cup_size'=>$cup,'amount'=>$amount,'min_spend'=>$spend,'min_paid_cups'=>$cups,'valid_days'=>7,'name'=>['vi'=>'','zh'=>'','en'=>'']];
+        $prizes[]=['id'=>$kind,'kind'=>$kind,'enabled'=>true,'weight'=>$weight,'item_id'=>$item,'item_ids'=>$item>0?[$item]:[],'item_sizes'=>$kind==='tea'&&$item>0?[(string)$item=>$cup]:[],'gift_qty'=>$kind==='discount'?0:1,'cup_size'=>$cup,'amount'=>$amount,'min_spend'=>$spend,'min_paid_cups'=>$cups,'valid_days'=>7,'name'=>['vi'=>'','zh'=>'','en'=>'']];
     return ['theme'=>'memory','back_image'=>'','faces'=>array_fill(0,6,''),'prizes'=>$prizes];
 }
 /** Invalid persisted settings close the campaign rather than silently changing its prizes. */

@@ -16,6 +16,15 @@ try {
         $r = hyg_join((string)($_POST['invite'] ?? ''), $_POST['nickname'] ?? '');
     } else {
         $id = hyg_code($_POST['room_id'] ?? '');
+        // While the host plays this room's checkout Mini Game, the room stays as it was quoted.
+        hcgs_guard_group($id);
+        if ($action === 'checkout') {
+            // Only the host's checkout button may open a Mini Game session for this group, like the cart's checkout button.
+            $r = hyg_checkout($id);
+            if (!$r['already']) $_SESSION['hcgs_allow_open'] = $r['room']['public_id'];
+            header('Location: ' . base_url('checkout.php?group=' . rawurlencode($r['room']['public_id'])), true, 303);
+            exit;
+        }
         hyg_mutate($id, $action, $_POST);
         $r = hyg_room($id);
         if ($action === 'payment_confirm') {
@@ -28,6 +37,7 @@ try {
                 }
             }
             if (!empty($quote['payment']['can_checkout']) && !empty($quote['cart']) && !$hasInvalid) {
+                $_SESSION['hcgs_allow_open'] = $r['public_id'];
                 header('Location: ' . base_url('checkout.php?group=' . rawurlencode($r['public_id'])), true, 303);
                 exit;
             }

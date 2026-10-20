@@ -60,6 +60,7 @@ if(!empty($_POST['group_id'])){
         header('Location: '.base_url('product.php?id='.$id.'&group='.$_POST['group_id'].'#customize'),true,303);exit;
     }catch(Throwable $e){hyg_error_page($e);}
 }
+hcgs_guard_cart();
 $_SESSION['cart'][$key]=$newCartRow;
 $_SESSION['cart_flash']=t('cart_added');
 redirect(base_url('product.php?id='.$id.'#customize'));

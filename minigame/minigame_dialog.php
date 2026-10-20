@@ -23,7 +23,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 ?>
 
 <!-- File CSS của Minigame -->
-<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.0')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.3')) ?>">
 
 <style>
     /* Style tùy chỉnh cơ bản cho Dialog */
@@ -60,6 +60,42 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
     .kyuc-dialog-close:hover {
         color: #000;
     }
+
+    .kyuc-reward-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .kyuc-session-rewards {
+        margin-top: 16px;
+        padding: 12px 16px;
+        border: 1px dashed #c9a27a;
+        border-radius: 12px;
+    }
+
+    .kyuc-session-rewards h4 {
+        margin: 0 0 8px;
+    }
+
+    .kyuc-session-rewards ol {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .kyuc-session-rewards li {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 4px 12px;
+        padding: 4px 0;
+    }
+
+    .kyuc-session-rewards code {
+        font-weight: bold;
+        user-select: all;
+    }
 </style>
 
 <!-- Thẻ Dialog chứa toàn bộ Game -->
@@ -67,7 +103,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
     <!-- Nút đóng Dialog -->
     <button type="button" class="kyuc-dialog-close" onclick="document.getElementById('minigameModal').close()">✕</button>
 
-    <div class="kyuc-game" data-theme="<?= e($appearance['theme'] ?? '') ?>" data-api="<?= e(base_url('actions/minigame.php')) ?>" data-csrf="<?= e(csrf_token()) ?>" data-lang="<?= e(current_lang()) ?>" data-currency="<?= e(currency()) ?>">
+    <div class="kyuc-game" data-checkout="1" data-theme="<?= e($appearance['theme'] ?? '') ?>" data-api="<?= e(base_url('actions/minigame.php')) ?>" data-csrf="<?= e(csrf_token()) ?>" data-lang="<?= e(current_lang()) ?>" data-currency="<?= e(currency()) ?>">
 
         <div class="kyuc-layout">
             <!-- Banner Hero -->
@@ -140,10 +176,9 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 
                     <div class="kyuc-actions">
                         <button class="btn" type="button" data-game-retry hidden><?= e(hgr_text('retry')) ?></button>
-                        <button class="btn primary" type="button" data-game-next hidden><?= e(hgr_text('next')) ?></button>
                     </div>
 
-                    <!-- Màn hình nhận thưởng -->
+                    <!-- Màn hình nhận thưởng: mỗi lượt chơi = 1 mã quà riêng -->
                     <section class="kyuc-reward" data-game-reward hidden>
                         <span class="kyuc-eyebrow"><?= e(hgr_text('reward')) ?></span>
                         <h3 data-game-reward-name></h3>
@@ -151,14 +186,19 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                         <code data-game-reward-code></code>
                         <span data-game-reward-amount hidden></span>
                         <p data-game-reward-expiry></p>
+<div class="kyuc-share-bonus" data-game-share-bonus hidden><p></p><button class="btn primary" type="button"></button></div>
                         <div class="kyuc-reward-actions">
-                            <button class="btn primary" type="button" onclick="document.getElementById('minigameModal').close()">Đóng & Dùng Quà</button>
+                            <button class="btn primary" type="button" data-game-next hidden><?= e(hgr_text('next')) ?> (còn <b data-game-balance>0</b> lượt)</button>
                         </div>
                     </section>
-                </section>
 
-                <!-- Script nạp logic Game -->
-                <script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.0')) ?>"></script>
+                    <!-- Danh sách tất cả mã quà đã trúng trong đơn này -->
+                    <section class="kyuc-session-rewards" data-game-session-rewards hidden>
+                        <h4 data-game-session-heading></h4>
+                        <ol data-game-session-list></ol>
+                        <p data-game-session-cash hidden></p>
+                    </section>
+                </section>
             <?php endif; ?>
         </div>
 
@@ -167,11 +207,14 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
             <p><?= e(hgr_text('rules')) ?></p>
             <p class="kyuc-odds" data-game-odds <?= $prizes ? '' : 'hidden' ?>>
                 <?php foreach ($prizes as $i => $prize): ?>
-                    <?= $i ? ' · ' : '' ?><?= e(hgr_label($prize) . ' ' . rtrim(rtrim(number_format((float)$prize['odds_percent'], 2, '.', ''), '0'), '.') . '%') ?>
+                    <?= $i ? ' · ' : '' ?><?= hgr_label_html($prize) ?>
                 <?php endforeach; ?>
             </p>
             <p><?= e(pt(hym_current_member() ? 'member_saved' : 'guest_saved')) ?></p>
         </section>
+
+        <!-- Nút chia sẻ trang đặt hàng lên Facebook kèm nội dung bài viết soạn sẵn -->
+        <?php require __DIR__ . '/share_facebook.php'; ?>
 
         <details class="kyuc-prize-details" data-game-prize-details <?= $prizes ? '' : 'hidden' ?>>
             <summary><?= e($prizeHeading) ?></summary>
@@ -187,17 +230,18 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
     </div>
 </dialog>
 
-<!-- <script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.0')) ?>"></script> -->
+<!-- Chỉ nạp game.js một lần, nạp 2 lần sẽ gửi trùng mỗi lần lật thẻ -->
+<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.8')) ?>"></script>
 
-<!-- Dòng 188 cũ của bạn -->
-<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.0')) ?>"></script>
-
-<!-- BỔ SUNG ĐOẠN SCRIPT NÀY NGAY BÊN DƯỚI -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const minigameModal = document.getElementById('minigameModal');
 
         if (minigameModal) {
+            // Prizes apply to this order straight away; reload once the game is closed so the bill shows them.
+            minigameModal.addEventListener('close', function() {
+                if (minigameModal.querySelector('.kyuc-game')?.dataset.awarded === '1') location.reload();
+            });
             // Click ra ngoài vùng Dialog (click vào phần nền xám) để đóng
             minigameModal.addEventListener('click', function(event) {
                 const rect = minigameModal.getBoundingClientRect();

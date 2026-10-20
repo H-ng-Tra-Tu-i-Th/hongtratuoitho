@@ -91,6 +91,21 @@ if ($checkoutUnknown) {
   } catch (Throwable $e) {
   }
 }
+// Every full ten drinks grants one chance now; the session locks the cart (or the group room) until it is submitted or expires.
+$gameSession = null;
+if (!$checkoutUnknown) {
+  $gameChances = $promotion['mode'] === 'draw' && (float)$coupon['discount'] <= 0 ? (int)$promotion['expected_chances'] : 0;
+  $gameSession = hcgs_open((int)$promotion['eligible_qty'], $gameChances, (string)($groupCheckout['room']['public_id'] ?? ''));
+  // A prize from an earlier, already paid order must not show up in this session's game.
+  try { hcgs_forget_old_board($gameSession); } catch (Throwable $ignored) {}
+}
+// Money prizes won in this session are summed and taken off the bill straight away.
+$gameCash = hcgs_cash_discount($cart, $coupon, $gameSession);
+$checkoutTotal = max(0, $checkoutTotal - $gameCash['discount']);
+// Free drink/topping prizes are added as 0đ gift lines with the quantity set in the prize settings.
+$gameGifts = hcgs_gift_rewards($gameSession);
+$gameFlash = $_SESSION['hcgs_flash'] ?? '';
+unset($_SESSION['hcgs_flash']);
 front_header(t('order_info'));
 ?>
 <?php if ($groupCheckout): ?><section class="hyg-checkout-note"><strong><?= e(gt('order_group')) ?>：<?= e($groupCheckout['room']['title']) ?></strong>
@@ -104,10 +119,37 @@ front_header(t('order_info'));
     <?php if ($checkoutUnknown): ?><div class="alert danger checkout-error-summary" role="alert">
         <p><?= e(htp_ux('unknown')) ?></p><a class="btn" href="<?= e(base_url('payment.php?order=' . rawurlencode($checkoutRequest['order_no']))) ?>"><?= e(htp_ux('check_order')) ?></a>
       </div><?php elseif ($checkoutError || $fieldErrors): ?><div class="alert danger checkout-error-summary" role="alert" tabindex="-1" data-checkout-errors><?= e($checkoutError ?: htp_ux('draft_error')) ?></div><?php endif; ?>
+    <?php if ($gameFlash): ?><div class="alert danger" role="alert"><?= e($gameFlash) ?></div><?php endif; ?>
+    <?php if ($gameSession): ?>
+      <section class="alert success checkout-game-session" data-game-session data-remaining="<?= max(0, (int)$gameSession['remaining']) ?>">
+        <p><strong><?= e(hcgs_text('opened', ['qty' => (int)$gameSession['drink_qty'], 'chances' => (int)$gameSession['granted_chances']])) ?></strong></p>
+        <p><?= e(hcgs_text($groupCheckout ? 'group_locked' : 'locked')) ?></p>
+        <p><?= e(hcgs_text('expires', ['minutes' => intdiv(HCGS_TTL, 60)])) ?></p>
+        <p><?= e(hcgs_text('forfeit_note')) ?></p>
+        <p><?= e(hcgs_text('remaining')) ?>: <b data-game-session-clock>--:--</b></p>
+        <button type="button" class="btn primary" onclick="openMinigameModal()">🎮 Chơi Mini Game nhận quà</button>
+      </section>
+      <script>
+        (function() {
+          const box = document.querySelector('[data-game-session]');
+          const clock = box && box.querySelector('[data-game-session-clock]');
+          if (!clock) return;
+          const end = Date.now() + Number(box.dataset.remaining) * 1000;
+          const tick = function() {
+            const left = Math.max(0, Math.round((end - Date.now()) / 1000));
+            clock.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
+            // Expiry is fixed on the server; reload slightly after it so the session is already undone.
+            if (left === 0) { clearInterval(timer); setTimeout(function() { location.reload(); }, 1500); }
+          };
+          const timer = setInterval(tick, 1000);
+          tick();
+        })();
+      </script>
+    <?php endif; ?>
     <div class="member-checkout-note">
       <p><?= e(mt($checkoutMember ? 'checkout_member_notice' : 'checkout_member_guest')) ?></p><a href="<?= e(base_url('member/index.php')) ?>"><?= e(mt('member_entry')) ?></a>
     </div>
-    <form method="post" action="<?= e(base_url('actions/submit_order.php')) ?>" class="checkout-form" data-checkout-form data-submitting-label="<?= e(htp_ux('submitting')) ?>">
+    <form method="post" action="<?= e(base_url('actions/submit_order.php')) ?>" class="checkout-form" id="checkoutForm" data-checkout-form data-game-remaining="<?= hcgs_remaining($gameSession) ?>" data-submitting-label="<?= e(htp_ux('submitting')) ?>">
       <?= csrf_field() ?>
       <input type="hidden" name="checkout_token" value="<?= e($checkoutToken) ?>">
       <?php if (!$groupCheckout): ?><input type="hidden" name="promotion_signature" value="<?= e(promotion_quote_signature($cart)) ?>"><?php endif; ?>
@@ -200,20 +242,59 @@ front_header(t('order_info'));
         <b><?= e(currency()) ?><?= money($r['unit_price'] * $r['qty']) ?></b>
       </div>
     <?php endforeach; ?>
+    <?php foreach ($gameGifts as $gift): $pick = $gift['item']; ?>
+      <div class="review-row">
+        <div>
+          <strong>🎁 Quà Mini Game · <?= e($pick['name'] . ($pick['cup_size'] !== '' ? ' · ' . $pick['cup_size'] : '')) ?> × <?= (int)$gift['qty'] ?></strong>
+          <small><?= e($gift['kind'] === 'tea' ? 'Tặng ' . $gift['qty'] . ' ly' : 'Tặng ' . $gift['qty'] . ' phần topping') ?> · <?= e($gift['code']) ?></small>
+        </div>
+        <b><?= e(currency()) ?>0</b>
+      </div>
+    <?php endforeach; ?>
     <div class="review-totals">
-      <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong></div><?php if ($coupon['discount'] > 0): ?><div class="discount-line"><span><?= e(t('coupon_discount')) ?> · <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div><?php endif; ?><div class="review-total"><span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
+      <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong></div><?php if ($coupon['discount'] > 0): ?><div class="discount-line"><span><?= e(t('coupon_discount')) ?> · <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div><?php endif; ?><?php if ($gameCash['discount'] > 0): ?><div class="discount-line"><span>Quà Mini Game (<?= count($gameCash['codes']) ?> mã) · <?= e(implode(', ', $gameCash['codes'])) ?></span><strong>-<?= e(currency()) ?><?= money($gameCash['discount']) ?></strong></div><?php endif; ?><div class="review-total"><span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
     </div>
   </aside>
 </div>
 
-<!-- Dialog Mua 10ly nước được chơi game -->
-<div style="margin: 20px 0; text-align: center;">
-  <button type="button" class="btn primary" onclick="openMinigameModal()">
-    🎮 Chơi Mini Game nhận quà
-  </button>
-</div>
-
-<?php require_once __DIR__ . '/minigame/minigame_dialog.php'; ?>
+<!-- Dialog Mua 10ly nước được chơi game: chỉ khi khách chọn "Mua 10 nhận lượt rút thưởng" và đủ 10 ly -->
+<?php if ($gameSession) require_once __DIR__ . '/minigame/minigame_dialog.php'; ?>
+<?php if ($gameSession): ?>
+  <!-- Submitting with unplayed chances asks first: they are forfeited, not kept for later. -->
+  <dialog id="gameForfeitModal" class="kyuc-confirm">
+    <h3><?= str_replace('%N%', '<b data-forfeit-count>' . hcgs_remaining($gameSession) . '</b>', e(hcgs_text('forfeit_title', ['n' => '%N%']))) ?></h3>
+    <p><?= e(hcgs_text('forfeit_body')) ?></p>
+    <div class="kyuc-confirm-actions">
+      <button type="button" class="btn primary" data-forfeit-play>🎮 <?= e(hcgs_text('play_now')) ?></button>
+      <button type="button" class="btn" data-forfeit-submit><?= e(hcgs_text('forfeit_submit')) ?></button>
+    </div>
+  </dialog>
+  <style>
+    .kyuc-confirm{border:none;border-radius:16px;padding:24px;max-width:420px;width:calc(100vw - 32px);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+    .kyuc-confirm::backdrop{background:rgba(0,0,0,.55)}
+    .kyuc-confirm h3{margin:0 0 8px}
+    .kyuc-confirm-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:16px}
+  </style>
+  <script>
+    (function() {
+      const form = document.querySelector('[data-checkout-form]');
+      const ask = document.getElementById('gameForfeitModal');
+      if (!form || !ask) return;
+      let confirmed = false;
+      // Registered before app.js, so the order is not marked as submitting while the customer decides.
+      form.addEventListener('submit', function(event) {
+        const left = Number(form.dataset.gameRemaining) || 0;
+        if (confirmed || left < 1) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        ask.querySelector('[data-forfeit-count]').textContent = String(left);
+        ask.showModal();
+      });
+      ask.querySelector('[data-forfeit-play]').addEventListener('click', function() { ask.close(); openMinigameModal(); });
+      ask.querySelector('[data-forfeit-submit]').addEventListener('click', function() { confirmed = true; ask.close(); form.requestSubmit(); });
+    })();
+  </script>
+<?php endif; ?>
 
 
 
