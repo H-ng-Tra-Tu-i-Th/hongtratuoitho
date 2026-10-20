@@ -11,10 +11,10 @@
 .admin-shell .admin-container .table-wrap:focus-visible{outline:3px solid #efb3bd;outline-offset:2px}
 .admin-shell .admin-container .table-scroll-hint{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #eaecf0;background:#f8fafc;color:#667085;font-size:12px;line-height:1.5;white-space:normal}
 .admin-shell .admin-container .table-scroll-hint[hidden]{display:none!important}
-.admin-mobile .ma-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
-.admin-mobile .ma-toolbar>.ma-tool{width:100%;min-width:0;margin:0;text-align:center;justify-content:center;display:flex;align-items:center;gap:6px;white-space:normal;overflow-wrap:normal}
-.admin-mobile .ma-toolbar>.ma-home{grid-column:1/-1;background:#fff5f5;border:1px solid #eab5bc;color:#9f1825;font-weight:750;white-space:nowrap}
+.admin-mobile .ma-toolbar{display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:6px;padding:6px 10px;align-items:center;scrollbar-width:none}
+.admin-mobile .ma-toolbar::-webkit-scrollbar{display:none}
+.admin-mobile .ma-toolbar>.ma-tool{width:auto;min-width:max-content;min-height:34px;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.admin-mobile .ma-toolbar>.ma-home{grid-column:auto;background:#fff5f5;border:1px solid #eab5bc;color:#9f1825;font-weight:750;white-space:nowrap}
 @media(min-width:641px){.admin-shell .admin-container .table-wrap:has(td[data-label]) :is(th,td){white-space:nowrap;overflow-wrap:normal;word-break:normal}.admin-shell .admin-container .table-wrap:has(td[data-label]) td :is(small,.status){white-space:nowrap;overflow-wrap:normal}}
 @media(max-width:640px){.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) :is(th,td){padding:12px 14px}.admin-shell .admin-container .table-wrap:not(:has(td[data-label])) table{min-width:100%}}
-@media(min-width:1000px){.admin-mobile .ma-toolbar{grid-template-columns:repeat(3,minmax(0,1fr))}}
 }

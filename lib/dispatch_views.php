@@ -34,8 +34,18 @@ function hds_view_order_action(int $orderId,string $action,array $data,int $admi
     if($action==='dispatch_refresh'){hds_refresh_order($orderId,$adminId,$revision);return 'dispatch_refreshed';}
     if($action==='dispatch_clear'){hds_assign_order($orderId,null,$adminId,$revision);return 'dispatch_saved';}
     if($action==='dispatch_assign'){
-        $value=$data['store_id']??null;if(!is_string($value)||!preg_match('/^[1-9]\d{0,9}$/D',$value))throw new InvalidArgumentException('dispatch_store_unavailable');
-        hds_assign_order($orderId,(int)$value,$adminId,$revision);return 'dispatch_saved';
+        $value=$data['store_id']??null;
+        if($value === '' || $value === '0' || $value === null){
+            hds_assign_order($orderId,null,$adminId,$revision);
+            return 'dispatch_saved';
+        }
+        if($value === 'auto_refresh' || $value === 'refresh'){
+            hds_refresh_order($orderId,$adminId,$revision);
+            return 'dispatch_refreshed';
+        }
+        if(!is_string($value)||!preg_match('/^[1-9]\d{0,9}$/D',$value))throw new InvalidArgumentException('dispatch_store_unavailable');
+        hds_assign_order($orderId,(int)$value,$adminId,$revision);
+        return 'dispatch_saved';
     }
     if($action==='dispatch_adopt'){
         $dispatch=hds_order_dispatch($orderId);if(!$dispatch)throw new InvalidArgumentException('dispatch_order_not_found');
@@ -63,16 +73,57 @@ function hds_render_order_dispatch(array $order): string {
         <div class="hds-store-summary is-assigned"><span><?=e(dt('assigned'))?></span><strong><?=e($assigned['name']??dt('unassigned'))?></strong>
           <?php if($assigned):?><p><?=nl2br(e($assigned['address']??''))?></p><?php if(!empty($assigned['phone'])):?><p><?=e($assigned['phone'])?></p><?php endif;?><?php $map=hds_view_store_map($assigned);if($map!==''):?><a class="hds-map-link" href="<?=e($map)?>" target="_blank" rel="noopener noreferrer"><?=e(dt('open_map'))?> ↗</a><?php endif;?><?php if(isset($assigned['enabled'])&&!$assigned['enabled']):?><p class="hds-help"><?=e(dt('inactive_assigned'))?></p><?php endif;?><?php endif;?>
         </div>
+        <?php if($ready && $recommended):?>
         <div class="hds-store-summary"><span><?=e(dt('suggested'))?></span>
-          <?php if($ready):?><strong><?=e($recommended['name'])?></strong><p><?=nl2br(e($recommended['address']??''))?></p><?php $map=hds_view_store_map($recommended);if($map!==''):?><a class="hds-map-link" href="<?=e($map)?>" target="_blank" rel="noopener noreferrer"><?=e(dt('open_map'))?> ↗</a><?php endif;?><?php if(isset($dispatch['distance_km'])&&is_numeric($dispatch['distance_km'])):?><p class="hds-distance"><?=e(dt('distance'))?> · <?=e(dt('distance_value',['distance'=>number_format((float)$dispatch['distance_km'],2)]))?></p><?php endif;?><p class="hds-help"><?=e(dt('recommendation_hint'))?></p>
-          <?php else:?><strong><?=e(dt('no_suggestion'))?></strong><p class="hds-help"><?=e(dt((string)($dispatch['message_key']??'dispatch_pending')))?></p><?php endif;?>
+          <strong><?=e($recommended['name'])?></strong><p><?=nl2br(e($recommended['address']??''))?></p><?php $map=hds_view_store_map($recommended);if($map!==''):?><a class="hds-map-link" href="<?=e($map)?>" target="_blank" rel="noopener noreferrer"><?=e(dt('open_map'))?> ↗</a><?php endif;?><?php if(isset($dispatch['distance_km'])&&is_numeric($dispatch['distance_km'])):?><p class="hds-distance"><?=e(dt('distance'))?> · <?=e(dt('distance_value',['distance'=>number_format((float)$dispatch['distance_km'],2)]))?></p><?php endif;?><p class="hds-help"><?=e(dt('recommendation_hint'))?></p>
         </div>
+        <?php elseif(!$assigned):?>
+        <div class="hds-store-summary"><span><?=e(dt('suggested'))?></span>
+          <strong><?=e(dt('no_suggestion'))?></strong><p class="hds-help"><?=e(dt((string)($dispatch['message_key']??'dispatch_pending')))?></p>
+        </div>
+        <?php endif;?>
       </div>
-      <?php if($editable):?><div class="hds-controls">
-        <?php if($ready):?><form method="post"><?=csrf_field()?><input type="hidden" name="dispatch_revision" value="<?=$revision?>"><input type="hidden" name="recommended_store_id" value="<?=(int)$recommended['id']?>"><button class="hds-btn primary" name="action" value="dispatch_adopt" type="submit"><?=e(dt('adopt'))?></button></form><?php endif;?>
-        <form method="post" class="hds-manual-form"><?=csrf_field()?><input type="hidden" name="dispatch_revision" value="<?=$revision?>"><label><?=e(dt('manual'))?><select name="store_id" required><option value=""><?=e(dt('select_store'))?></option><?php foreach($stores as $store):?><option value="<?=(int)$store['id']?>" <?=isset($assigned['id'])&&(int)$assigned['id']===(int)$store['id']?'selected':''?>><?=e($store['name'])?></option><?php endforeach;?></select></label><button class="hds-btn primary" name="action" value="dispatch_assign" type="submit" <?=$stores?'':'disabled'?>><?=e(dt('assign'))?></button></form>
-        <div class="hds-secondary-actions"><form method="post"><?=csrf_field()?><input type="hidden" name="dispatch_revision" value="<?=$revision?>"><button class="hds-btn" name="action" value="dispatch_refresh" type="submit"><?=e(dt('refresh'))?></button></form><?php if($assigned):?><form method="post"><?=csrf_field()?><input type="hidden" name="dispatch_revision" value="<?=$revision?>"><button class="hds-btn danger" name="action" value="dispatch_clear" type="submit"><?=e(dt('clear'))?></button></form><?php endif;?></div><p class="hds-help"><?=e(dt('refresh_hint'))?></p>
-      </div><?php else:?><p class="hds-help"><?=e(dt('terminal_hint'))?></p><?php endif;?>
+      <?php if($editable):?>
+      <?php 
+        $currentSelectedId = isset($assigned['id']) ? (int)$assigned['id'] : (!empty($recommended['id']) ? (int)$recommended['id'] : 0);
+        $currentSelectedAddress = $assigned['address'] ?? ($recommended['address'] ?? ($stores[0]['address'] ?? ''));
+      ?>
+      <div class="hds-controls">
+        <form method="post" class="hds-manual-wrap" style="display:flex; flex-direction:column; gap:8px;">
+          <?=csrf_field()?>
+          <input type="hidden" name="dispatch_revision" value="<?=$revision?>">
+          <label for="hds-store-select" style="font-weight:700; font-size:15px; color:#374151;">
+            <?=e(dt('manual'))?>
+          </label>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <select name="store_id" id="hds-store-select" onchange="hdsUpdateStoreAddress(this)" style="flex:1; min-width:200px;" required>
+              <?php foreach($stores as $store):?>
+                <option value="<?=(int)$store['id']?>" 
+                  data-address="<?=e($store['address'] ?? '')?>"
+                  <?=$currentSelectedId === (int)$store['id'] ? 'selected' : ''?>>
+                  <?=e($store['name'])?><?=!empty($store['address']) ? ' — ' . e(mb_strimwidth($store['address'], 0, 45, '...')) : ''?>
+                </option>
+              <?php endforeach;?>
+            </select>
+            <button class="hds-btn primary" name="action" value="dispatch_assign" type="submit" style="white-space:nowrap;" <?=$stores?'':'disabled'?>>
+              <?=e(dt('assign'))?>
+            </button>
+          </div>
+          <div id="hds-store-addr-box" style="font-size:0.83rem; color:#64748b; display:flex; align-items:flex-start; gap:4px; line-height:1.4; padding:2px 0;">
+            <span style="flex-shrink:0;">📍</span>
+            <span id="hds-store-addr-text"><?=e($currentSelectedAddress ?: adm_t('store_address_empty'))?></span>
+          </div>
+        </form>
+        <script>
+          function hdsUpdateStoreAddress(sel) {
+            var opt = sel.options[sel.selectedIndex];
+            var addr = opt ? (opt.getAttribute('data-address') || '') : '';
+            var el = document.getElementById('hds-store-addr-text');
+            if (el) el.textContent = addr || '<?= e(adm_t('store_address_empty')) ?>';
+          }
+        </script>
+      </div>
+      <?php else:?><p class="hds-help"><?=e(dt('terminal_hint'))?></p><?php endif;?>
       <details class="hds-history"><summary><?=e(dt('audit'))?></summary><?php if(!$history):?><p class="hds-help"><?=e(dt('audit_empty'))?></p><?php else:?><ol><?php foreach($history as $entry):?><li><strong><?=e(($entry['store_id']??null)?($entry['name']??dt('none')):dt('unassigned'))?></strong><span><?=e(($entry['admin_name']??'')?:dt('staff_number',['id'=>(int)($entry['admin_id']??0)]))?> · <?=e(hds_view_time((string)($entry['created_at']??'')))?></span><?php if(!empty($entry['address'])):?><p><?=e($entry['address'])?></p><?php endif;?></li><?php endforeach;?></ol><?php endif;?></details>
     </section>
     <?php return ob_get_clean();

@@ -219,7 +219,12 @@ function translations(): array {
 }
 function t(string $key, array $vars=[]): string {
     $d = translations(); $lang=current_lang();
-    $text = $d[$lang][$key] ?? $d['vi'][$key] ?? $key;
+    $text = $d[$lang][$key] ?? $d['vi'][$key] ?? null;
+    if ($text === null && function_exists('adm_t')) {
+        $adm = adm_t($key, $vars, $lang);
+        if ($adm !== $key) return $adm;
+    }
+    $text = $text ?? $key;
     foreach ($vars as $k=>$v) $text=str_replace('{'.$k.'}',(string)$v,$text);
     return $text;
 }

@@ -327,7 +327,10 @@
     if (toast) {
       toast.hidden = false; const h = toast.querySelector('[data-alert-title]'), m = toast.querySelector('[data-alert-meta]'), a = toast.querySelector('[data-alert-view]');
       if (h) h.textContent = `${t.pending} ${pendingCount} · #${order.order_no}`;
-      if (m) m.textContent = `${order.customer_name} · ${Number(order.total_amount || 0).toLocaleString('en-US')}`;
+      if (m) {
+        const storeLabel = (order.dispatch_store_name || order.store_name) ? ` · 🏬 ${order.dispatch_store_name || order.store_name}` : '';
+        m.textContent = `${order.customer_name} · ${Number(order.total_amount || 0).toLocaleString('en-US')}${storeLabel}`;
+      }
       if (a) a.href = cfg.orderUrl + '?id=' + encodeURIComponent(order.id);
     }
     if (ringing && !pending.some(o => Number(o.id) === ringId)) stopSound();
@@ -345,8 +348,9 @@
      */
     if (document.visibilityState === 'hidden' && 'Notification' in window && Notification.permission === 'granted' && id > lastSoundId) {
       try {
+        const storeLabel = (order.dispatch_store_name || order.store_name) ? ` [🏬 ${order.dispatch_store_name || order.store_name}]` : '';
         new Notification(t.newOrder || 'Có đơn hàng mới', {
-          body: `#${order.order_no} - ${order.customer_name} (${Number(order.total_amount || 0).toLocaleString('vi-VN')}đ)`,
+          body: `#${order.order_no} - ${order.customer_name} (${Number(order.total_amount || 0).toLocaleString('vi-VN')}đ)${storeLabel}`,
           icon: '/assets/icons/order-icon-192.png',
           tag: 'new-order-' + order.id
         });
