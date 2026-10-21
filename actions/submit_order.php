@@ -237,6 +237,7 @@ if (!@session_start())
 $reopenedRequest = hcq_lookup($checkoutToken, $checkoutContext);
 if (!$reopenedRequest || ($reopenedRequest['state'] ?? '') !== 'unknown' || ($reopenedRequest['order_no'] ?? '') !== $no || (int) ($_SESSION['member_id'] ?? 0) !== (int) ($orderMemberId ?? 0))
     hcq_fail($checkoutContext, $groupId, htp_ux('unknown'));
+$gameSessionId = hcgs_current_for($groupId) ? hcgs_session_id() : '';
 $pdo = db();
 try {
     $pdo->beginTransaction();
@@ -304,7 +305,6 @@ try {
     }
     // One coupon may hold several gift items; it is spent once.
     foreach(array_keys($usedGifts??[]) as $giftCode)if(!mark_customer_coupon_used($giftCode,$oid))throw new RuntimeException('Coupon already used.');
-    if($groupCheckout)hyg_finish($groupCheckout,$oid);
     if ($groupCheckout)
         hyg_finish($groupCheckout, $oid);
     $selectedStoreId = !empty($_POST['selected_store_id']) ? (int) $_POST['selected_store_id'] : null;
@@ -372,6 +372,8 @@ try {
 // The order is committed. A notification failure must never turn it into a failed checkout.
 hcq_saved($checkoutToken, $no);
 unset($_SESSION['checkout_drafts'][$checkoutContext], $_SESSION['checkout_errors'][$checkoutContext]);
+if ($gameSessionId !== '')
+    unset($_SESSION[HCGS_KEY]);
 if ($groupId === '') {
     $_SESSION['cart'] = [];
     clear_coupon();
