@@ -115,6 +115,8 @@ function promotion_selector(array $choice, array $options = []): string
   if (!in_array($mode, ['none', 'buy4get1', 'draw', 'reward'], true)) $mode = 'none';
   if ((!$hostDiscount && in_array($mode, ['buy4get1', 'reward'], true)) || (!$buy4 && $mode === 'buy4get1') || (!$draw && $mode === 'draw')) $mode = 'none';
   $prefix = $group !== '' ? 'group-promotion' : 'cart-promotion';
+  // close-test-Hai | Tạm ẩn "Mã phần thưởng": ưu đãi đã lưu kiểu này hiển thị như "Không dùng ưu đãi"
+  if ($mode === 'reward') $mode = 'none';
   $code = $mode === 'reward' ? strtoupper((string)($choice['code'] ?? '')) : '';
   if ($code !== '' && !coupon_record($code)) $code = '';
   ob_start(); ?>
@@ -151,7 +153,7 @@ function promotion_selector(array $choice, array $options = []): string
   <section class="promotion-panel">
     <h2><?= e(pt('title')) ?></h2>
     <p class="promotion-help"><?= e(pt('choose_one')) ?></p>
-    <form id="<?= e($prefix) ?>-selector" class="promotion-selector" data-promotion-selector method="post" action="<?= e(base_url($group !== '' ? 'group/action.php' : 'actions/apply_coupon.php')) ?>">
+    <form id="<?= e($prefix) ?>-selector" class="promotion-selector" data-promotion-selector<?= $group !== '' ? ' data-promotion-group' : '' ?> method="post" action="<?= e(base_url($group !== '' ? 'group/action.php' : 'actions/apply_coupon.php')) ?>">
       <?= csrf_field() ?><input type="hidden" name="action" value="<?= $group !== '' ? 'coupon' : 'apply' ?>">
       <?php if ($group !== ''): ?><input type="hidden" name="room_id" value="<?= e($group) ?>"><input type="hidden" name="revision" value="<?= (int)($options['revision'] ?? 0) ?>"><?php endif; ?>
 
@@ -159,7 +161,9 @@ function promotion_selector(array $choice, array $options = []): string
       <fieldset class="promotion-options">
         <legend class="sr-only"><?= e(pt('title')) ?></legend>
 
-        <?php foreach (['none', 'buy4get1', 'draw', 'reward'] as $value): ?>
+        <?php // close-test-Hai | Tạm ẩn lựa chọn "Mã phần thưởng" (giỏ hàng lẫn đơn nhóm)
+        // foreach (['none', 'buy4get1', 'draw', 'reward'] as $value): ?>
+        <?php foreach (['none', 'buy4get1', 'draw'] as $value): ?>
           <?php
           // Bổ sung điều kiện !$buy10 vào nút 'draw'
           $disabled = ($value === 'buy4get1' && (!$buy4 || !$hostDiscount))
@@ -196,9 +200,15 @@ function promotion_selector(array $choice, array $options = []): string
 
 
 
+      <?php // close-test-Hai | Tạm ẩn ô nhập "Mã phần thưởng" (giỏ hàng lẫn đơn nhóm)
+      /*
       <div class="promotion-reward-field" data-promotion-reward <?= $mode !== 'reward' ? 'hidden' : '' ?>><label for="<?= $prefix ?>-code"><?= e(pt('reward_code')) ?></label><input id="<?= $prefix ?>-code" data-promotion-code name="coupon_code" value="<?= e($code) ?>" <?= $mode === 'reward' ? 'required' : 'disabled' ?> maxlength="80" autocomplete="off" spellcheck="false" list="<?= $prefix ?>-codes" placeholder="<?= e(pt('reward_code_placeholder')) ?>" aria-describedby="<?= $prefix ?>-code-hint"><datalist id="<?= $prefix ?>-codes"><?php foreach ($coupons as $coupon): ?><option value="<?= e($coupon['code']) ?>"><?= e($coupon['coupon_type'] === 'game_reward' ? hgr_label($coupon) : currency() . money($coupon['amount'])) ?></option><?php endforeach; ?></datalist><small id="<?= $prefix ?>-code-hint"><?= e(pt('reward_code_hint')) ?></small></div>
+      */ ?>
       <?php if (!$hostDiscount): ?><p class="promotion-help"><?= e(pt('host_discount_note')) ?></p><?php endif; ?>
-      <?php if ($group !== ''): ?><button class="btn primary block" type="submit"><?= e(pt('apply')) ?></button><?php endif; ?>
+      <?php // close-test-Hai | Bỏ nút "Áp dụng ưu đãi" ở đơn nhóm: chỉ chọn radio, nút "Chốt món" gửi kèm lựa chọn
+      /*
+      <?php if ($group !== ''): ?><button class="btn primary block" type="submit" data-promotion-apply><?= e(pt('apply')) ?></button><?php endif; ?>
+      */ ?>
     </form>
   </section>
 

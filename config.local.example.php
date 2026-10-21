@@ -5,3 +5,10 @@ define('DB_USER', 'root');
 define('DB_PASS', 'rootpassword');
 define('APP_BASE_URL', 'http://localhost:8000');
 define('APP_TIMEZONE', 'Asia/Ho_Chi_Minh');
+// Zalo login (developers.zalo.me). Leave empty to hide the button.
+define('ZALO_APP_ID', '');
+define('ZALO_APP_SECRET', '');
+// Optional: defaults to APP_BASE_URL/member/zalo.php; must match a Callback URL in the Zalo app.
+define('ZALO_REDIRECT_URI', '');
+// Zalo Mini App login: Secret Key of the Mini App (empty = use ZALO_APP_SECRET).
+define('ZALO_MINIAPP_SECRET', '');

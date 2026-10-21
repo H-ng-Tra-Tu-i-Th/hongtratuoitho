@@ -125,16 +125,33 @@
     const odds = root.querySelector('[data-game-odds]');
     if (odds) {
       odds.hidden = prizes.length === 0;
-      // Money amounts (e.g. 46.000đ) are shown in bold; the rest stays plain text.
+      // Same layout as hgr_odds_html(): money prizes on one line (largest highlighted, 0đ hidden), each gift on its own line.
       odds.replaceChildren();
-      prizes.forEach((prize, i) => {
-        if (i) odds.append(' · ');
-        name(prize).split(/(\d[\d.,]*\s?(?:đ|₫))/u).forEach((part, j) => {
-          if (!part) return;
-          if (j % 2) { const b = document.createElement('b'); b.className = 'kyuc-money'; b.textContent = part; odds.append(b); }
-          else odds.append(part);
-        });
+      const label = (prize, into) => name(prize).split(/(\d[\d.,]*\s?(?:đ|₫))/u).forEach((part, j) => {
+        if (!part) return;
+        if (j % 2) { const b = document.createElement('b'); b.className = 'kyuc-money'; b.textContent = part; into.append(b); }
+        else into.append(part);
       });
+      const line = (cls) => { const span = document.createElement('span'); span.className = 'kyuc-odds-line ' + cls; odds.append(span); return span; };
+      const amount = prize => Number(prize.amount) || 0;
+      const money = prizes.filter(prize => prize.kind === 'discount' && amount(prize) > 0);
+      const gifts = prizes.filter(prize => prize.kind !== 'discount');
+      const top = Math.max(0, ...money.map(amount));
+      if (money.length) {
+        // One heading, then the amounts only (no "Giảm" before each one).
+        const row = line('kyuc-odds-money');
+        if (odds.dataset.moneyLabel) row.append(odds.dataset.moneyLabel + ' ');
+        money.forEach((prize, i) => {
+          if (i) row.append(' · ');
+          const b = document.createElement('b');
+          b.className = 'kyuc-money';
+          b.textContent = Math.round(amount(prize)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, language === 'vi' ? '.' : ',') + 'đ';
+          if (amount(prize) === top) { const hi = document.createElement('span'); hi.className = 'kyuc-odds-top'; hi.append(b); row.append(hi); }
+          else row.append(b);
+        });
+      }
+      gifts.forEach(prize => label(prize, line('kyuc-odds-gift')));
+      odds.hidden = !money.length && !gifts.length;
     }
     const details = root.querySelector('[data-game-prize-details]');
     if (details) details.hidden = prizes.length === 0;

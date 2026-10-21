@@ -50,6 +50,29 @@ function hym_member_row(int $id): ?array {
     $row['id']=(int)$row['id'];return $row;
 }
 function hym_current_member(): ?array { return hym_member_row((int)($_SESSION['member_id']??0)); }
+/** Maps a ?return= value to the page a guest is sent back to after signing in; null if not allowed. */
+function hym_return_path(string $target): ?string {
+    if($target==='group')return 'group/';
+    // A group invite link: the guest comes back to the same invite to join.
+    if(preg_match('/^invite-([a-f0-9]{64})$/D',$target,$m))return 'group/?invite='.$m[1];
+    return null;
+}
+/** Links a members-only entry point: guests go to sign-in first and come back afterwards. */
+function hym_login_gate_url(string $target): string {
+    $path=hym_return_path($target);
+    if($path===null)return base_url('member/index.php');
+    return (int)($_SESSION['member_id']??0)>0?base_url($path):base_url('member/index.php?return='.rawurlencode($target));
+}
+/** Remembers where to send the customer once sign-in (password, Zalo or registration) completes. */
+function hym_remember_return(string $target): void {
+    if(hym_return_path($target)!==null)$_SESSION['member_return']=['target'=>$target,'created_at'=>time()];
+}
+/** Returns and clears the pending post-login destination, if still fresh. */
+function hym_take_return(): ?string {
+    $pending=$_SESSION['member_return']??null;unset($_SESSION['member_return']);
+    if(!is_array($pending)||($pending['created_at']??0)<time()-1800)return null;
+    return hym_return_path((string)($pending['target']??''));
+}
 function hym_require_member(): array {
     $member=hym_current_member();
     if(!$member)redirect(base_url('member/index.php'));
