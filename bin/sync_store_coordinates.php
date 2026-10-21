@@ -28,7 +28,9 @@ foreach ($stores as $s) {
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 10,
-        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
     ]);
     $res = curl_exec($ch);
     $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -37,12 +39,16 @@ foreach ($stores as $s) {
     if ($code === 200 && $res) {
         $json = json_decode($res, true);
         $loc = $json['results'][0]['geometry']['location'] ?? null;
-        if ($loc && isset($loc['lat'], $loc['lng'])) {
+        if ($loc && isset($loc['lat'], $loc['lng']) && is_numeric($loc['lat']) && is_numeric($loc['lng'])) {
             $lat = (float)$loc['lat'];
             $lng = (float)$loc['lng'];
-            $upd = $pdo->prepare('UPDATE dispatch_stores SET lat=?, lng=?, coord_source="manual", geocoded_at=UTC_TIMESTAMP() WHERE id=?');
-            $upd->execute([$lat, $lng, $id]);
-            echo " [OK] Store #$id ($name): lat=$lat, lng=$lng | Address: $cleanAddr\n";
+            if ($lat >= -90.0 && $lat <= 90.0 && $lng >= -180.0 && $lng <= 180.0) {
+                $upd = $pdo->prepare('UPDATE dispatch_stores SET lat=?, lng=?, coord_source="google", geocoded_at=UTC_TIMESTAMP(), expires_at=DATE_ADD(UTC_TIMESTAMP(), INTERVAL 30 DAY) WHERE id=?');
+                $upd->execute([$lat, $lng, $id]);
+                echo " [OK] Store #$id ($name): lat=$lat, lng=$lng | Address: $cleanAddr\n";
+            } else {
+                echo " [WARN] Store #$id ($name): Coordinates out of bounds (lat=$lat, lng=$lng)\n";
+            }
         } else {
             echo " [WARN] Store #$id ($name): Could not find geometry location. Result status: " . ($json['status'] ?? 'unknown') . "\n";
         }

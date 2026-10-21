@@ -74,6 +74,7 @@ function sepay_strip_accents(string $str): string
 function sepay_bank_code(string $bankName): string
 {
     $raw = strtoupper(trim(sepay_strip_accents($bankName)));
+    $compact = preg_replace('/[^A-Z0-9]/', '', $raw);
     // 1. Exact match first (highest priority)
     $exactMap = [
         'VIETCOMBANK' => 'VCB',
@@ -136,6 +137,9 @@ function sepay_bank_code(string $bankName): string
     ];
     if (isset($exactMap[$raw])) {
         return $exactMap[$raw];
+    }
+    if (isset($exactMap[$compact])) {
+        return $exactMap[$compact];
     }
 
     // 2. Substring matching for phrases and descriptive names
@@ -296,23 +300,25 @@ function sepay_normalize_account(string $account): string
     return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $account));
 }
 
+function sepay_normalize_bank(string $bank): string
+{
+    return sepay_bank_code($bank);
+}
+
 /**
- * Check if the received bank account matches store account or company accounts.
+ * Check whether the received bank account and gateway match an allowed account.
  */
-function sepay_match_account(string $receivedAccount, array $validAccounts): bool
+function sepay_match_account(string $receivedAccount, string $receivedBank, array $validAccounts): bool
 {
     $rec = sepay_normalize_account($receivedAccount);
-    if ($rec === '')
+    $bank = sepay_normalize_bank($receivedBank);
+    if ($rec === '' || $bank === '')
         return false;
-
-    // SePay sandbox/test account number standard
-    if ($rec === '0000000001') {
-        return true;
-    }
 
     foreach ($validAccounts as $acc) {
         $num = sepay_normalize_account((string) ($acc['account_number'] ?? ''));
-        if ($num !== '' && hash_equals($num, $rec)) {
+        $configuredBank = sepay_normalize_bank((string) ($acc['bank_name'] ?? ''));
+        if ($num !== '' && $configuredBank !== '' && hash_equals($num, $rec) && hash_equals($configuredBank, $bank)) {
             return true;
         }
     }
@@ -332,14 +338,20 @@ function sepay_process_order_payment(array $payload, string $orderNo): array
     }
 
     $sepayId = (int) ($payload['id'] ?? 0);
-    $receivedAmount = (float) ($payload['transferAmount'] ?? 0);
+    $delta = htp_cents($payload['transferAmount'] ?? 0);
     $bankAccount = (string) ($payload['accountNumber'] ?? '');
     $referenceCode = (string) ($payload['referenceCode'] ?? '');
-    $gateway = (string) ($payload['gateway'] ?? '');
+    $gateway = trim((string) ($payload['gateway'] ?? ''));
+    $bankBrand = trim((string) ($payload['bank_brand_name'] ?? ''));
+    if ($gateway === '') {
+        $gateway = $bankBrand;
+    } elseif ($bankBrand !== '' && sepay_normalize_bank($gateway) !== sepay_normalize_bank($bankBrand)) {
+        sepay_fail('SePay bank identity fields do not match.');
+    }
     $content = (string) ($payload['content'] ?? '');
     $subAccount = (string) ($payload['subAccount'] ?? '');
 
-    if ($receivedAmount <= 0) {
+    if ($delta <= 0) {
         sepay_fail('Invalid transfer amount');
     }
 
@@ -383,35 +395,31 @@ function sepay_process_order_payment(array $payload, string $orderNo): array
             $receipt = hyg_one('SELECT * FROM transfer_order_receipts WHERE order_id = ? FOR UPDATE', [$orderId]);
         }
 
-        // Validate account recipient
+        // Validate account recipient: strictly the order's branch account (or HQ fallback if branch has no account).
+        // Never allow other branches' accounts!
         $orderForBank = $order;
         $orderForBank['payment_method'] = 'transfer';
         $validAccounts = htp_order_accounts($orderForBank, false, true);
-        if ($validAccounts && !sepay_match_account($bankAccount, $validAccounts)) {
-            // Also check all active branch/store accounts or HQ accounts as fallback
-            $allHq = hyg_all('SELECT bank_name, account_number, account_name FROM bank_accounts WHERE active = 1');
-            $allStores = hyg_all('SELECT bank_name, account_number, account_name FROM transfer_store_accounts WHERE enabled = 1');
-            $combined = array_merge($validAccounts, $allHq, $allStores);
-            if (!sepay_match_account($bankAccount, $combined) && !str_starts_with(strtoupper($subAccount), 'SBSEPAY')) {
-                sepay_fail('Received bank account ' . $bankAccount . ' does not match configured store accounts.');
-            }
+        if (!$validAccounts || !sepay_match_account($bankAccount, $gateway, $validAccounts)) {
+            sepay_fail('Received bank account ' . $bankAccount . ' does not match allowed branch/HQ account for order ' . $orderNo);
         }
 
         $due = htp_cents($receipt['amount']);
         $currentReceived = htp_cents($receipt['received_amount']);
         $currentRefunded = htp_cents($receipt['refunded_amount']);
-        $delta = htp_cents($receivedAmount);
 
         $newReceived = $currentReceived + $delta;
         $net = $newReceived - $currentRefunded;
 
-        $newStatus = ($due === 0 && $net === 0) ? 'not_required' : (($net >= $due && $due > 0) ? 'confirmed' : 'partial');
         $newVersion = (int) $receipt['version'] + 1;
 
         // Snapshot matching account details
         $matchedAccount = null;
         foreach ($validAccounts as $va) {
-            if (sepay_normalize_account((string) $va['account_number']) === sepay_normalize_account($bankAccount)) {
+            if (
+                sepay_normalize_account((string) $va['account_number']) === sepay_normalize_account($bankAccount)
+                && sepay_normalize_bank((string) ($va['bank_name'] ?? '')) === sepay_normalize_bank($gateway)
+            ) {
                 $matchedAccount = $va;
                 break;
             }
@@ -430,8 +438,49 @@ function sepay_process_order_payment(array $payload, string $orderNo): array
 
         $recipientJson = json_encode(htp_account_snapshot($matchedAccount), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
-        $pdo->prepare("UPDATE transfer_order_receipts SET status = ?, version = ?, received_amount = ?, report_state = 'confirmed', recipient_json = COALESCE(recipient_json, ?), confirmed_at = UTC_TIMESTAMP(), confirmed_by_admin_id = 0 WHERE order_id = ?")
-            ->execute([$newStatus, $newVersion, htp_decimal($newReceived), $recipientJson, $orderId]);
+        // Handle payment for already-cancelled orders
+        if ($order['status'] === 'cancelled') {
+            $pdo->prepare("UPDATE transfer_order_receipts SET status = 'refund_pending', version = ?, received_amount = ?, report_state = 'refund_pending', recipient_json = COALESCE(recipient_json, ?), confirmed_at = UTC_TIMESTAMP(), confirmed_by_admin_id = 0 WHERE order_id = ?")
+                ->execute([$newVersion, htp_decimal($newReceived), $recipientJson, $orderId]);
+
+            $before = $receipt;
+            $after = hyg_one('SELECT * FROM transfer_order_receipts WHERE order_id = ?', [$orderId]);
+            $safe = fn($r) => array_intersect_key($r, array_flip(['status', 'version', 'amount', 'received_amount', 'refunded_amount', 'report_state', 'recipient_json', 'confirmed_at']));
+
+            $pdo->prepare('INSERT INTO transfer_payment_events(order_id, event_key, event_type, amount_delta, refund_delta, account_code, recipient_json, transaction_reference, reference_key, reason, admin_id, before_json, after_json, created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,UTC_TIMESTAMP())')
+                ->execute([
+                    $orderId,
+                    $eventKey,
+                    'payment_after_cancel',
+                    htp_decimal($delta),
+                    '0.00',
+                    $matchedAccount['source'] . ':' . ($matchedAccount['id'] ?? 0),
+                    $recipientJson,
+                    $referenceCode !== '' ? $referenceCode : ('sepay:' . $sepayId),
+                    $refKey,
+                    'Khách chuyển khoản sau khi đơn đã hủy. Chờ xử lý hoàn tiền / soát xét thủ công. Ghi chú: ' . mb_substr($content, 0, 500),
+                    0,
+                    json_encode($safe($before), JSON_UNESCAPED_UNICODE),
+                    json_encode($safe($after), JSON_UNESCAPED_UNICODE)
+                ]);
+
+            $pdo->commit();
+
+            return [
+                'status' => 'payment_after_cancel',
+                'order_id' => $orderId,
+                'order_no' => $orderNo,
+                'received' => htp_decimal($delta),
+                'receipt_status' => 'refund_pending',
+                'message' => 'Payment received for cancelled order. Flagged for refund/manual review.'
+            ];
+        }
+
+        $newStatus = ($due === 0 && $net === 0) ? 'not_required' : (($net >= $due && $due > 0) ? 'confirmed' : 'partial');
+
+        $fullyPaid = in_array($newStatus, ['confirmed', 'not_required'], true);
+        $pdo->prepare("UPDATE transfer_order_receipts SET status = ?, version = ?, received_amount = ?, report_state = IF(? = 1, 'confirmed', report_state), recipient_json = COALESCE(recipient_json, ?), confirmed_at = IF(? = 1, UTC_TIMESTAMP(), confirmed_at), confirmed_by_admin_id = IF(? = 1, 0, confirmed_by_admin_id) WHERE order_id = ?")
+            ->execute([$newStatus, $newVersion, htp_decimal($newReceived), $fullyPaid ? 1 : 0, $recipientJson, $fullyPaid ? 1 : 0, $fullyPaid ? 1 : 0, $orderId]);
 
         // Insert audit event in transfer_payment_events
         $before = $receipt;
@@ -463,24 +512,26 @@ function sepay_process_order_payment(array $payload, string $orderNo): array
         throw $e;
     }
 
-    // Trigger cooking/delivery notifications only AFTER successful commit
-    try {
-        send_new_order_push_notifications($orderId, true);
-    } catch (Throwable $e) {
-        error_log('[sepay] Push notification failed for order ' . $orderId . ': ' . $e->getMessage());
-    }
-    try {
-        $mailDetail = '';
-        send_order_notification_by_id($orderId, $mailDetail);
-    } catch (Throwable $e) {
-        error_log('[sepay] Mail notification failed for order ' . $orderId . ': ' . $e->getMessage());
+    // Notify staff only after the full payment is confirmed.
+    if (in_array($newStatus, ['confirmed', 'not_required'], true)) {
+        try {
+            send_new_order_push_notifications($orderId, true);
+        } catch (Throwable $e) {
+            error_log('[sepay] Push notification failed for order ' . $orderId . ': ' . $e->getMessage());
+        }
+        try {
+            $mailDetail = '';
+            send_order_notification_by_id($orderId, $mailDetail);
+        } catch (Throwable $e) {
+            error_log('[sepay] Mail notification failed for order ' . $orderId . ': ' . $e->getMessage());
+        }
     }
 
     return [
         'status' => 'confirmed',
         'order_id' => $orderId,
         'order_no' => $orderNo,
-        'received' => $receivedAmount,
+        'received' => htp_decimal($delta),
         'receipt_status' => $newStatus,
         'message' => 'Order payment confirmed successfully via SePay.'
     ];
@@ -499,13 +550,20 @@ function sepay_process_member_payment(array $payload, int $memberId): array
     }
 
     $sepayId = (int) ($payload['id'] ?? 0);
-    $receivedAmount = (float) ($payload['transferAmount'] ?? 0);
+    $delta = htp_cents($payload['transferAmount'] ?? 0);
     $bankAccount = (string) ($payload['accountNumber'] ?? '');
     $referenceCode = (string) ($payload['referenceCode'] ?? '');
-    $gateway = (string) ($payload['gateway'] ?? '');
+    $gateway = trim((string) ($payload['gateway'] ?? ''));
+    $bankBrand = trim((string) ($payload['bank_brand_name'] ?? ''));
+    if ($gateway === '') {
+        $gateway = $bankBrand;
+    } elseif ($bankBrand !== '' && sepay_normalize_bank($gateway) !== sepay_normalize_bank($bankBrand)) {
+        sepay_fail('SePay bank identity fields do not match.');
+    }
     $content = (string) ($payload['content'] ?? '');
+    $subAccount = trim((string) ($payload['subAccount'] ?? ''));
 
-    if ($receivedAmount <= 0) {
+    if ($delta <= 0) {
         sepay_fail('Invalid transfer amount');
     }
 
@@ -542,6 +600,11 @@ function sepay_process_member_payment(array $payload, int $memberId): array
             sepay_fail('Group room not found: ' . $roomId);
         }
 
+        $groupAccount = hyg_one('SELECT bank_name,account_number,account_name FROM transfer_group_accounts WHERE room_id=?', [$roomId]);
+        if (!$groupAccount || !sepay_match_account($bankAccount, $gateway, [$groupAccount])) {
+            sepay_fail('Received bank account does not match the group payment account.');
+        }
+
         // Step 3: Lock group_members row
         $member = hyg_one('SELECT * FROM group_members WHERE id = ? AND room_id = ? FOR UPDATE', [$memberId, $roomId]);
         if (!$member) {
@@ -549,9 +612,9 @@ function sepay_process_member_payment(array $payload, int $memberId): array
         }
 
         // Check if member already paid
-        $currentPaid = (float) $member['payment_received_amount'];
-        $currentRequested = (float) ($member['payment_requested_amount'] ?? 0);
-        if ($member['payment_status'] === 'paid' && $currentPaid >= $receivedAmount && $receivedAmount > 0) {
+        $currentPaid = htp_cents($member['payment_received_amount'] ?? 0);
+        $currentRequested = htp_cents($member['payment_requested_amount'] ?? 0);
+        if ($member['payment_status'] === 'paid' && $currentPaid >= $delta && $delta > 0) {
             $pdo->commit();
             return [
                 'status' => 'already_paid',
@@ -562,16 +625,16 @@ function sepay_process_member_payment(array $payload, int $memberId): array
         }
 
         // Update member payment record
-        $newReceived = round($currentPaid + $receivedAmount, 2);
-        $confirmedAmount = $currentRequested > 0 ? $currentRequested : $receivedAmount;
+        $newReceived = $currentPaid + $delta;
+        $confirmedAmount = $currentRequested > 0 ? $currentRequested : $delta;
 
         $pdo->prepare("UPDATE group_members SET payment_status = 'paid', payment_completed_at = COALESCE(payment_completed_at, UTC_TIMESTAMP()), payment_confirmed_at = UTC_TIMESTAMP(), payment_confirmed_by_member_id = 0, payment_confirmed_amount = ?, payment_received_amount = ?, payment_invalidated_at = NULL, payment_invalidation_reason = '' WHERE id = ?")
-            ->execute([$confirmedAmount, $newReceived, $memberId]);
+            ->execute([htp_decimal($confirmedAmount), htp_decimal($newReceived), $memberId]);
 
         $afterMember = hyg_one('SELECT * FROM group_members WHERE id = ?', [$memberId]);
 
         // Insert audit event in group_payment_events with seed_key
-        hyg_payment_event($room, $member, 0, 'confirmed', $receivedAmount, 'SePay VietQR split bill auto confirmation. ' . mb_substr($content, 0, 100), $member, $afterMember, $seedKey);
+        hyg_payment_event($room, $member, 0, 'confirmed', htp_decimal($delta), 'SePay VietQR split bill auto confirmation.' . ($subAccount !== '' ? ' SubAccount: ' . mb_substr($subAccount, 0, 80) . '.' : '') . ' ' . mb_substr($content, 0, 100), $member, $afterMember, $seedKey);
 
         // Increment room revision
         $pdo->prepare('UPDATE group_rooms SET revision = revision + 1, updated_at = UTC_TIMESTAMP() WHERE id = ?')
@@ -616,7 +679,7 @@ function sepay_process_member_payment(array $payload, int $memberId): array
         'room_id' => $roomId,
         'member_id' => $memberId,
         'member_name' => $member['nickname'] ?? '',
-        'received' => $receivedAmount,
+        'received' => htp_decimal($delta),
         'all_confirmed' => !empty($summary) && hyg_payments_confirmed($summary),
         'message' => 'Member payment confirmed successfully via SePay.'
     ];

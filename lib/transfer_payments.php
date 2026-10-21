@@ -260,27 +260,6 @@ function htp_customer_order(mixed $number): array
         htp_fail('forbidden');
     return $o;
 }
-function htp_account_qr_file(array $a, bool $bytes = false): array
-{
-    $filename = (string) ($a['qr_image'] ?? '');
-    $result = ['qr_digest' => '', 'qr_url' => '', 'qr_data' => null, 'qr_mime' => null];
-    if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*\.(?:jpe?g|png|webp)$/Di', $filename))
-        return $result;
-    $path = dirname(__DIR__) . '/uploads/' . $filename;
-    if (!is_file($path) || is_link($path) || filesize($path) > 5 * 1024 * 1024)
-        return $result;
-    $image = @getimagesize($path);
-    $types = [IMAGETYPE_JPEG => 'image/jpeg', IMAGETYPE_PNG => 'image/png', IMAGETYPE_WEBP => 'image/webp'];
-    if (!$image || !isset($types[$image[2]]))
-        return $result;
-    $result['qr_digest'] = hash_file('sha256', $path);
-    $result['qr_url'] = base_url('uploads/' . $filename);
-    if ($bytes) {
-        $result['qr_data'] = file_get_contents($path);
-        $result['qr_mime'] = $types[$image[2]];
-    }
-    return $result;
-}
 /** Recommended stores NEVER become recipients. Only explicit assignment or HQ account is used. */
 function htp_order_accounts(array $order, bool $bytes = false, bool $lock = false): array
 {
@@ -296,7 +275,7 @@ function htp_order_accounts(array $order, bool $bytes = false, bool $lock = fals
     $rows = hyg_all('SELECT * FROM bank_accounts WHERE active=1 ORDER BY sort_order,id' . ($lock ? ' FOR UPDATE' : ''));
     $accounts = [];
     foreach ($rows as $a)
-        $accounts[] = array_merge($a, htp_account_qr_file($a, $bytes), ['code' => 'hq:' . (int) $a['id'], 'source' => 'hq', 'id' => (int) $a['id'], 'recipient' => htp('headquarters')]);
+        $accounts[] = array_merge($a, ['qr_digest' => '', 'qr_url' => '', 'qr_data' => null, 'qr_mime' => null], ['code' => 'hq:' . (int) $a['id'], 'source' => 'hq', 'id' => (int) $a['id'], 'recipient' => htp('headquarters')]);
     return $accounts;
 }
 function htp_quote(array $order, array $receipt, array $account): string

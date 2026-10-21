@@ -14,14 +14,22 @@ try{
     }elseif($type==='store'&&$staff&&isset($_GET['store'])){
         if(admin_is_operator())htp_fail('forbidden');
         $raw=$_GET['store'];if(!is_string($raw)||!preg_match('/^\d{1,10}$/D',$raw)||(int)$raw<1)htp_fail('forbidden');
-        $row=hyg_one('SELECT qr_data,qr_mime FROM transfer_store_accounts WHERE store_id=?',[(int)$raw]);
+        $row=hyg_one('SELECT qr_data,qr_mime FROM transfer_store_accounts WHERE store_id=? AND enabled=1 AND bank_name<>"" AND account_number<>"" AND account_name<>""',[(int)$raw]);
     }elseif(in_array($type,['store','receipt'],true)){
         $no=htp_text($_GET['order']??'',80);
         $o=$staff?hyg_one('SELECT * FROM orders WHERE order_no=?',[$no]):htp_customer_order($no);if(!$o)htp_fail('forbidden');
         if($type==='receipt')$row=hyg_one('SELECT qr_data,qr_mime FROM transfer_order_receipts WHERE order_id=?',[$o['id']]);
         else{
-            if(!(int)($o['dispatch_store_id']??0)||$o['status']==='cancelled')htp_fail('forbidden');
-            $row=hyg_one('SELECT qr_data,qr_mime FROM transfer_store_accounts WHERE store_id=? AND enabled=1',[$o['dispatch_store_id']]);
+            if($o['status']==='cancelled')htp_fail('forbidden');
+            $orderForBank = $o;
+            $orderForBank['payment_method'] = 'transfer';
+            $accounts = htp_order_accounts($orderForBank, true);
+            foreach ($accounts as $act) {
+                if (!empty($act['qr_data']) && !empty($act['qr_mime'])) {
+                    $row = ['qr_data' => $act['qr_data'], 'qr_mime' => $act['qr_mime']];
+                    break;
+                }
+            }
         }
     }else htp_fail('forbidden');
     if(!$row||!is_string($row['qr_data'])||$row['qr_data']===''||!in_array($row['qr_mime'],['image/jpeg','image/png','image/webp'],true)){http_response_code(404);exit;}
