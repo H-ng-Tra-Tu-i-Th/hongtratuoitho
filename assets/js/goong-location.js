@@ -195,7 +195,10 @@
       let stores = storesList || this.state.storesWithDistance;
       if ((!stores || stores.length === 0) && this.storesPromise) {
         const fetched = await this.storesPromise;
-        stores = (fetched && fetched.length > 0) ? fetched : this.state.storesWithDistance;
+        stores =
+          fetched && fetched.length > 0
+            ? fetched
+            : this.state.storesWithDistance;
       }
       if (!stores || stores.length === 0)
         return { nearest: null, sortedStores: [] };
@@ -445,10 +448,7 @@
             ? "shipping-text-free"
             : "shipping-text-grab";
           reviewShippingText.textContent = isFreeship
-            ? t(
-                "shipping_fee_freeship",
-                "Miễn phí giao hàng (Freeship ≤ 3km)",
-              )
+            ? t("shipping_fee_freeship", "Miễn phí giao hàng (Freeship ≤ 3km)")
             : t("shipping_fee_grab", "Tính phí theo giá Grab (> 3km)");
         }
       } else {
@@ -1235,7 +1235,7 @@
                 if (textEl)
                   textEl.textContent = t(
                     "addr_btn_confirmed",
-                    "✅ Đã xác định chi nhánh phục vụ",
+                    "✅ Đã xác định địa chỉ",
                   );
               }
               return true;
@@ -1886,7 +1886,10 @@
                 deliveryAddressAlias.value = savedAddress;
               }
 
-              if (!manager.getState().selectedStore || activeBranchSearchPromise) {
+              if (
+                !manager.getState().selectedStore ||
+                activeBranchSearchPromise
+              ) {
                 e.preventDefault();
                 e.stopPropagation();
 
@@ -1987,7 +1990,10 @@
             syncFullDeliveryAddress();
 
             // Nếu chưa xác định chi nhánh phục vụ:
-            if (!manager.getState().selectedStore || activeBranchSearchPromise) {
+            if (
+              !manager.getState().selectedStore ||
+              activeBranchSearchPromise
+            ) {
               e.preventDefault();
               e.stopPropagation();
 
