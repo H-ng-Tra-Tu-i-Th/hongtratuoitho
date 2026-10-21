@@ -112,7 +112,11 @@ try{
     }
     // One coupon may hold several gift items; it is spent once.
     foreach(array_keys($usedGifts??[]) as $giftCode)if(!mark_customer_coupon_used($giftCode,$oid))throw new RuntimeException('Coupon already used.');
-    if($groupCheckout)hyg_finish($groupCheckout,$oid);
+    if($groupCheckout){
+        hyg_finish($groupCheckout,$oid);
+        // Members become children of the leader; the leader's parent earns points (see member_referral.php).
+        hym_group_referral_after_order((int)$groupCheckout['room']['id'],$oid);
+    }
     htp_initialize_order($oid);
     // Chances already granted at checkout are kept by this order and never awarded twice.
     if($gameSessionId!=='')hcgs_complete_locked($gameSessionId,$oid);

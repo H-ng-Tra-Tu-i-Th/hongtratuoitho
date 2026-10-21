@@ -15,7 +15,7 @@ unset($_SESSION['coupon_message'], $_SESSION['coupon_error'], $_SESSION['hcgs_fl
 ?>
 <?php if($gameFlash):?><div class="alert danger" role="alert"><?=e($gameFlash)?></div><?php endif;?>
 <div class="section-head"><div><span class="eyebrow"><?=e(t('your_order'))?></span><h1><?=e(t('cart'))?></h1></div></div>
-<section class="hyg-entry"><div><strong><?=e(gt('share_cart'))?></strong><p><?=e(gt('copy_hint'))?></p></div><a class="btn primary" href="<?=e(base_url('group/'))?>"><?=e(gt('create'))?></a></section>
+<section class="hyg-entry"><div><strong><?=e(gt('share_cart'))?></strong><p><?=e(gt('copy_hint'))?></p></div><a class="btn primary" href="<?=e(hym_login_gate_url('group'))?>"><?=e(gt('create'))?></a></section>
 <?php if(!$cart): ?>
 <div class="empty"><h2><?=e(t('cart_empty'))?></h2><p><?=e(t('cart_empty_desc'))?></p><a class="btn primary" href="<?=e(base_url('index.php'))?>"><?=e(t('return_menu'))?></a></div>
 <?php else: ?>

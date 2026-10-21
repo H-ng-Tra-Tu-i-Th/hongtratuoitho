@@ -29,6 +29,7 @@ hyg_schema();
 
 require_once __DIR__ . '/member.php';
 require_once __DIR__ . '/member_sync.php';
+require_once __DIR__ . '/member_zalo.php';
 require_once __DIR__ . '/member_i18n.php';
 require_once __DIR__ . '/member_admin_i18n.php';
 require_once __DIR__ . '/member_orders.php';
@@ -36,6 +37,8 @@ hym_schema();
 hym_orders_schema();
 require_once __DIR__ . '/member_rewards.php';
 hym_reward_schema();
+require_once __DIR__ . '/member_referral.php';
+hym_referral_schema();
 promotion_schema();
 require_once __DIR__ . '/dispatch.php';
 require_once __DIR__ . '/dispatch_i18n.php';

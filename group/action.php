@@ -10,9 +10,22 @@ try {
     hyg_csrf();
     $action = (string)($_POST['action'] ?? '');
     if ($action === 'create') {
+        if (!hym_current_member()) {
+            header('Location: ' . hym_login_gate_url('group'), true, 303);
+            exit;
+        }
         $account = htp_group_input($_POST, $_FILES);
         $r = hyg_create($_POST['title'] ?? '', $_POST['nickname'] ?? '', !empty($_POST['copy_cart']), (string)($_POST['request_key'] ?? ''), $account);
     } elseif ($action === 'join') {
+        // Only signed-in members may join; guests sign in first and come back to this invite.
+        $invite = (string)($_POST['invite'] ?? '');
+        if (!hym_current_member()) {
+            // Keep the name the guest typed so the invite form shows it again after sign-in.
+            $typed = $_POST['nickname'] ?? '';
+            if (is_string($typed) && trim($typed) !== '') $_SESSION['hyg_pending_nickname'] = ['invite' => $invite, 'nickname' => mb_substr(trim($typed), 0, 32), 'created_at' => time()];
+            header('Location: ' . hym_login_gate_url(preg_match('/^[a-f0-9]{64}$/D', $invite) ? 'invite-' . $invite : 'group'), true, 303);
+            exit;
+        }
         $r = hyg_join((string)($_POST['invite'] ?? ''), $_POST['nickname'] ?? '');
     } else {
         $id = hyg_code($_POST['room_id'] ?? '');
@@ -27,6 +40,11 @@ try {
         }
         hyg_mutate($id, $action, $_POST);
         $r = hyg_room($id);
+        if ($action === 'coupon' && ($_POST['lock_after'] ?? '') === '1') {
+            // "Lock" submits the offer form: save the offer, then lock at the revision it produced.
+            hyg_mutate($id, 'lock', ['revision' => (int)$r['revision']] + $_POST);
+            $r = hyg_room($id);
+        }
         if ($action === 'payment_confirm') {
             $quote = hyg_locked_quote($r);
             $hasInvalid = false;

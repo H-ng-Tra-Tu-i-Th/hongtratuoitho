@@ -321,10 +321,9 @@ function hyg_render_room(array $r): string
 
           <?= promotion_selector($promotion, ['group_public' => $r['public_id'], 'revision' => $r['revision'], 'host_discount_available' => $payment['host_obligation'] > 0]) ?>
 
-          <form action="<?= e(base_url('group/action.php')) ?>" method="post" data-confirm="<?= e(gt('lock_confirm')) ?>">
-            <?= hyg_action_fields($r, 'lock') ?><button class="btn primary block" type="submit" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>><?= e(gt('lock')) ?>
-            </button>
-          </form><?php endif; ?>
+          <!-- Like checkout in the cart, locking submits the chosen offer together. -->
+          <button class="btn primary block" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm="<?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>><?= e(gt('lock')) ?></button>
+        <?php endif; ?>
 
         <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?><?php if (!empty($payment['can_checkout']) && $cart && !$hasInvalid): ?>
         <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'checkout') ?>
