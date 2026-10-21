@@ -168,6 +168,7 @@ if (memoryGame) {
       if (!replacement || replacement.dataset.paymentVersion !== data.signature) throw new Error('invalid_payment_state');
       const changeMessage = panel.dataset.paymentChanged;
       panel.replaceWith(replacement); replacement.dataset.paymentNext = String(Date.now() + 20000);
+      document.dispatchEvent(new CustomEvent('payment-panel-replaced', { detail: replacement }));
       feedback(replacement, changeMessage, true);
     } catch (_) {
       const failures = Math.min(3, Number(panel.dataset.paymentFailures || 0) + 1);

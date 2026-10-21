@@ -107,8 +107,14 @@
     init() {
       this.bindCopyButtons();
       this.bindQRModal();
+      this.bindQRImageRetry();
       this.startCountdown();
       this.startPolling();
+
+      document.addEventListener('payment-panel-replaced', (event) => {
+        if (this.isDestroyed || event.detail !== document.querySelector('[data-sepay-panel]')) return;
+        this.rebindAfterPanelReplacement(event.detail);
+      });
 
       window.addEventListener('visibilitychange', () => {
         if (!document.hidden && !this.isDestroyed) {
@@ -295,6 +301,14 @@
       }
     }
 
+    rebindAfterPanelReplacement(panel) {
+      this.stopCountdown();
+      const durationSeconds = Number.parseInt(panel.dataset.durationSeconds || '', 10);
+      this.remainingSeconds = Number.isFinite(durationSeconds) ? Math.max(0, durationSeconds) : 0;
+      this.bindQRImageRetry();
+      this.startCountdown();
+    }
+
     bindCopyButtons() {
       document.addEventListener('click', async (e) => {
         const btn = e.target.closest('[data-sepay-copy]');
@@ -342,6 +356,42 @@
           if (event.target === modal) modal.remove();
         });
         document.body.appendChild(modal);
+      });
+    }
+
+    bindQRImageRetry() {
+      const retryDelays = [250, 750, 1500];
+
+      document.querySelectorAll('.sepay-qr-img').forEach((image) => {
+        const originalSrc = image.dataset.sepayQrSrc || image.currentSrc || image.src;
+        if (!originalSrc || image.dataset.sepayQrRetryBound === '1') return;
+
+        image.dataset.sepayQrRetryBound = '1';
+        image.dataset.sepayQrOriginalSrc = originalSrc;
+
+        const retry = () => {
+          const attempt = Number(image.dataset.sepayQrRetry || 0);
+          if (attempt >= retryDelays.length) {
+            image.classList.add('is-load-failed');
+            return;
+          }
+
+          image.dataset.sepayQrRetry = String(attempt + 1);
+          setTimeout(() => {
+            if (image.dataset.sepayQrOriginalSrc !== originalSrc) return;
+            const retryUrl = new URL(originalSrc, document.baseURI);
+            retryUrl.searchParams.set('_retry', String(attempt + 1));
+            image.src = retryUrl.toString();
+          }, retryDelays[attempt]);
+        };
+
+        image.addEventListener('load', () => {
+          image.classList.remove('is-load-failed');
+        });
+        image.addEventListener('error', retry);
+
+        // The first error can occur before deferred scripts finish binding.
+        if (image.complete && image.naturalWidth === 0) retry();
       });
     }
 
@@ -433,6 +483,7 @@
       });
       manager.bindCopyButtons();
       manager.bindQRModal();
+      manager.bindQRImageRetry();
       window.currentSepayGroupManager = manager;
     }
   });

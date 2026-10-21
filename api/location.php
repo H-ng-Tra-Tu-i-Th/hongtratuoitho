@@ -87,9 +87,9 @@ function call_goong_api(string $url): array
  * Validates a pipe-separated string of lat,lng points.
  * Returns true if valid, false otherwise.
  */
-function validate_coords_list(string $raw, int $maxPoints = 5): bool
+function validate_coords_list(string $raw, int $maxPoints = 30, int $maxLen = 2000): bool
 {
-    if (strlen($raw) === 0 || strlen($raw) > 300) {
+    if (strlen($raw) === 0 || strlen($raw) > $maxLen) {
         return false;
     }
     $points = explode('|', $raw);
@@ -153,9 +153,9 @@ switch ($action) {
         $destinations = trim((string)($_GET['destinations'] ?? $_POST['destinations'] ?? ''));
         $vehicle = 'bike';
 
-        if (!validate_coords_list($origins, 5) || !validate_coords_list($destinations, 5)) {
+        if (!validate_coords_list($origins, 5, 200) || !validate_coords_list($destinations, 30, 2000)) {
             http_response_code(400);
-            echo json_encode(['status' => 'ERROR', 'message' => 'Tham số origins hoặc destinations không đúng định dạng tọa độ (tối đa 5 điểm, dạng lat,lng).'], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['status' => 'ERROR', 'message' => 'Tham số origins hoặc destinations không đúng định dạng tọa độ.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
         $url = 'https://rsapi.goong.io/DistanceMatrix?origins=' . urlencode($origins) . '&destinations=' . urlencode($destinations) . '&vehicle=' . urlencode($vehicle) . '&api_key=' . urlencode($apiKey);
