@@ -392,7 +392,7 @@ front_header(t('order_info'));
         </div>
 
         <!-- Banner chi nhánh phục vụ tối ưu (nằm ngay dưới ô địa chỉ giao hàng) -->
-        <div class="location-store-banner" data-location-banner>
+        <!-- <div class="location-store-banner" data-location-banner>
           <div class="location-banner-main">
             <div class="location-banner-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24">
@@ -414,7 +414,7 @@ front_header(t('order_info'));
             </div>
           </div>
           <button type="button" class="location-banner-btn-change" data-btn-change-store><?= e(sepay_t('gps_change_store')) ?></button>
-        </div>
+        </div> -->
 
         <fieldset>
           <legend><?= e(t('payment_method')) ?></legend>
