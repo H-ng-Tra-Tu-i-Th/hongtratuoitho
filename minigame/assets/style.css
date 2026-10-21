@@ -47,3 +47,8 @@
 /* 0đ prize: share the website for a guaranteed replay. */
 .kyuc-game .kyuc-share-bonus{margin:14px 0 0;padding:12px 14px;border:1px dashed var(--kyuc-red);border-radius:12px;background:#fff6ee;text-align:center}
 .kyuc-game .kyuc-share-bonus p{margin:0 0 10px;font-size:13px;line-height:1.6;font-weight:700;color:var(--kyuc-red)}
+.kyuc-game .kyuc-odds-line{display:block}
+.kyuc-game .kyuc-odds-line+.kyuc-odds-line{margin-top:10px;padding-top:10px;border-top:1px dashed #e2c7a8}
+.kyuc-game .kyuc-odds-top{display:inline-block;margin:4px 0;padding:4px 12px;border-radius:999px;background:var(--kyuc-red);color:#fff;font-size:1.15em;font-weight:900;box-shadow:0 3px 10px rgba(185,31,41,.28)}
+.kyuc-game .kyuc-odds-top::before{content:"★ "}
+.kyuc-game .kyuc-odds .kyuc-odds-top .kyuc-money{color:#fff}

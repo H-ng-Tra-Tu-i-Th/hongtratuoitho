@@ -12,12 +12,12 @@ $returnOrder=is_string($returnOrder)&&preg_match('/^[A-Za-z0-9_-]{1,80}$/D',$ret
 try{
     hym_csrf();$action=hym_post('action');$type='success';
     switch($action){
-        case 'register':hym_register(hym_post('phone'),hym_post('password'),hym_post('password_confirm'),hym_post('display_name'),hym_post('delivery_address'));$key='member_registered';break;
+        case 'register':hym_register(hym_post('phone'),hym_post('password'),hym_post('password_confirm'),hym_post('display_name'),hym_post('delivery_address'));$key=hym_zalo_link_pending((int)$_SESSION['member_id'])?'member_zalo_linked':'member_registered';break;
         case 'login':
             $member=hym_login(hym_post('phone'),hym_post('password'));
             // A missing upstream member is retried on later logins, without blocking the local account.
             if($member['phone_verified_at'])try{$config=hym_config();if($config['enabled']&&$config['token_configured'])hym_sync_member($member['id'],false);}catch(Throwable $e){}
-            $key='member_logged_in';break;
+            $key=hym_zalo_link_pending($member['id'])?'member_zalo_linked':'member_logged_in';break;
         case 'logout':hym_logout();$key='member_logged_out';break;
         case 'save_profile':$member=hym_require_member();hym_save_profile($member['id'],hym_post('display_name'),hym_post('delivery_address'));$key='member_profile_saved';break;
         case 'sync':$member=hym_require_member();$state=hym_sync_member($member['id'],true);$key=$state['message_key'];$type=$state['status']==='synced'?'success':'error';break;

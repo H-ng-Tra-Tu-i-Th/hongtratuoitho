@@ -36,7 +36,8 @@
   });
   document.addEventListener('submit', (event) => {
     const form = event.target;
-    if (form.matches('[data-confirm]') && !window.confirm(form.dataset.confirm)) { event.preventDefault(); return; }
+    const confirmText = event.submitter?.dataset.confirm || form.dataset.confirm;
+    if (confirmText && !window.confirm(confirmText)) { event.preventDefault(); return; }
     if (form.closest('.hyg-page') && form.dataset.submitting) { event.preventDefault(); return; }
     if (form.closest('.hyg-page')) form.dataset.submitting = '1';
   });
@@ -78,6 +79,10 @@
         const stateChanged = live && replacement && live.dataset.state !== replacement.dataset.state;
         if (interacting && !force && !stateChanged) { notice(config.changed); return; }
         if (live && replacement) {
+          // Keep the host's not-yet-submitted offer choice; "Chốt món" sends it.
+          const picked = live.querySelector('[data-promotion-selector] input[name="promotion_mode"]:checked');
+          const same = picked && replacement.querySelector(`[data-promotion-selector] input[name="promotion_mode"][value="${picked.value}"]:not(:disabled)`);
+          if (same) same.checked = true;
           live.replaceWith(replacement); lastSignature = data.signature;
         }
         const shareBox = document.querySelector('.hyg-share');

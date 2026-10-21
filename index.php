@@ -123,7 +123,7 @@ front_header(); ?>
   <section class="hyg-entry">
     <div><strong><?= e(gt('entry_title')) ?></strong>
       <p><?= e(gt('entry_desc')) ?></p>
-    </div><a class="btn primary" href="<?= e(base_url('group/')) ?>"><?= e(gt('share_cart')) ?></a>
+    </div><a class="btn primary" href="<?= e(hym_login_gate_url('group')) ?>"><?= e(gt('share_cart')) ?></a>
   </section><?php endif; ?>
 <?php if ($firstKey !== ''): ?>
   <section class="catalog-shell" data-catalog>

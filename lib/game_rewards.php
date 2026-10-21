@@ -19,6 +19,7 @@ function hgr_text(string $key): string {
         'title'=>['zh'=>'10 杯童年回憶','vi'=>'Ký Ức 10 Ly','en'=>'Ten Cups of Memories'],
         'intro'=>['zh'=>'翻開童年回憶，配對 6 組圖案，領取下一次的驚喜。','vi'=>'Lật thẻ ký ức, ghép đủ 6 cặp và nhận một món quà cho lần gặp tới.','en'=>'Match six pairs of childhood memories and earn a gift for your next order.'],
         'rules'=>['zh'=>'選擇買10抽獎，單筆訂單每滿10杯飲品獲1次機會：10杯1次、20杯2次、30杯3次，完成後發放。杯數不跨單累計，不與其他優惠共用。','vi'=>'Chọn Mua 10 nhận lượt rút thưởng: mỗi 10 ly trong cùng một đơn nhận 1 lượt khi hoàn tất; 10 ly được 1 lượt, 20 ly được 2, 30 ly được 3. Không cộng ly giữa các đơn hoặc dùng cùng ưu đãi khác.','en'=>'Choose Buy 10 for a prize draw: every 10 drinks in one completed order earns 1 play; 10 drinks earn 1, 20 earn 2, 30 earn 3. Cups do not carry over between orders; offers cannot be combined.'],
+        'odds_money'=>['zh'=>'訂單直接折抵最高：','vi'=>'Giảm giá tiền trực tiếp trên đơn lên tới:','en'=>'Money off your order, up to:'],
         'pairs'=>['zh'=>'配對','vi'=>'Cặp hình','en'=>'Pairs'], 'moves'=>['zh'=>'翻牌次數','vi'=>'Lượt lật','en'=>'Moves'],
         'time'=>['zh'=>'遊戲時間','vi'=>'Thời gian','en'=>'Time'], 'retry'=>['zh'=>'重新載入進度','vi'=>'Tải lại tiến độ','en'=>'Reload progress'],
         'next'=>['zh'=>'使用下次機會','vi'=>'Chơi lượt tiếp theo','en'=>'Use next play'], 'reward'=>['zh'=>'你的回憶好禮','vi'=>'Món quà của bạn','en'=>'Your memory gift'],
@@ -153,6 +154,27 @@ function hgr_label(array $reward,string $field='name'): string {
 /** Escaped prize label with money amounts (e.g. 46.000đ) wrapped in <b class="kyuc-money">. */
 function hgr_label_html(array $reward): string {
     return preg_replace('/\d[\d.,]*\s?(?:đ|₫)/u','<b class="kyuc-money">$0</b>',e(hgr_label($reward)))??e(hgr_label($reward));
+}
+/** Prize list for the game page: money prizes on one line (largest highlighted, 0đ hidden), each gift on its own line. */
+function hgr_odds_html(array $prizes): string {
+    $money=[];$gifts=[];$top=0.0;
+    foreach($prizes as $prize){
+        if(!is_array($prize)||hgr_reward_is_zero($prize))continue;
+        if(($prize['kind']??'')==='discount'){$money[]=$prize;$top=max($top,(float)($prize['amount']??0));}
+        else $gifts[]=$prize;
+    }
+    $html='';
+    if($money){
+        // One heading, then the amounts only (no "Giảm" before each one).
+        $parts=[];$lang=function_exists('current_lang')?current_lang():'vi';
+        foreach($money as $prize){
+            $amount='<b class="kyuc-money">'.e(hgr_money_text((int)($prize['amount']??0),$lang)).'</b>';
+            $parts[]=(float)($prize['amount']??0)===$top?'<span class="kyuc-odds-top">'.$amount.'</span>':$amount;
+        }
+        $html.='<span class="kyuc-odds-line kyuc-odds-money">'.e(hgr_text('odds_money')).' '.implode(' · ',$parts).'</span>';
+    }
+    foreach($gifts as $prize)$html.='<span class="kyuc-odds-line kyuc-odds-gift">'.hgr_label_html($prize).'</span>';
+    return $html;
 }
 function hgr_expiry(string $utc): string {
     return (new DateTimeImmutable($utc,new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('Asia/Ho_Chi_Minh'))->format('Y-m-d H:i').' (UTC+7)';

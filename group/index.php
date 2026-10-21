@@ -8,8 +8,10 @@ try {
   hyg_device(true);
   $r = null;
   $invited = null;
-  $id = (string) ($_GET['id'] ?? '');
-  $invite = (string) ($_GET['invite'] ?? '');
+  $id = (string)($_GET['id'] ?? '');
+  $invite = (string)($_GET['invite'] ?? '');
+  // Creating a group needs a signed-in member (the group's owner_member_id).
+  if ($id === '' && $invite === '' && !hym_current_member()) redirect(hym_login_gate_url('group'));
   if ($id !== '') {
     $r = hyg_room($id);
     hyg_member($r);
@@ -33,6 +35,18 @@ if ($r) {
   $GLOBALS['hyg_hide_mode'] = true;
 }
 $GLOBALS['hyg_qr_page'] = true;
+// Signed-in customers start with their member name as the group nickname; they can still change it.
+try {
+  $memberNickname = mb_substr(trim((string)(hym_current_member()['display_name'] ?? '')), 0, 32);
+} catch (Throwable $e) {
+  $memberNickname = '';
+}
+// A name typed before being sent to sign in wins over the member name for that same invite.
+$pendingNickname = $_SESSION['hyg_pending_nickname'] ?? null;
+if (is_array($pendingNickname) && $invited && ($pendingNickname['invite'] ?? '') === $invite) {
+  unset($_SESSION['hyg_pending_nickname']);
+  if (($pendingNickname['created_at'] ?? 0) >= time() - 1800) $memberNickname = (string)($pendingNickname['nickname'] ?? '');
+}
 front_header(gt('title'));
 $msg = (string) ($_SESSION['hyg_message'] ?? '');
 unset($_SESSION['hyg_message']);
@@ -61,13 +75,8 @@ unset($_SESSION['hyg_message']);
   <?php elseif ($invited): ?>
     <section class="hyg-welcome hyg-card"><span class="hyg-eyebrow"><?= e(gt('join_title')) ?></span>
       <h1><?= e($invited['title']) ?></h1>
-      <p class="hyg-deadline-note"><?= e(gt('expires')) ?>
-        <?= e(date('m/d H:i T', strtotime($invited['expires_at'] . ' UTC'))) ?></p>
-      <form method="post" action="<?= e(base_url('group/action.php')) ?>" class="hyg-form"><?= csrf_field() ?><input
-          type="hidden" name="action" value="join"><input type="hidden" name="invite"
-          value="<?= e($invite) ?>"><label><?= e(gt('nickname')) ?><input name="nickname" required maxlength="32"
-            autocomplete="nickname"></label><small><?= e(gt('nickname_hint')) ?></small><button class="btn primary block"
-          type="submit"><?= e(gt('join')) ?></button></form>
+      <p class="hyg-deadline-note"><?= e(gt('expires')) ?> <?= e(date('m/d H:i T', strtotime($invited['expires_at'] . ' UTC'))) ?></p>
+      <form method="post" action="<?= e(base_url('group/action.php')) ?>" class="hyg-form"><?= csrf_field() ?><input type="hidden" name="action" value="join"><input type="hidden" name="invite" value="<?= e($invite) ?>"><label><?= e(gt('nickname')) ?><input name="nickname" required maxlength="32" autocomplete="nickname" value="<?= e($memberNickname) ?>"></label><small><?= e(gt('nickname_hint')) ?></small><button class="btn primary block" type="submit"><?= e(gt('join')) ?></button></form>
     </section>
   <?php else: ?>
     <section class="hyg-welcome hyg-card"><span class="hyg-eyebrow"><?= e(gt('title')) ?></span>
@@ -84,7 +93,7 @@ unset($_SESSION['hyg_message']);
           <input name="title" maxlength="80" required placeholder="<?= e(gt('room_placeholder')) ?>">
         </label>
         <label>
-          <?= e(gt('nickname')) ?><input name="nickname" maxlength="32" required autocomplete="nickname">
+          <?= e(gt('nickname')) ?><input name="nickname" maxlength="32" required autocomplete="nickname" value="<?= e($memberNickname) ?>">
         </label>
 
         <!-- CheckBox (AutoComplete) payment group -->

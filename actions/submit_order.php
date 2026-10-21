@@ -305,8 +305,11 @@ try {
     }
     // One coupon may hold several gift items; it is spent once.
     foreach(array_keys($usedGifts??[]) as $giftCode)if(!mark_customer_coupon_used($giftCode,$oid))throw new RuntimeException('Coupon already used.');
-    if ($groupCheckout)
+    if ($groupCheckout) {
         hyg_finish($groupCheckout, $oid);
+        // Members become children of the leader; the leader's parent earns points (see member_referral.php).
+        hym_group_referral_after_order((int)$groupCheckout['room']['id'], $oid);
+    }
     $selectedStoreId = !empty($_POST['selected_store_id']) ? (int) $_POST['selected_store_id'] : null;
     if ($selectedStoreId > 0) {
         $stStore = $pdo->prepare('SELECT id, name, address, map_url FROM dispatch_stores WHERE id = ? AND enabled = 1');

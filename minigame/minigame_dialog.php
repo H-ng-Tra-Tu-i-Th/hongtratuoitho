@@ -23,7 +23,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 ?>
 
 <!-- File CSS của Minigame -->
-<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.3')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.4')) ?>">
 
 <style>
     /* Style tùy chỉnh cơ bản cho Dialog */
@@ -205,10 +205,8 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
         <!-- Quy tắc game & Chi tiết phần thưởng -->
         <section class="kyuc-rules">
             <p><?= e(hgr_text('rules')) ?></p>
-            <p class="kyuc-odds" data-game-odds <?= $prizes ? '' : 'hidden' ?>>
-                <?php foreach ($prizes as $i => $prize): ?>
-                    <?= $i ? ' · ' : '' ?><?= hgr_label_html($prize) ?>
-                <?php endforeach; ?>
+            <p class="kyuc-odds" data-game-odds data-money-label="<?= e(hgr_text('odds_money')) ?>" <?= $prizes ? '' : 'hidden' ?>>
+                <?= hgr_odds_html($prizes) ?>
             </p>
             <p><?= e(pt(hym_current_member() ? 'member_saved' : 'guest_saved')) ?></p>
         </section>
@@ -231,7 +229,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 </dialog>
 
 <!-- Chỉ nạp game.js một lần, nạp 2 lần sẽ gửi trùng mỗi lần lật thẻ -->
-<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.8')) ?>"></script>
+<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.10')) ?>"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
