@@ -428,6 +428,34 @@
 
     // Subscribe to state updates to render banner & modal
     manager.subscribe((state) => {
+      // 1. Luôn cập nhật hiddenStoreInput cho backend gửi lên khi submit order
+      if (state.selectedStore && hiddenStoreInput) {
+        hiddenStoreInput.value = state.selectedStore.id;
+      }
+
+      // 2. Luôn cập nhật dòng phí ship ở Bảng tổng tiền (Order Review)
+      if (state.isLoading) {
+        if (reviewShippingWrap) reviewShippingWrap.style.display = "none";
+      } else if (state.selectedStore && state.selectedStore.distance) {
+        const distanceKm = (state.selectedStore.distance.value || 0) / 1000;
+        const isFreeship = distanceKm <= 3.0;
+        if (reviewShippingWrap && reviewShippingText) {
+          reviewShippingWrap.style.display = "flex";
+          reviewShippingText.className = isFreeship
+            ? "shipping-text-free"
+            : "shipping-text-grab";
+          reviewShippingText.textContent = isFreeship
+            ? t(
+                "shipping_fee_freeship",
+                "Miễn phí giao hàng (Freeship ≤ 3km)",
+              )
+            : t("shipping_fee_grab", "Tính phí theo giá Grab (> 3km)");
+        }
+      } else {
+        if (reviewShippingWrap) reviewShippingWrap.style.display = "none";
+      }
+
+      // 3. Nếu không có phần tử banner hiển thị trên trang thì dừng việc cập nhật banner
       if (!bannerEl) return;
       const bannerIcon = bannerEl.querySelector(".location-banner-icon");
 
@@ -437,7 +465,6 @@
         if (bannerIcon) bannerIcon.classList.add("is-spinning");
         if (bannerReasonWrap) bannerReasonWrap.style.display = "none";
         if (bannerShippingText) bannerShippingText.style.display = "none";
-        if (reviewShippingWrap) reviewShippingWrap.style.display = "none";
 
         bannerStoreTitle.textContent = t(
           "gps_calculating_nearest",
