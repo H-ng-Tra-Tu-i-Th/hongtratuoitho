@@ -3,6 +3,7 @@ require __DIR__.'/../lib/bootstrap.php';
 require_once __DIR__.'/../lib/promotion_views.php';
 if($_SERVER['REQUEST_METHOD']!=='POST') exit;
 verify_csrf();
+hcgs_guard_cart();
 $action=$_POST['action']??'apply';
 if($action==='remove'){
     clear_coupon();
@@ -14,6 +15,11 @@ try{
     $choice=promotion_selection_from_post($_POST);
     $_SESSION['promotion_mode']=$choice['mode'];
     if($choice['code']!=='')$_SESSION['coupon_code']=$choice['code'];else unset($_SESSION['coupon_code']);
+    if(($_POST['continue_to_checkout']??'')==='1'){
+        unset($_SESSION['coupon_message'],$_SESSION['coupon_error']);
+        $_SESSION['hcgs_allow_open']=true; // Checkout may open a new Mini Game session only from here.
+        redirect(base_url('checkout.php'));
+    }
     $_SESSION['coupon_message']=pt('selection_saved');
 }catch(Throwable $e){
     $_SESSION['coupon_error']=t('coupon_invalid');

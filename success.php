@@ -1,9 +1,9 @@
 <?php
-require_once __DIR__ . '/lib/bootstrap.php';
-require_once __DIR__ . '/lib/layout.php';
-require_once __DIR__ . '/lib/promotion_views.php';
-require_once __DIR__ . '/lib/game_entry.php';
-
+require __DIR__.'/lib/bootstrap.php';
+require __DIR__.'/lib/layout.php';
+require_once __DIR__.'/lib/promotion_views.php';
+require_once __DIR__.'/lib/game_entry.php';
+require_once __DIR__.'/lib/order_detail_view.php';
 header('Cache-Control: private, no-store');
 
 $no = is_string($_SESSION['last_order_no'] ?? null) ? $_SESSION['last_order_no'] : '';

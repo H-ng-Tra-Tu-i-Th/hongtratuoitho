@@ -1,6 +1,36 @@
 <?php
 
+
 /** Checkout drafts and request outcomes stay in the current authenticated session. */
+if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
+    http_response_code(404);
+    exit;
+}
+function hcq_context(string $group = ''): string
+{
+    return $group !== '' ? 'group:' . $group : 'ordinary';
+}
+function hcq_fields(): array
+{
+    return ['customer_name' => 100, 'phone' => 50, 'address' => 255, 'payment_method' => 16, 'invoice_required' => 1, 'invoice_company_name' => 200, 'invoice_tax_id' => 50, 'invoice_company_address' => 255, 'invoice_company_representative' => 120, 'invoice_company_phone' => 50, 'invoice_email' => 190, 'order_note' => 1000];
+}
+function hcq_capture(string $context, array $input): array
+{
+    $values = [];
+    $errors = [];
+    foreach (hcq_fields() as $key => $max) {
+        $raw = $input[$key] ?? '';
+        if (!is_string($raw) && !is_int($raw)) {
+            $errors[$key] = 'incomplete_data';
+            $raw = '';
+        }
+        $value = trim((string)$raw);
+        $length = function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
+        if ($length > $max) {
+            $errors[$key] = 'incomplete_data';
+            $value = function_exists('mb_substr') ? mb_substr($value, 0, $max, 'UTF-8') : substr($value, 0, $max);
+        }
+        $values[$key] = $value;
 if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
     http_response_code(404);
     exit;

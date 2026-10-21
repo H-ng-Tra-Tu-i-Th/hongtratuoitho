@@ -269,32 +269,42 @@ try {
         if ($choice['mode'] === 'reward' && (float) $coupon['discount'] <= 0)
             throw new RuntimeException('coupon_no_discount');
     }
-    $subtotal = cart_subtotal($cart);
-    $discount = (float) $coupon['discount'];
-    $total = max(0, $subtotal - $discount);
-    $couponCode = $coupon['valid'] ? $coupon['code'] : '';
-    $eligibleDrinkQty = 0;
-    foreach ($cart as $r) {
-        if (!empty($r['product_id']) && empty($r['standalone_topping_id']))
-            $eligibleDrinkQty += (int) $r['qty'];
+    $subtotal=cart_subtotal($cart);$discount=(float)$coupon['discount'];$total=max(0,$subtotal-$discount);$couponCode=$coupon['valid']?$coupon['code']:'';
+    $eligibleDrinkQty=0;foreach($cart as $r){if(!empty($r['product_id'])&&empty($r['standalone_topping_id']))$eligibleDrinkQty+=(int)$r['qty'];}
+    $expectedGameChances=$choice['mode']==='draw'&&$couponCode===''&&$discount<=0?game_saved_chance_count($eligibleDrinkQty,(int)$choice['expected_chances']):0;
+    // Money prizes won in this checkout session are summed, taken off this order and spent with it.
+    $gameCash=hcgs_cash_discount($cart,$coupon,hcgs_row($gameSessionId));
+    if($gameCash['discount']>0){
+        $discount+=$gameCash['discount'];$total=max(0,$subtotal-$discount);
+        foreach($gameCash['line_discounts'] as $k=>$v)$coupon['line_discounts'][$k]=($coupon['line_discounts'][$k]??0)+$v;
+        $couponCode=implode(',',$gameCash['codes']);if(strlen($couponCode)>80)$couponCode=$gameCash['codes'][0].' +'.(count($gameCash['codes'])-1);
     }
-    $expectedGameChances = $choice['mode'] === 'draw' && $couponCode === '' && $discount <= 0 ? game_saved_chance_count($eligibleDrinkQty, (int) $choice['expected_chances']) : 0;
-    $st = $pdo->prepare('INSERT INTO orders(order_no,customer_name,phone,address,payment_method,invoice_required,invoice_company_name,invoice_tax_id,invoice_company_address,invoice_company_representative,invoice_company_phone,invoice_email,order_note,coupon_code,subtotal_amount,discount_amount,total_amount,game_wallet_token,group_room_id,group_title,member_id,promotion_mode,game_chances_expected,checkout_request_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-    $st->execute([$no, $name, $phone, $address, $pay, $invoice ? 1 : 0, $companyName ?: null, $taxId ?: null, $companyAddress ?: null, $companyRepresentative ?: null, $companyPhone ?: null, $invoiceEmail ?: null, $orderNote ?: null, $couponCode ?: null, $subtotal, $discount, $total, $choice['mode'] === 'draw' ? ($walletToken ?: null) : null, $groupCheckout['room']['id'] ?? null, $groupCheckout['room']['title'] ?? null, $orderMemberId, $choice['mode'], $expectedGameChances, hash('sha256', $checkoutToken)]);
-    $oid = (int) $pdo->lastInsertId();
-    $st2 = $pdo->prepare('INSERT INTO order_items(order_id,product_id,standalone_topping_id,product_name,cup_size,base_price,ice_choice,sugar_choice,toppings_text,unit_price,discount_amount,qty,line_total,group_member_name,group_member_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-    foreach ($cart as $key => $r) {
-        $tops = implode('、', array_map(fn($top) => ($top['display_name'] ?? $top['name']) . '(+' . currency() . money($top['price']) . ')', $r['toppings'] ?? []));
-        $lineDiscount = (float) ($coupon['line_discounts'][(string) $key] ?? 0);
-        $lineOriginal = (float) $r['unit_price'] * (int) $r['qty'];
-        $productId = !empty($r['product_id']) ? (int) $r['product_id'] : null;
-        $standaloneId = !empty($r['standalone_topping_id']) ? (int) $r['standalone_topping_id'] : null;
-        $st2->execute([$oid, $productId, $standaloneId, $r['name'], $r['cup_size'] ?? null, $r['base_price'], $r['ice'] ?? '', $r['sugar'] ?? '', $tops, $r['unit_price'], $lineDiscount, $r['qty'], max(0, $lineOriginal - $lineDiscount), $r['group_member_name'] ?? null, $r['group_member_id'] ?? null]);
+    $st=$pdo->prepare('INSERT INTO orders(order_no,customer_name,phone,address,payment_method,invoice_required,invoice_company_name,invoice_tax_id,invoice_company_address,invoice_company_representative,invoice_company_phone,invoice_email,order_note,coupon_code,subtotal_amount,discount_amount,total_amount,game_wallet_token,group_room_id,group_title,member_id,promotion_mode,game_chances_expected,checkout_request_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    $st->execute([$no,$name,$phone,$address,$pay,$invoice?1:0,$companyName?:null,$taxId?:null,$companyAddress?:null,$companyRepresentative?:null,$companyPhone?:null,$invoiceEmail?:null,$orderNote?:null,$couponCode?:null,$subtotal,$discount,$total,$choice['mode']==='draw'?($walletToken?:null):null,$groupCheckout['room']['id']??null,$groupCheckout['room']['title']??null,$orderMemberId,$choice['mode'],$expectedGameChances,hash('sha256',$checkoutToken)]);
+    $oid=(int)$pdo->lastInsertId();
+    $st2=$pdo->prepare('INSERT INTO order_items(order_id,product_id,standalone_topping_id,product_name,cup_size,base_price,ice_choice,sugar_choice,toppings_text,unit_price,discount_amount,qty,line_total,group_member_name,group_member_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    foreach($cart as $key=>$r){
+        $tops=implode('、',array_map(fn($top)=>($top['display_name']??$top['name']).'(+'.currency().money($top['price']).')',$r['toppings']??[]));
+        $lineDiscount=(float)($coupon['line_discounts'][(string)$key]??0); $lineOriginal=(float)$r['unit_price']*(int)$r['qty'];
+        $productId=!empty($r['product_id'])?(int)$r['product_id']:null;
+        $standaloneId=!empty($r['standalone_topping_id'])?(int)$r['standalone_topping_id']:null;
+        $st2->execute([$oid,$productId,$standaloneId,$r['name'],$r['cup_size']??null,$r['base_price'],$r['ice']??'',$r['sugar']??'',$tops,$r['unit_price'],$lineDiscount,$r['qty'],max(0,$lineOriginal-$lineDiscount),$r['group_member_name']??null,$r['group_member_id']??null]);
     }
     if (($coupon['source'] ?? '') === 'game' && $couponCode !== '') {
         if (!mark_customer_coupon_used($couponCode, $oid))
             throw new RuntimeException('Coupon already used.');
     }
+    foreach($gameCash['codes'] as $gameCode)if(!mark_customer_coupon_used($gameCode,$oid))throw new RuntimeException('Coupon already used.');
+    // Free drink/topping prizes are saved as 0đ gift lines, tagged with their coupon, and spent with this order.
+    $giftSt=$pdo->prepare('INSERT INTO order_items(order_id,product_id,standalone_topping_id,product_name,cup_size,base_price,ice_choice,sugar_choice,toppings_text,unit_price,discount_amount,qty,line_total,game_reward_code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    foreach(hcgs_gift_rewards(hcgs_row($gameSessionId)) as $gift){
+        $pick=$gift['item'];$tea=$gift['kind']==='tea';
+        $giftSt->execute([$oid,$tea?$pick['id']:null,$tea?null:$pick['id'],'🎁 Quà Mini Game: '.$pick['name'],$pick['cup_size']?:null,$pick['price'],'','','',0,$pick['price']*$gift['qty'],$gift['qty'],0,$gift['code']]);
+        $usedGifts[$gift['code']]=true;
+    }
+    // One coupon may hold several gift items; it is spent once.
+    foreach(array_keys($usedGifts??[]) as $giftCode)if(!mark_customer_coupon_used($giftCode,$oid))throw new RuntimeException('Coupon already used.');
+    if($groupCheckout)hyg_finish($groupCheckout,$oid);
     if ($groupCheckout)
         hyg_finish($groupCheckout, $oid);
     $selectedStoreId = !empty($_POST['selected_store_id']) ? (int) $_POST['selected_store_id'] : null;
@@ -310,6 +320,8 @@ try {
         }
     }
     htp_initialize_order($oid);
+    // Chances already granted at checkout are kept by this order and never awarded twice.
+    if($gameSessionId!=='')hcgs_complete_locked($gameSessionId,$oid);
     // This server-generated reference also authorizes recovery if COMMIT loses its reply.
     if ($orderMemberId === null)
         htp_remember_customer_order($no);

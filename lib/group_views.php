@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/order_detail_view.php';
 require_once __DIR__ . '/promotion_views.php';
 require_once __DIR__ . '/game_entry.php';
 require_once __DIR__ . '/group_payment_views.php';
@@ -138,6 +139,7 @@ function hyg_render_room(array $r): string
         <h2><?= e(gt('submitted')) ?></h2><strong><?= e($order['order_no']) ?></strong>
         <p><?= e(t(status_label_key($order['status']))) ?></p>
         <p><?= e(gt('sent_note')) ?></p>
+        <?= order_detail_render($order) ?>
       </section><?php endif; ?>
     <?php if ($order && $host): ?>    <?= hge_render(hge_order_state($order)) ?>  <?php endif; ?>
     <?php if ($hostCollect): ?>
@@ -492,30 +494,15 @@ function hyg_render_room(array $r): string
       <aside class="hyg-summary hyg-card"><span class="hyg-eyebrow">HỒNG TRÀ TUỔI THƠ</span>
         <h2><?= e(gt($order ? 'final_total' : 'total')) ?></h2>
         <div class="hyg-total"><?= e(currency()) ?><?= money($order ? $order['total_amount'] : $payment['total']) ?></div>
-        <p class="hyg-counts"><?= e(gt('people', ['n' => count($members)])) ?> ·
-          <?= e(gt('cups', ['n' => $drinks])) ?>  <?php if ($portions): ?><br><?= e(gt('portions', ['n' => $portions])) ?><?php endif; ?>
-        </p>
-        <div class="hyg-totals-line">
-          <span><?= e(gt('subtotal')) ?></span><b><?= e(currency()) ?><?= money($subtotal) ?></b></div>
-        <?php if ($payment['discount'] > 0): ?>
-          <div class="hyg-totals-line">
-            <span><?= e(gt('discount')) ?></span><b>−<?= e(currency()) ?><?= money($payment['discount']) ?></b></div>
-        <?php endif; ?>
-        <div class="hyg-totals-line">
-          <span><?= e(gt('checkout_mode')) ?></span><b><?= e(gt($split ? 'checkout_split' : 'checkout_together')) ?></b>
-        </div>
-        <?php if (!$payment['legacy']): ?>
-          <div class="hyg-totals-line">
-            <span><?= e(gt('host_advances')) ?></span><b><?= e(currency()) ?><?= money($payment['host_advance']) ?></b>
-          </div>
-          <div class="hyg-totals-line hyg-host-due">
-            <span><?= e($hostCollect ? htp('contribution') : gt('host_due')) ?></span><b><?= e(currency()) ?><?= money($payment['host_due']) ?></b>
-          </div><?php endif; ?>
-        <?php if ($approval && $payment['frozen']): ?>
-          <div class="hyg-payment-progress" role="status">
-            <strong><?= e(gt('payment_confirmation_progress', ['confirmed' => (int) ($payment['confirmed_payers'] ?? 0), 'required' => (int) ($payment['required_payers'] ?? 0)])) ?></strong>
-            <p class="hyg-muted">
-              <?= e(gt(!$cart ? 'empty_room' : ($allConfirmed ? 'payments_all_confirmed' : 'payments_unconfirmed'))) ?></p>
+        <p class="hyg-counts"><?= e(gt('people', ['n' => count($members)])) ?> · <?= e(gt('cups', ['n' => $drinks])) ?><?php if ($portions): ?><br><?= e(gt('portions', ['n' => $portions])) ?><?php endif; ?></p>
+        <div class="hyg-totals-line"><span><?= e(gt('subtotal')) ?></span><b><?= e(currency()) ?><?= money($subtotal) ?></b></div>
+        <?php $shownDiscount = $order ? (float)$order['discount_amount'] : (float)$payment['discount']; ?>
+        <?php if ($shownDiscount > 0): ?><div class="hyg-totals-line"><span><?= e(gt('discount')) ?></span><b>−<?= e(currency()) ?><?= money($shownDiscount) ?></b></div><?php endif; ?>
+        <div class="hyg-totals-line"><span><?= e(gt('checkout_mode')) ?></span><b><?= e(gt($split ? 'checkout_split' : 'checkout_together')) ?></b></div>
+        <?php if (!$payment['legacy']): ?><div class="hyg-totals-line"><span><?= e(gt('host_advances')) ?></span><b><?= e(currency()) ?><?= money($payment['host_advance']) ?></b></div>
+          <div class="hyg-totals-line hyg-host-due"><span><?= e($hostCollect ? htp('contribution') : gt('host_due')) ?></span><b><?= e(currency()) ?><?= money($payment['host_due']) ?></b></div><?php endif; ?>
+        <?php if ($approval && $payment['frozen']): ?><div class="hyg-payment-progress" role="status"><strong><?= e(gt('payment_confirmation_progress', ['confirmed' => (int)($payment['confirmed_payers'] ?? 0), 'required' => (int)($payment['required_payers'] ?? 0)])) ?></strong>
+            <p class="hyg-muted"><?= e(gt(!$cart ? 'empty_room' : ($allConfirmed ? 'payments_all_confirmed' : 'payments_unconfirmed'))) ?></p>
           </div><?php endif; ?>
         <?= promotion_summary($promotion) ?>
         <?php if ($status === 'locked'): ?>
@@ -538,13 +525,13 @@ function hyg_render_room(array $r): string
             </button>
           </form><?php endif; ?>
 
-        <?php if ($status === 'locked' && $host): ?>    <?php if (!$payment['legacy']): ?>      <?php if (!empty($payment['can_checkout']) && $cart && !$hasInvalid): ?>
-              <a class="btn primary block"
-                href="<?= e(base_url('checkout.php?group=' . $r['public_id'])) ?>"><?= e(gt($split ? 'submit_group' : 'checkout')) ?>
-              </a>
-            <?php endif; ?>
-          <?php endif; ?>
-          <?php if (!$hasReports): ?>
+        <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?><?php if (!empty($payment['can_checkout']) && $cart && !$hasInvalid): ?>
+        <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'checkout') ?>
+          <button class="btn primary block" type="submit"><?= e(gt($split ? 'submit_group' : 'checkout')) ?></button>
+        </form>
+      <?php endif; ?>
+    <?php endif; ?>
+    <?php if (!$hasReports): ?>
 
             <!-- btn mở lại chọn món  -->
             <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'reopen') ?>

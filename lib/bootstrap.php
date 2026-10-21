@@ -58,3 +58,7 @@ require_once __DIR__ . '/client_i18n.php';
 require_once __DIR__ . '/sepay_i18n.php';
 require_once __DIR__ . '/admin_i18n.php';
 require_once __DIR__ . '/sepay.php';
+
+require_once __DIR__.'/checkout_game_session.php';
+hcgs_schema();
+hcgs_sweep();

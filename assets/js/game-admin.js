@@ -36,49 +36,102 @@
     return total;
   }
 
+  // A dropdown checklist in front of the native multi-select, which stays in the form for posting and validity.
+  function checklist(select, extra = () => null) {
+    const wrap = document.createElement('div');
+    const toggle = document.createElement('button');
+    const panel = document.createElement('div');
+    wrap.className = 'hgra-multi';
+    toggle.type = 'button'; toggle.className = 'hgra-multi-toggle';
+    toggle.setAttribute('aria-haspopup', 'true'); toggle.setAttribute('aria-expanded', 'false');
+    panel.className = 'hgra-multi-panel'; panel.hidden = true;
+    select.classList.add('hgra-multi-native'); select.tabIndex = -1; select.setAttribute('aria-hidden', 'true');
+    select.before(wrap); wrap.append(toggle, panel, select);
+    const open = show => { panel.hidden = !show; toggle.setAttribute('aria-expanded', String(show)); };
+    function sync() {
+      const chosen = [...select.selectedOptions].map(option => option.textContent.trim());
+      toggle.textContent = !chosen.length ? form.dataset.select : chosen.length <= 2 ? chosen.join(', ') : form.dataset.chosen.replace('{n}', chosen.length);
+      toggle.title = chosen.join(', ');
+      toggle.classList.toggle('hgra-multi-empty', !chosen.length);
+    }
+    function render() {
+      panel.replaceChildren(...[...select.options].map(option => {
+        const line = document.createElement('div');
+        const label = document.createElement('label');
+        const box = document.createElement('input');
+        const text = document.createElement('span');
+        line.className = 'hgra-multi-option';
+        box.type = 'checkbox'; box.checked = option.selected;
+        text.textContent = option.textContent.trim();
+        const side = extra(option);
+        box.addEventListener('change', () => {
+          option.selected = box.checked;
+          if (side) side.disabled = !box.checked;
+          sync(); select.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        label.append(box, text);
+        line.append(label);
+        if (side) { side.disabled = !box.checked; line.append(side); }
+        return line;
+      }));
+      sync();
+    }
+    toggle.addEventListener('click', () => open(panel.hidden));
+    wrap.addEventListener('keydown', event => { if (event.key === 'Escape' && !panel.hidden) { open(false); toggle.focus(); } });
+    document.addEventListener('click', event => { if (!wrap.contains(event.target)) open(false); });
+    return { render };
+  }
+
   function bindPrize(row) {
     const kind = row.querySelector('[data-prize-kind]');
     const item = row.querySelector('[data-prize-item]');
-    const size = row.querySelector('[data-prize-size]');
     const amount = row.querySelector('[name$="[amount]"]');
     const itemOptions = [...item.options].filter(option => option.dataset.kind).map(option => ({
       kind: option.dataset.kind, value: option.value, text: option.textContent, sizes: option.dataset.sizes
     }));
     let discountAmount = amount.value || '5000';
+    const sizesOf = option => { try { return JSON.parse(option.dataset.sizes || '[""]'); } catch (_) { return ['']; } };
+    let itemSizes = {};
+    try { itemSizes = JSON.parse(item.dataset.itemSizes || '{}') || {}; } catch (_) { itemSizes = {}; }
+    const sizeName = item.name.replace(/\[item_ids\]\[\]$/, '[item_sizes]');
+    // Every gift drink gets its own cup size, chosen next to it in the list.
+    const picker = checklist(item, option => {
+      if (kind.value !== 'tea') return null;
+      const sizes = sizesOf(option);
+      const choice = document.createElement('select');
+      choice.name = `${sizeName}[${option.value}]`;
+      choice.className = 'hgra-multi-size';
+      choice.setAttribute('aria-label', `${form.dataset.sizeLabel}: ${option.textContent.trim()}`);
+      sizes.forEach(value => choice.add(new Option(value || form.dataset.single, value)));
+      choice.value = sizes.includes(itemSizes[option.value]) ? itemSizes[option.value] : sizes[0];
+      choice.hidden = sizes.length === 1;
+      choice.addEventListener('change', () => { itemSizes[option.value] = choice.value; });
+      return choice;
+    });
     function validateItem() {
-      item.setCustomValidity(item.required && item.value === '0' ? form.dataset.select : '');
-    }
-    function rebuildSizes(keep = size.value) {
-      const selected = item.selectedOptions[0];
-      let choices = [''];
-      if (kind.value === 'tea') {
-        try { choices = JSON.parse(selected?.dataset.sizes || '[""]'); } catch (_) { choices = ['']; }
-      }
-      size.replaceChildren();
-      choices.forEach(value => { const option = new Option(value || form.dataset.single, value); option.selected = value === keep; size.add(option); });
-      if (!choices.includes(keep)) size.value = choices[0] || '';
-      const sizeField = row.querySelector('[data-prize-size-field]');
-      sizeField.hidden = kind.value !== 'tea' || choices.length === 1 && choices[0] === '';
+      item.setCustomValidity(item.required && item.selectedOptions.length === 0 ? form.dataset.select : '');
     }
     function updateKind(initial = false) {
-      const selected = initial ? item.dataset.selected : '0';
-      item.replaceChildren(new Option(form.dataset.select, '0'));
+      let selected = [];
+      if (initial) { try { selected = JSON.parse(item.dataset.selected || '[]').map(String); } catch (_) { selected = []; } }
+      item.replaceChildren();
       itemOptions.filter(option => option.kind === kind.value).forEach(record => {
         const option = new Option(record.text, record.value);
         option.dataset.sizes = record.sizes;
-        option.selected = record.value === selected;
+        option.selected = selected.includes(record.value);
         item.add(option);
       });
+      picker.render();
       row.querySelector('[data-prize-item-field]').hidden = kind.value === 'discount';
+      row.querySelector('[data-prize-qty-field]').hidden = kind.value === 'discount';
       row.querySelector('[data-prize-amount-field]').hidden = kind.value !== 'discount';
       item.required = kind.value !== 'discount' && row.querySelector('[data-prize-enabled]').checked;
       if (kind.value !== 'discount') { if (Number(amount.value) > 0) discountAmount = amount.value; amount.value = '0'; }
-      else { amount.value = discountAmount; item.value = '0'; }
-      rebuildSizes(initial ? size.dataset.selected : '');
+      else { amount.value = discountAmount; [...item.options].forEach(option => { option.selected = false; }); picker.render(); }
       validateItem();
     }
     kind.addEventListener('change', () => updateKind());
-    item.addEventListener('change', () => { rebuildSizes(''); validateItem(); });
+    item.addEventListener('change', validateItem);
     amount.addEventListener('input', () => { if (kind.value === 'discount') discountAmount = amount.value; });
     row.querySelector('[data-prize-weight]').addEventListener('input', updateTotal);
     row.querySelector('[data-prize-enabled]').addEventListener('change', () => {
