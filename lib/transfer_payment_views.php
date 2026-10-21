@@ -337,9 +337,9 @@ function htp_render_account(array $a): string
               $vietQrUrl = ($accNum && $bankName) ? sepay_qr_url($accNum, $bankName, (float) $r['amount'], $des, 'compact') : '';
 
               // Tính thời gian giữ đơn thực tế dựa trên thời điểm tạo đơn trong DB (15 phút = 900 giây)
-              $createdAt = !empty($order['created_at']) ? strtotime($order['created_at'] . ' UTC') : time();
+              $createdAt = !empty($order['created_at']) ? strtotime($order['created_at']) : time();
               $holdSeconds = 15 * 60;
-              $remainingSeconds = max(0, ($createdAt + $holdSeconds) - time());
+              $remainingSeconds = max(0, min($holdSeconds, ($createdAt + $holdSeconds) - time()));
               $countdownDisplay = sprintf('%02d:%02d', floor($remainingSeconds / 60), $remainingSeconds % 60);
               $isExpired = ($remainingSeconds <= 0 && !$isConfirmed && !$cancelled);
 

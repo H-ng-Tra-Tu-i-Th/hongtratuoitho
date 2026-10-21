@@ -129,7 +129,7 @@ function htow_cancel_expired_orders(int $limit = 50): int {
             LEFT JOIN transfer_order_receipts r ON r.order_id = o.id
             WHERE o.status = 'new'
               AND o.payment_method = 'transfer'
-              AND o.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE)
+              AND o.created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
               AND COALESCE(r.received_amount, 0) <= 0
               AND COALESCE(r.status, 'pending') NOT IN ('confirmed', 'overpaid')
             ORDER BY o.id ASC

@@ -218,7 +218,7 @@ function customer_find_pending_payment_order(?int $memberId = null, ?string $pho
                       WHERE $whereUser
                         AND o.status = 'new'
                         AND o.payment_method = 'transfer'
-                        AND o.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE)
+                        AND o.created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
                         AND COALESCE(r.received_amount, 0) <= 0
                         AND COALESCE(r.status, 'pending') NOT IN ('confirmed', 'overpaid')";
         $pdo->prepare($cancelSql)->execute($userParams);
@@ -233,7 +233,7 @@ function customer_find_pending_payment_order(?int $memberId = null, ?string $pho
               AND o.status NOT IN ('done', 'cancelled')
               AND o.payment_method = 'transfer'
               AND o.total_amount > 0
-              AND o.created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 15 MINUTE)
+              AND o.created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
               AND (
                   r.order_id IS NULL
                   OR r.status IN ('pending', 'partial', 'requested')
