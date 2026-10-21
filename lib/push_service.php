@@ -147,8 +147,15 @@ function send_new_order_push_notifications(?int $orderId=null,bool $deliverNow=t
     try{
         if(!$orderId){$orderId=(int)db()->query('SELECT MAX(id) FROM orders')->fetchColumn();}
         $st=db()->prepare('SELECT * FROM orders WHERE id=?');$st->execute([$orderId]);$order=$st->fetch();if(!$order)return $result;
-        // Legacy records are left untouched, but need an explicit new registration.
-        $rows=db()->query("SELECT p.* FROM push_subscriptions p JOIN admins a ON a.id=p.owner_admin_id WHERE p.active=1 AND p.client_app IN ('admin','mobile')")->fetchAll();
+        // Route notifications strictly to Owners and the assigned branch staff
+        $storeId = !empty($order['dispatch_store_id']) ? (int)$order['dispatch_store_id'] : null;
+        if ($storeId !== null) {
+            $stPush = db()->prepare("SELECT p.* FROM push_subscriptions p JOIN admins a ON a.id=p.owner_admin_id WHERE p.active=1 AND p.client_app IN ('admin','mobile') AND (a.role='owner' OR a.store_id=?)");
+            $stPush->execute([$storeId]);
+            $rows = $stPush->fetchAll();
+        } else {
+            $rows = db()->query("SELECT p.* FROM push_subscriptions p JOIN admins a ON a.id=p.owner_admin_id WHERE p.active=1 AND p.client_app IN ('admin','mobile') AND (a.role='owner')")->fetchAll();
+        }
         foreach($rows as $row){hqp_enqueue($row,$order,'order-'.$orderId);$result['queued']++;}
         if($deliverNow){$attempt=hqp_process_queue(20,9,$orderId);$result['sent']=$attempt['accepted'];$result['failed']=$attempt['failed'];}
     }catch(Throwable $e){hqp_log('enqueue_error',$e);$result['error']='enqueue_error';}

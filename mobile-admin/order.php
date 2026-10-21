@@ -8,6 +8,16 @@ require_once __DIR__ . '/../lib/order_workflow.php';
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) redirect(ma_url('index.php'));
 hds_view_require_staff(ma_url('login.php?return_order=' . $id));
+
+$st = db()->prepare('SELECT * FROM orders WHERE id=?');
+$st->execute([$id]);
+$o = $st->fetch();
+if (!$o) {
+  http_response_code(404);
+  exit('Order not found');
+}
+require_order_access($o);
+
 $message = '';
 $error = '';
 
@@ -17,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? null;
     if (!is_string($action)) throw new InvalidArgumentException('invalid_action');
     if (in_array($action, ['dispatch_refresh', 'dispatch_assign', 'dispatch_adopt', 'dispatch_clear'], true)) {
+      if (admin_store_id() !== null) throw new InvalidArgumentException('forbidden');
       $_SESSION['dispatch_order_flash'] = ['id' => $id, 'key' => hds_view_order_action($id, $action, $_POST, (int) $_SESSION['admin_id'])];
     } elseif ($action === 'confirm_merchant_payment') {
       htp_confirm($id, $_POST['payment_version'] ?? null, (int) $_SESSION['admin_id']);

@@ -11,19 +11,28 @@ $after = max(0, (int) ($_GET['after'] ?? 0));
 $watch = max(0, (int) ($_GET['watch'] ?? 0));
 try {
     $readyCond = "(o.payment_method != 'transfer' OR o.total_amount <= 0 OR r.status IN ('confirmed', 'overpaid') OR r.received_amount >= r.amount)";
-    $st = db()->prepare("SELECT o.id,o.order_no,o.customer_name,o.total_amount,o.created_at,o.dispatch_store_id,ds.name AS dispatch_store_name,ds.address AS dispatch_store_address,ds.phone AS dispatch_store_phone,ds.map_url AS dispatch_store_map_url,ds.name AS store_name,ds.address AS store_address,ds.phone AS store_phone FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id LEFT JOIN dispatch_stores ds ON ds.id=o.dispatch_store_id WHERE (o.id>? OR (o.payment_method='transfer' AND r.confirmed_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 SECOND))) AND o.status='new' AND $readyCond ORDER BY o.id ASC");
-    $st->execute([$after]);
+    $storeId = admin_store_id();
+    $storeCond = $storeId !== null ? " AND o.dispatch_store_id = ?" : "";
+    $storeParams = $storeId !== null ? [$storeId] : [];
+
+    $st = db()->prepare("SELECT o.id,o.order_no,o.customer_name,o.total_amount,o.created_at,o.dispatch_store_id,ds.name AS dispatch_store_name,ds.address AS dispatch_store_address,ds.phone AS dispatch_store_phone,ds.map_url AS dispatch_store_map_url,ds.name AS store_name,ds.address AS store_address,ds.phone AS store_phone FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id LEFT JOIN dispatch_stores ds ON ds.id=o.dispatch_store_id WHERE (o.id>? OR (o.payment_method='transfer' AND r.confirmed_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 SECOND))) AND o.status='new' AND $readyCond$storeCond ORDER BY o.id ASC");
+    $st->execute(array_merge([$after], $storeParams));
     $orders = $st->fetchAll();
-    $latest = latest_order_id();
+    $latest = latest_order_id($storeId);
     $watchStatus = null;
     if ($watch > 0) {
-        $ws = db()->prepare('SELECT status FROM orders WHERE id=?');
-        $ws->execute([$watch]);
+        $ws = db()->prepare('SELECT status FROM orders WHERE id=?' . ($storeId !== null ? ' AND dispatch_store_id=?' : ''));
+        $ws->execute($storeId !== null ? [$watch, $storeId] : [$watch]);
         $v = $ws->fetchColumn();
         $watchStatus = $v === false ? 'missing' : (string) $v;
     }
-    $pending = db()->query("SELECT o.id,o.order_no,o.customer_name,o.total_amount,o.created_at,o.dispatch_store_id,ds.name AS dispatch_store_name,ds.address AS dispatch_store_address,ds.phone AS dispatch_store_phone,ds.map_url AS dispatch_store_map_url,ds.name AS store_name,ds.address AS store_address,ds.phone AS store_phone FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id LEFT JOIN dispatch_stores ds ON ds.id=o.dispatch_store_id WHERE o.status='new' AND $readyCond ORDER BY o.id ASC")->fetchAll();
-    $newCount = (int) db()->query("SELECT COUNT(*) FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id WHERE o.status='new' AND $readyCond")->fetchColumn();
+    $pendingSt = db()->prepare("SELECT o.id,o.order_no,o.customer_name,o.total_amount,o.created_at,o.dispatch_store_id,ds.name AS dispatch_store_name,ds.address AS dispatch_store_address,ds.phone AS dispatch_store_phone,ds.map_url AS dispatch_store_map_url,ds.name AS store_name,ds.address AS store_address,ds.phone AS store_phone FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id LEFT JOIN dispatch_stores ds ON ds.id=o.dispatch_store_id WHERE o.status='new' AND $readyCond$storeCond ORDER BY o.id ASC");
+    $pendingSt->execute($storeParams);
+    $pending = $pendingSt->fetchAll();
+
+    $countSt = db()->prepare("SELECT COUNT(*) FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id WHERE o.status='new' AND $readyCond$storeCond");
+    $countSt->execute($storeParams);
+    $newCount = (int) $countSt->fetchColumn();
     echo json_encode(['ok' => true, 'latest' => $latest, 'new_count' => $newCount, 'orders' => $orders, 'pending_orders' => $pending, 'watch_status' => $watchStatus], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 } catch (Throwable $e) {
     http_response_code(500);

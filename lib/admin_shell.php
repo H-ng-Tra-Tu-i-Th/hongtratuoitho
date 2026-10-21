@@ -110,7 +110,7 @@ function has_sidebar(string $title): void
                 </section><?php endforeach; ?>
         </nav>
         <div class="admin-sidebar-user"><span class="admin-avatar"><?= e($initial[0] ?? 'H') ?></span>
-            <div><strong><?= e($display) ?></strong><small><?= e(haa_t($me['role'] ?? 'admin')) ?></small></div><a
+            <div><strong><?= e($display) ?></strong><small><?= e(haa_t($me['role'] ?? 'admin')) ?><?php if(!empty($me['store_id'])): $stName=hyg_one('SELECT name FROM dispatch_stores WHERE id=?',[(int)$me['store_id']]); if($stName): ?> · 🏬 <?= e($stName['name']) ?><?php endif; endif; ?></small></div><a
                 href="<?= e(base_url('admin/logout.php')) ?>" aria-label="<?= e(t('logout')) ?>"><?= has_icon('logout') ?></a>
         </div>
     </aside>

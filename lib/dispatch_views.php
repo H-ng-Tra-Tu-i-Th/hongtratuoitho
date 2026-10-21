@@ -30,6 +30,7 @@ function hds_view_revision(mixed $value): int {
 }
 /** Explicit dispatch actions cannot fall through into order-status updates. */
 function hds_view_order_action(int $orderId,string $action,array $data,int $adminId): string {
+    if (admin_store_id() !== null || !admin_order_allowed($orderId)) throw new InvalidArgumentException('forbidden');
     $revision=hds_view_revision($data['dispatch_revision']??null);
     if($action==='dispatch_refresh'){hds_refresh_order($orderId,$adminId,$revision);return 'dispatch_refreshed';}
     if($action==='dispatch_clear'){hds_assign_order($orderId,null,$adminId,$revision);return 'dispatch_saved';}

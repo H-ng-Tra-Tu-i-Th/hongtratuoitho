@@ -393,10 +393,21 @@ function mark_customer_coupon_used(string $code, int $orderId): bool
     }
 }
 
-function latest_order_id(): int
+function latest_order_id(?int $storeId = null): int
 {
     try {
-        return (int) (db()->query("SELECT COALESCE(MAX(o.id),0) FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id WHERE (o.payment_method != 'transfer' OR o.total_amount <= 0 OR r.status IN ('confirmed', 'overpaid') OR r.received_amount >= r.amount)")->fetchColumn() ?: 0);
+        if ($storeId === null && function_exists('admin_store_id')) {
+            $storeId = admin_store_id();
+        }
+        $where = "(o.payment_method != 'transfer' OR o.total_amount <= 0 OR r.status IN ('confirmed', 'overpaid') OR r.received_amount >= r.amount)";
+        $args = [];
+        if ($storeId !== null && $storeId > 0) {
+            $where .= " AND o.dispatch_store_id = ?";
+            $args[] = $storeId;
+        }
+        $st = db()->prepare("SELECT COALESCE(MAX(o.id),0) FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id WHERE $where");
+        $st->execute($args);
+        return (int) ($st->fetchColumn() ?: 0);
     } catch (Throwable $e) {
         return 0;
     }

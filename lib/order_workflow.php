@@ -37,6 +37,7 @@ function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int
     try{
         htp_staff_locked($adminId);
         $order=hyg_one('SELECT * FROM orders WHERE id=? FOR UPDATE',[$orderId]);if(!$order)htow_fail('not_found');
+        if(!admin_order_allowed($order))htow_fail('forbidden');
         if((int)$order['status_version']!==(int)$version)htow_fail('status_changed_error');
         if($order['status']===$target){$pdo->commit();return;}
         if(!in_array($target,htow_targets($order['status']),true))htow_fail('status_transition_error');
@@ -66,12 +67,37 @@ function htow_render_history(array $order): string {
 /** Shared filters use real receipt balances, never fulfillment status as a paid indicator. */
 function htp_list_query(array $filters,int $limit=200): array {
     $where=[];$args=[];$status=$filters['status']??'';$payment=$filters['payment_state']??'';
+    $adminStore = admin_store_id();
+    $storeId = $adminStore !== null ? $adminStore : (!empty($filters['store_id']) ? (int)$filters['store_id'] : null);
+    if ($storeId !== null && $storeId > 0) {
+        $where[] = 'o.dispatch_store_id = ?';
+        $args[] = $storeId;
+    }
     if(is_string($status)&&in_array($status,['new','accepted','done','cancelled'],true)){$where[]='o.status=?';$args[]=$status;}
     $state="CASE WHEN o.status='cancelled' AND COALESCE(r.received_amount-r.refunded_amount,0)>0 THEN 'refund_pending' WHEN o.status='cancelled' AND COALESCE(r.received_amount,0)>0 AND r.received_amount=r.refunded_amount THEN 'refunded' WHEN r.order_id IS NULL THEN 'legacy' WHEN r.received_amount-r.refunded_amount>r.amount THEN 'overpaid' WHEN r.amount=0 AND r.received_amount=r.refunded_amount THEN 'not_required' WHEN r.amount>0 AND r.received_amount-r.refunded_amount>=r.amount THEN 'confirmed' WHEN r.received_amount-r.refunded_amount>0 THEN 'partial' WHEN r.report_state='requested' THEN 'requested' WHEN r.report_state='rejected' THEN 'rejected' ELSE 'unpaid' END";
     if(is_string($payment)&&in_array($payment,['unpaid','requested','partial','confirmed','overpaid','refund_pending','refunded','legacy','not_required','rejected'],true)){$where[]='('.$state.')=?';$args[]=$payment;}
     else{$where[]="(o.payment_method != 'transfer' OR o.total_amount <= 0 OR ($state) NOT IN ('unpaid', 'requested'))";}
     $sql="SELECT o.*,r.status AS receipt_status,r.version AS receipt_version,r.amount AS receipt_due,r.received_amount,r.refunded_amount,r.report_state,r.ledger_only,$state AS financial_state FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id".($where?' WHERE '.implode(' AND ',$where):'').' ORDER BY o.id DESC LIMIT '.max(1,min(500,$limit));
     return hyg_all($sql,$args);
+}
+function htow_status_counts(?int $storeId = null): array {
+    $counts = ['new' => 0, 'accepted' => 0, 'done' => 0, 'cancelled' => 0];
+    $adminStore = admin_store_id();
+    $storeId = $adminStore !== null ? $adminStore : $storeId;
+    $where = "(o.payment_method != 'transfer' OR o.total_amount <= 0 OR r.status IN ('confirmed', 'overpaid') OR r.received_amount >= r.amount)";
+    $args = [];
+    if ($storeId !== null && $storeId > 0) {
+        $where .= " AND o.dispatch_store_id = ?";
+        $args[] = $storeId;
+    }
+    $st = db()->prepare("SELECT o.status, COUNT(*) c FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id WHERE $where GROUP BY o.status");
+    $st->execute($args);
+    foreach ($st->fetchAll() as $r) {
+        if (isset($counts[$r['status']])) {
+            $counts[$r['status']] = (int)$r['c'];
+        }
+    }
+    return $counts;
 }
 function htp_render_list_filters(string $path,array $filters,bool $export=true): string {
     ob_start();?><section class="panel ma-panel"><form method="get" action="<?=e($path)?>" class="form-grid"><input type="hidden" name="status" value="<?=e(is_string($filters['status']??'')?$filters['status']??'':'')?>"><label><?=e(pwf('payment_state'))?><select name="payment_state"><option value=""><?=e(pwf('filter_all'))?></option><?php foreach(['unpaid','requested','partial','confirmed','overpaid','refund_pending','refunded','legacy','not_required','rejected'] as $key):?><option value="<?=e($key)?>" <?=($filters['payment_state']??'')===$key?'selected':''?>><?=e(pwf($key))?></option><?php endforeach;?></select></label><button class="btn ma-btn" type="submit"><?=e(pwf('filter'))?></button></form><?php if($export&&!admin_is_operator()):?><p><a class="btn ma-btn" href="<?=e(base_url('admin/payment_export.php'))?>"><?=e(pwf('export'))?></a></p><?php endif;?></section><?php return ob_get_clean();

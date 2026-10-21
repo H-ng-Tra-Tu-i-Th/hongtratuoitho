@@ -7,7 +7,15 @@ require_once __DIR__ . '/../lib/order_workflow.php';
 require_admin();
 
 $id = (int) ($_GET['id'] ?? 0);
-hds_view_require_staff(base_url('admin/login.php' . ($id > 0 ? '?return_order=' . $id : '')));
+if ($id <= 0) redirect(base_url('admin/index.php'));
+hds_view_require_staff(base_url('admin/login.php?return_order=' . $id));
+
+$st = db()->prepare('SELECT * FROM orders WHERE id=?');
+$st->execute([$id]);
+$o = $st->fetch();
+if (!$o) exit(e(t('order_not_found')));
+require_order_access($o);
+
 $msg = '';
 $error = '';
 
@@ -17,27 +25,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? null;
     if (!is_string($action)) throw new InvalidArgumentException('invalid_action');
     if (in_array($action, ['dispatch_refresh', 'dispatch_assign', 'dispatch_adopt', 'dispatch_clear'], true)) {
+      if (admin_store_id() !== null) throw new InvalidArgumentException('forbidden');
       $_SESSION['dispatch_order_flash'] = ['id' => $id, 'key' => hds_view_order_action($id, $action, $_POST, (int) $_SESSION['admin_id'])];
       redirect(base_url('admin/order.php?id=' . $id . '#hds-dispatch-heading'));
     } elseif ($action === 'confirm_merchant_payment') {
       htp_confirm($id, $_POST['payment_version'] ?? null, (int) $_SESSION['admin_id']);
-      $msg = htp('staff_saved');
+      $_SESSION['admin_order_msg'] = htp('staff_saved');
+      redirect(base_url('admin/order.php?id=' . $id));
     } elseif (in_array($action, ['payment_receive', 'payment_correct', 'payment_reject', 'payment_refund'], true)) {
       htp_staff_action($id, $action, $_POST, (int) $_SESSION['admin_id']);
-      $msg = pwf('action_saved');
+      $_SESSION['admin_order_msg'] = pwf('action_saved');
+      redirect(base_url('admin/order.php?id=' . $id));
     } elseif ($action === 'resend_email') {
       $detail = '';
-      if (send_order_notification_by_id($id, $detail)) $msg = t('order_email_resent');
-      else $error = t('order_email_resend_failed', ['detail' => $detail ?: 'unknown']);
+      if (send_order_notification_by_id($id, $detail)) {
+        $_SESSION['admin_order_msg'] = t('order_email_resent');
+      } else {
+        $_SESSION['admin_order_error'] = t('order_email_resend_failed', ['detail' => $detail ?: 'unknown']);
+      }
+      redirect(base_url('admin/order.php?id=' . $id));
     } elseif ($action === 'status') {
       htow_change($id, $_POST['status'] ?? null, $_POST['status_version'] ?? null, $_POST['status_reason'] ?? null, (int) $_SESSION['admin_id']);
-      $msg = pwf('status_saved');
+      $_SESSION['admin_order_msg'] = pwf('status_saved');
+      redirect(base_url('admin/order.php?id=' . $id));
     } else {
       throw new InvalidArgumentException('invalid_action');
     }
   } catch (Throwable $exception) {
     $error = htow_error($exception);
   }
+}
+
+if (isset($_SESSION['admin_order_msg'])) {
+  $msg = $_SESSION['admin_order_msg'];
+  unset($_SESSION['admin_order_msg']);
+}
+if (isset($_SESSION['admin_order_error'])) {
+  $error = $_SESSION['admin_order_error'];
+  unset($_SESSION['admin_order_error']);
 }
 
 $dispatchFlash = $_SESSION['dispatch_order_flash'] ?? null;

@@ -445,6 +445,8 @@ function htp_staff_action(int $orderId, string $action, array $input, int $admin
         $order = hyg_one('SELECT * FROM orders WHERE id=? FOR UPDATE', [$orderId]);
         if (!$order)
             htp_fail('not_found');
+        if (!admin_order_allowed($order))
+            htp_fail('forbidden');
         $r = hyg_one('SELECT * FROM transfer_order_receipts WHERE order_id=? FOR UPDATE', [$orderId]);
         if (!$r) {
             if ($expected !== 1)
@@ -581,6 +583,8 @@ function htp_report(string $number, mixed $code, mixed $quote): void
 function htp_confirm(int $orderId, mixed $expectedVersion, int $adminId): void
 {
     htp_staff_guard($adminId);
+    if (!admin_order_allowed($orderId))
+        htp_fail('forbidden');
     $r = htp_receipt($orderId);
     if (!$r)
         htp_fail('legacy');
