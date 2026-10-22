@@ -53,5 +53,8 @@ require_once __DIR__.'/game_rewards.php';
 hgr_schema();
 
 require_once __DIR__.'/checkout_game_session.php';
+
+// Cầu nối sang hệ mới (Laravel) -- xoá khi bỏ hệ cũ
+require_once __DIR__.'/new_api_bridge.php';
 hcgs_schema();
 hcgs_sweep();

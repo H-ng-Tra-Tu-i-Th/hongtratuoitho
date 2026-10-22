@@ -105,6 +105,8 @@ if (!$checkoutUnknown) {
 // Money prizes won in this session are summed and taken off the bill straight away.
 $gameCash = hcgs_cash_discount($cart, $coupon, $gameSession);
 $checkoutTotal = max(0, $checkoutTotal - $gameCash['discount']);
+// Group money prizes are not applied (see hcgs_cash_discount); show the codes the host keeps.
+$gameCashKept = $groupCheckout && $gameSession ? array_column(hcgs_cash_coupons($gameSession), 'code') : [];
 // Free drink/topping prizes are added as 0đ gift lines with the quantity set in the prize settings.
 $gameGifts = hcgs_gift_rewards($gameSession);
 $gameFlash = $_SESSION['hcgs_flash'] ?? '';
@@ -259,6 +261,7 @@ front_header(t('order_info'));
         <b><?= e(currency()) ?>0</b>
       </div>
     <?php endforeach; ?>
+    <?php if ($gameCashKept): ?><p class="alert info"><?= e(hcgs_text('group_cash_kept', ['codes' => implode(', ', $gameCashKept)])) ?></p><?php endif; ?>
     <div class="review-totals">
       <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong></div><?php if ($coupon['discount'] > 0): ?><div class="discount-line"><span><?= e(t('coupon_discount')) ?> · <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div><?php endif; ?><?php if ($gameCash['discount'] > 0): ?><div class="discount-line"><span>Quà Mini Game (<?= count($gameCash['codes']) ?> mã) · <?= e(implode(', ', $gameCash['codes'])) ?></span><strong>-<?= e(currency()) ?><?= money($gameCash['discount']) ?></strong></div><?php endif; ?><div class="review-total"><span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
     </div>
