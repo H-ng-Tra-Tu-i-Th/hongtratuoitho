@@ -150,6 +150,8 @@ ignore_user_abort(true);
 if(function_exists('fastcgi_finish_request'))fastcgi_finish_request();
 // Locate the committed order after releasing the session; maps failure never fails checkout.
 try{hds_recommend_order($oid);}catch(Throwable $e){error_log('[dispatch] Recommendation unavailable for order '.$oid);}
+// Báo hệ mới (Laravel): tự giao cửa hàng gần nhất + bắn socket cho partner-web. Chạy sau khi đã có tọa độ.
+hq_bridge_notify('order.created',$oid);
 try{hqp_process_queue(20,9,$oid);}catch(Throwable $e){hqp_log('post_order_push_error',$e);}
 try{$mailDetail='';send_order_notification_by_id($oid,$mailDetail);}catch(Throwable $e){hqp_log('post_order_mail_error',$e);}
 exit;
