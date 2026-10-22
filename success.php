@@ -158,7 +158,7 @@ front_header(t('order_sent'));
               </div>
             </div>
 
-            <?php if (!empty($savedOrder['dispatch_store_name'])): ?>
+            <!-- <?php if (!empty($savedOrder['dispatch_store_name'])): ?>
               <div class="order-store-badge-card">
                 <div class="order-store-info">
                   <span class="order-delivery-label"><?= e(sepay_t('success_store_title')) ?>:</span>
@@ -174,7 +174,7 @@ front_header(t('order_sent'));
                   <span><?= e(sepay_t('success_call_branch')) ?></span>
                 </a>
               </div>
-            <?php endif; ?>
+            <?php endif; ?> -->
 
             <?php if (!empty($savedOrder['order_note'])): ?>
               <div class="order-note-callout">
