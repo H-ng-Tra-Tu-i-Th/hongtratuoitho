@@ -18,6 +18,13 @@ try{
     }elseif(in_array($type,['store','receipt'],true)){
         $no=htp_text($_GET['order']??'',80);
         $o=$staff?hyg_one('SELECT * FROM orders WHERE order_no=?',[$no]):htp_customer_order($no);if(!$o)htp_fail('forbidden');
+        $nowTs = time();
+        $isOrderExpired = !empty($o['payment_expires_at'])
+            ? (int) $o['payment_expires_at'] <= $nowTs
+            : (!empty($o['created_at']) && (strtotime($o['created_at'] . ' UTC') + PAYMENT_HOLD_SECONDS) <= $nowTs);
+        if (!$staff && ($o['status'] === 'cancelled' || ($o['status'] === 'new' && $isOrderExpired))) {
+            htp_fail('forbidden');
+        }
         if($type==='receipt')$row=hyg_one('SELECT qr_data,qr_mime FROM transfer_order_receipts WHERE order_id=?',[$o['id']]);
         else{
             if($o['status']==='cancelled')htp_fail('forbidden');

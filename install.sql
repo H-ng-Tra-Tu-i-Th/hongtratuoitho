@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS orders (
  subtotal_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
  discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
  total_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+ payment_expires_at BIGINT UNSIGNED NULL,
  status ENUM('new','accepted','done','cancelled') NOT NULL DEFAULT 'new',
  game_wallet_token VARCHAR(64) DEFAULT NULL,
  game_award_processed TINYINT(1) NOT NULL DEFAULT 0,
@@ -109,7 +110,8 @@ CREATE TABLE IF NOT EXISTS orders (
  notification_email_detail VARCHAR(255) DEFAULT NULL,
  notification_email_attempts INT NOT NULL DEFAULT 0,
  notification_email_sent_at DATETIME DEFAULT NULL,
- created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ KEY idx_orders_payment_expiry(status,payment_method,payment_expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS order_items (

@@ -280,8 +280,12 @@ try {
         foreach($gameCash['line_discounts'] as $k=>$v)$coupon['line_discounts'][$k]=($coupon['line_discounts'][$k]??0)+$v;
         $couponCode=implode(',',$gameCash['codes']);if(strlen($couponCode)>80)$couponCode=$gameCash['codes'][0].' +'.(count($gameCash['codes'])-1);
     }
-    $st=$pdo->prepare('INSERT INTO orders(order_no,customer_name,phone,address,payment_method,invoice_required,invoice_company_name,invoice_tax_id,invoice_company_address,invoice_company_representative,invoice_company_phone,invoice_email,order_note,coupon_code,subtotal_amount,discount_amount,total_amount,game_wallet_token,group_room_id,group_title,member_id,promotion_mode,game_chances_expected,checkout_request_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
-    $st->execute([$no,$name,$phone,$address,$pay,$invoice?1:0,$companyName?:null,$taxId?:null,$companyAddress?:null,$companyRepresentative?:null,$companyPhone?:null,$invoiceEmail?:null,$orderNote?:null,$couponCode?:null,$subtotal,$discount,$total,$choice['mode']==='draw'?($walletToken?:null):null,$groupCheckout['room']['id']??null,$groupCheckout['room']['title']??null,$orderMemberId,$choice['mode'],$expectedGameChances,hash('sha256',$checkoutToken)]);
+    $paymentExpiresAt = null;
+    if ($pay === 'transfer' && $total > 0) {
+        $paymentExpiresAt = (int) $pdo->query('SELECT UNIX_TIMESTAMP()')->fetchColumn() + PAYMENT_HOLD_SECONDS;
+    }
+    $st=$pdo->prepare('INSERT INTO orders(order_no,customer_name,phone,address,payment_method,invoice_required,invoice_company_name,invoice_tax_id,invoice_company_address,invoice_company_representative,invoice_company_phone,invoice_email,order_note,coupon_code,subtotal_amount,discount_amount,total_amount,payment_expires_at,game_wallet_token,group_room_id,group_title,member_id,promotion_mode,game_chances_expected,checkout_request_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    $st->execute([$no,$name,$phone,$address,$pay,$invoice?1:0,$companyName?:null,$taxId?:null,$companyAddress?:null,$companyRepresentative?:null,$companyPhone?:null,$invoiceEmail?:null,$orderNote?:null,$couponCode?:null,$subtotal,$discount,$total,$paymentExpiresAt,$choice['mode']==='draw'?($walletToken?:null):null,$groupCheckout['room']['id']??null,$groupCheckout['room']['title']??null,$orderMemberId,$choice['mode'],$expectedGameChances,hash('sha256',$checkoutToken)]);
     $oid=(int)$pdo->lastInsertId();
     $st2=$pdo->prepare('INSERT INTO order_items(order_id,product_id,standalone_topping_id,product_name,cup_size,base_price,ice_choice,sugar_choice,toppings_text,unit_price,discount_amount,qty,line_total,group_member_name,group_member_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
     foreach($cart as $key=>$r){
@@ -396,7 +400,7 @@ if ($shouldNotifyNow) {
 }
 $redirectUrl = ($groupId !== '')
     ? hyg_room_url($groupId)
-    : ($pay === 'transfer' ? base_url('payment.php?order=' . rawurlencode($no)) : base_url('success.php'));
+    : (($pay === 'transfer' && $total > 0) ? base_url('payment.php?order=' . rawurlencode($no)) : base_url('success.php'));
 header('Location: ' . $redirectUrl, true, 303);
 if (session_status() === PHP_SESSION_ACTIVE)
     session_write_close();

@@ -9,7 +9,11 @@ if (!file_exists(__DIR__ . '/config.local.php')) {
 }
 require __DIR__ . '/config.local.php';
 
-date_default_timezone_set(APP_TIMEZONE ?? 'Asia/Taipei');
+date_default_timezone_set(APP_TIMEZONE ?? 'Asia/Ho_Chi_Minh');
+
+if (!defined('PAYMENT_HOLD_SECONDS')) {
+    define('PAYMENT_HOLD_SECONDS', 900);
+}
 
 if (!defined('GOONG_API_KEY')) {
     define('GOONG_API_KEY', '');

@@ -201,7 +201,8 @@ function htp_initialize_order(int $orderId): void
     // Already-collected legacy/direct-store groups must never be asked to pay the total again.
     if (!empty($o['group_room_id']) && ($summary['collection_mode'] ?? 'store') !== 'host')
         return;
-    db()->prepare("INSERT INTO transfer_order_receipts(order_id,status,amount,created_at) VALUES(?,?,?,UTC_TIMESTAMP())")->execute([$orderId, (float) $o['total_amount'] <= 0 ? 'not_required' : 'pending', $o['total_amount']]);
+    $isZero = (float) $o['total_amount'] <= 0;
+    db()->prepare("INSERT INTO transfer_order_receipts(order_id,status,amount,confirmed_at,created_at) VALUES(?,?,?,IF(?=1, UTC_TIMESTAMP(), NULL),UTC_TIMESTAMP())")->execute([$orderId, $isZero ? 'not_required' : 'pending', $o['total_amount'], $isZero ? 1 : 0]);
 }
 function htp_receipt(int $orderId): ?array
 {

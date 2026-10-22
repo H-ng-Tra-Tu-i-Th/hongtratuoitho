@@ -149,7 +149,7 @@ function hcq_field_attrs(array $errors, string $name): string
  */
 function customer_find_pending_payment_order(?int $memberId = null, ?string $phone = null, array $sessionOrders = [], bool $forUpdate = false): ?array
 {
-    // Tự động quét và hủy các đơn quá hạn 15 phút chưa thanh toán (để không chặn khách hàng)
+    // Tự động quét và hủy các đơn quá thời gian giữ thanh toán chưa thanh toán.
     require_once __DIR__ . '/order_workflow.php';
     if (function_exists('htow_cancel_expired_orders')) {
         try {
@@ -210,7 +210,7 @@ function customer_find_pending_payment_order(?int $memberId = null, ?string $pho
 
     $whereUser = '(' . implode(' OR ', $userClauses) . ')';
 
-    // Lazy Expiration tức thì: Hủy ngay các đơn quá 15 phút của riêng User / Số điện thoại này
+    // Lazy expiration: hủy ngay các đơn quá thời gian giữ của user / số điện thoại này.
     try {
         $cancelSql = "UPDATE orders o
                       LEFT JOIN transfer_order_receipts r ON r.order_id = o.id
@@ -218,14 +218,17 @@ function customer_find_pending_payment_order(?int $memberId = null, ?string $pho
                       WHERE $whereUser
                         AND o.status = 'new'
                         AND o.payment_method = 'transfer'
-                        AND o.created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+                        AND (
+                            (o.payment_expires_at IS NOT NULL AND o.payment_expires_at <= UNIX_TIMESTAMP())
+                            OR (o.payment_expires_at IS NULL AND o.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL " . (int) PAYMENT_HOLD_SECONDS . " SECOND))
+                        )
                         AND COALESCE(r.received_amount, 0) <= 0
                         AND COALESCE(r.status, 'pending') NOT IN ('confirmed', 'overpaid')";
         $pdo->prepare($cancelSql)->execute($userParams);
     } catch (Throwable $ignored) {
     }
 
-    $sql = "SELECT o.id, o.order_no, o.total_amount, o.status, o.payment_method, o.phone, o.customer_name, o.created_at,
+    $sql = "SELECT o.id, o.order_no, o.total_amount, o.status, o.payment_method, o.phone, o.customer_name, o.created_at, o.payment_expires_at,
                    r.status AS receipt_status, r.received_amount, r.refunded_amount
             FROM orders o
             LEFT JOIN transfer_order_receipts r ON r.order_id = o.id
@@ -233,7 +236,10 @@ function customer_find_pending_payment_order(?int $memberId = null, ?string $pho
               AND o.status NOT IN ('done', 'cancelled')
               AND o.payment_method = 'transfer'
               AND o.total_amount > 0
-              AND o.created_at >= DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+              AND (
+                  (o.payment_expires_at IS NOT NULL AND o.payment_expires_at > UNIX_TIMESTAMP())
+                  OR (o.payment_expires_at IS NULL AND o.created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL " . (int) PAYMENT_HOLD_SECONDS . " SECOND))
+              )
               AND (
                   r.order_id IS NULL
                   OR r.status IN ('pending', 'partial', 'requested')

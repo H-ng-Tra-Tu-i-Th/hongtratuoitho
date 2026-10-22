@@ -7,6 +7,8 @@ export interface SepayPaymentManagerOptions {
   groupId?: string;
   mode?: PaymentMode;
   expectedAmount?: number;
+  durationSeconds?: number;
+  expiresAt?: number;
   containerSelector?: string;
   onPaymentConfirmed?: (response: PaymentStateResponse | GroupStateResponse) => void;
   onPaymentUpdated?: (response: PaymentStateResponse | GroupStateResponse) => void;
@@ -22,12 +24,20 @@ export class SepayPaymentManager {
   private isPolling = false;
   private pollTimer: any = null;
   private countdownTimer: any = null;
-  private remainingSeconds = 900; // 15 minutes default
+  private expiresAt: number;
+  private remainingSeconds: number;
   private isDestroyed = false;
 
   constructor(service: SepayPaymentService, options: SepayPaymentManagerOptions = {}) {
     this.service = service;
     this.options = options;
+    const now = Math.floor(Date.now() / 1000);
+    this.expiresAt = typeof options.expiresAt === 'number' && !isNaN(options.expiresAt) && options.expiresAt > 0
+      ? options.expiresAt
+      : (typeof options.durationSeconds === 'number' && !isNaN(options.durationSeconds) && options.durationSeconds > 0
+        ? now + options.durationSeconds
+        : 0);
+    this.remainingSeconds = Math.max(0, Math.ceil(this.expiresAt - now));
   }
 
   public init(): void {
@@ -97,9 +107,24 @@ export class SepayPaymentManager {
 
   private handleOrderState(res: PaymentStateResponse): void {
     const isPaid = res.status === 'confirmed' || res.financial_state === 'confirmed' || res.status === 'overpaid' || res.paid === true;
+    const isCancelled = (res as any).cancelled || (res as any).order_status === 'cancelled' || res.status === 'cancelled';
 
     if (this.options.onPaymentUpdated) {
       this.options.onPaymentUpdated(res);
+    }
+
+    if (isCancelled) {
+      this.stopPolling();
+      this.stopCountdown();
+      if ((res as any).html) {
+        const panel = document.querySelector('[data-sepay-panel]');
+        if (panel) {
+          panel.outerHTML = (res as any).html;
+        }
+      }
+      document.querySelectorAll('[data-cancel-order-form], .payment-actions-bar form').forEach((el) => el.remove());
+      document.querySelectorAll('.payment-info-callout, .payment-page-hero').forEach((el) => el.remove());
+      return;
     }
 
     if (isPaid) {
@@ -130,17 +155,28 @@ export class SepayPaymentManager {
     const countdownEl = document.querySelector('[data-sepay-countdown]');
     if (!countdownEl) return;
 
-    this.countdownTimer = setInterval(() => {
-      if (this.isDestroyed) return;
-      this.remainingSeconds--;
+    const updateDisplay = () => {
+      if (this.expiresAt) {
+        this.remainingSeconds = Math.max(0, Math.ceil(this.expiresAt - Date.now() / 1000));
+      }
       if (this.remainingSeconds <= 0) {
         this.stopCountdown();
+        document.querySelectorAll('[data-cancel-order-form], .payment-actions-bar form').forEach((el) => {
+          (el as HTMLElement).style.display = 'none';
+        });
         countdownEl.textContent = '00:00';
         return;
       }
       const m = Math.floor(this.remainingSeconds / 60);
       const s = this.remainingSeconds % 60;
       countdownEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    };
+
+    updateDisplay();
+
+    this.countdownTimer = setInterval(() => {
+      if (this.isDestroyed) return;
+      updateDisplay();
     }, 1000);
   }
 

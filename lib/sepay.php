@@ -438,8 +438,33 @@ function sepay_process_order_payment(array $payload, string $orderNo): array
 
         $recipientJson = json_encode(htp_account_snapshot($matchedAccount), JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
-        // Handle payment for already-cancelled orders
-        if ($order['status'] === 'cancelled') {
+        // Check if order is already cancelled or has expired past the configured hold period.
+        $nowTs = time();
+        $isExpired = false;
+        if (!empty($order['payment_expires_at'])) {
+            $isExpired = (int) $order['payment_expires_at'] <= $nowTs;
+        } elseif (!empty($order['created_at'])) {
+            try {
+                $createdUtc = new DateTimeImmutable($order['created_at'], new DateTimeZone('UTC'));
+                $isExpired = ($createdUtc->getTimestamp() + PAYMENT_HOLD_SECONDS) <= $nowTs;
+            } catch (Throwable) {
+                $isExpired = true;
+            }
+        }
+
+        // Handle payment for already-cancelled or expired orders
+        if ($order['status'] === 'cancelled' || ($order['status'] === 'new' && $isExpired)) {
+            if ($order['status'] === 'new') {
+                $curVer = (int) ($order['status_version'] ?? 1);
+                $newVer = $curVer + 1;
+                $pdo->prepare('UPDATE orders SET status = "cancelled", status_version = ? WHERE id = ?')
+                    ->execute([$newVer, $orderId]);
+                $pdo->prepare('INSERT INTO order_status_events(order_id, from_status, to_status, from_version, to_version, admin_id, reason, created_at) VALUES(?, "new", "cancelled", ?, ?, 0, ?, UTC_TIMESTAMP())')
+                    ->execute([$orderId, $curVer, $newVer, 'Tự động hủy đơn do khách chuyển khoản sau khi đã quá hạn thời gian thanh toán']);
+                $order['status'] = 'cancelled';
+                $order['status_version'] = $newVer;
+            }
+
             $pdo->prepare("UPDATE transfer_order_receipts SET status = 'refund_pending', version = ?, received_amount = ?, report_state = 'refund_pending', recipient_json = COALESCE(recipient_json, ?), confirmed_at = UTC_TIMESTAMP(), confirmed_by_admin_id = 0 WHERE order_id = ?")
                 ->execute([$newVersion, htp_decimal($newReceived), $recipientJson, $orderId]);
 
@@ -458,7 +483,7 @@ function sepay_process_order_payment(array $payload, string $orderNo): array
                     $recipientJson,
                     $referenceCode !== '' ? $referenceCode : ('sepay:' . $sepayId),
                     $refKey,
-                    'Khách chuyển khoản sau khi đơn đã hủy. Chờ xử lý hoàn tiền / soát xét thủ công. Ghi chú: ' . mb_substr($content, 0, 500),
+                    'Khách chuyển khoản sau khi đơn đã hủy hoặc quá hạn thời gian thanh toán. Chờ xử lý hoàn tiền / soát xét thủ công. Ghi chú: ' . mb_substr($content, 0, 500),
                     0,
                     json_encode($safe($before), JSON_UNESCAPED_UNICODE),
                     json_encode($safe($after), JSON_UNESCAPED_UNICODE)
@@ -472,7 +497,7 @@ function sepay_process_order_payment(array $payload, string $orderNo): array
                 'order_no' => $orderNo,
                 'received' => htp_decimal($delta),
                 'receipt_status' => 'refund_pending',
-                'message' => 'Payment received for cancelled order. Flagged for refund/manual review.'
+                'message' => 'Payment received for cancelled or expired order. Flagged for refund/manual review.'
             ];
         }
 

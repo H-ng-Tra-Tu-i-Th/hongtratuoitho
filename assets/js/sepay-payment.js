@@ -97,9 +97,12 @@
       this.isPolling = false;
       this.pollTimer = null;
       this.countdownTimer = null;
-      this.remainingSeconds = typeof options.durationSeconds === 'number' && !isNaN(options.durationSeconds)
-        ? Math.max(0, options.durationSeconds)
-        : 900;
+      this.expiresAt = typeof options.expiresAt === 'number' && !isNaN(options.expiresAt) && options.expiresAt > 0
+        ? options.expiresAt
+        : (typeof options.durationSeconds === 'number' && !isNaN(options.durationSeconds) && options.durationSeconds > 0
+          ? Math.floor(Date.now() / 1000) + options.durationSeconds
+          : 0);
+      this.remainingSeconds = Math.max(0, Math.ceil(this.expiresAt - Date.now() / 1000));
       this.isDestroyed = false;
       this.lastSignature = null;
     }
@@ -190,6 +193,9 @@
             panel.outerHTML = res.html;
           }
         }
+        // Ẩn nút hủy đơn hàng và các thông tin chỉ dành cho đơn chờ thanh toán
+        document.querySelectorAll('[data-cancel-order-form], .payment-actions-bar form').forEach((el) => el.remove());
+        document.querySelectorAll('.payment-info-callout, .payment-page-hero').forEach((el) => el.remove());
         return;
       }
 
@@ -231,8 +237,15 @@
       if (!countdownEl) return;
 
       const updateDisplay = () => {
+        if (this.expiresAt) {
+          this.remainingSeconds = Math.max(0, Math.ceil(this.expiresAt - Date.now() / 1000));
+        }
         if (this.remainingSeconds <= 0) {
           this.stopCountdown();
+          // Ẩn nút hủy đơn khi đã hết hạn
+          document.querySelectorAll('[data-cancel-order-form], .payment-actions-bar form').forEach((el) => {
+            el.style.display = 'none';
+          });
           countdownEl.textContent = '00:00';
           const card = document.querySelector('.sepay-payment-card');
           if (card) card.classList.add('is-expired');
@@ -273,7 +286,7 @@
             if (expIcon) expIcon.style.display = 'block';
             const statusNote = liveStatus.querySelector('[data-sepay-status-note]');
             if (statusNote) {
-              statusNote.textContent = (window.__CLIENT_I18N__?.client?.sepay_qr_expired_notice) || 'Đơn hàng đã hết thời gian giữ chỗ thanh toán (15 phút). Hệ thống sẽ tự động hủy đơn để bạn có thể đặt lại đồ uống mới bất cứ lúc nào.';
+              statusNote.textContent = (window.__CLIENT_I18N__?.client?.sepay_qr_expired_notice) || 'Đơn hàng đã hết thời gian giữ chỗ thanh toán. Hệ thống sẽ tự động hủy đơn để bạn có thể đặt lại đồ uống mới bất cứ lúc nào.';
             }
           }
           return;
@@ -288,7 +301,6 @@
       if (this.remainingSeconds > 0) {
         this.countdownTimer = setInterval(() => {
           if (this.isDestroyed) return;
-          this.remainingSeconds--;
           updateDisplay();
         }, 1000);
       }
@@ -303,8 +315,15 @@
 
     rebindAfterPanelReplacement(panel) {
       this.stopCountdown();
-      const durationSeconds = Number.parseInt(panel.dataset.durationSeconds || '', 10);
-      this.remainingSeconds = Number.isFinite(durationSeconds) ? Math.max(0, durationSeconds) : 0;
+      const expiresAt = Number.parseInt(panel.dataset.expiresAt || '', 10);
+      if (Number.isFinite(expiresAt) && expiresAt > 0) {
+        this.expiresAt = expiresAt;
+        this.remainingSeconds = Math.max(0, Math.ceil(this.expiresAt - Date.now() / 1000));
+      } else {
+        const durationSeconds = Number.parseInt(panel.dataset.durationSeconds || '', 10);
+        this.remainingSeconds = Number.isFinite(durationSeconds) ? Math.max(0, durationSeconds) : 0;
+        this.expiresAt = Math.floor(Date.now() / 1000) + this.remainingSeconds;
+      }
       this.bindQRImageRetry();
       this.startCountdown();
     }
@@ -458,12 +477,17 @@
       const stateUrl = individualPanel.dataset.paymentStateUrl || '';
       const durationSeconds = individualPanel.dataset.durationSeconds !== undefined
         ? Math.max(0, parseInt(individualPanel.dataset.durationSeconds, 10))
-        : 900;
+        : 0;
+      const parsedExpiresAt = Number.parseInt(individualPanel.dataset.expiresAt || '', 10);
+      const expiresAt = Number.isFinite(parsedExpiresAt) && parsedExpiresAt > 0
+        ? parsedExpiresAt
+        : (Math.floor(Date.now() / 1000) + durationSeconds);
       const service = new SepayPaymentService();
       const manager = new SepayPaymentManager(service, {
         orderNo,
         stateUrl,
         durationSeconds,
+        expiresAt,
         containerSelector: '[data-sepay-panel]',
         onPaymentConfirmed: () => {
           // Success handled in renderSuccessState

@@ -336,10 +336,21 @@ function htp_render_account(array $a): string
               $des = sepay_order_description($order['order_no']);
               $vietQrUrl = ($accNum && $bankName) ? sepay_qr_url($accNum, $bankName, (float) $r['amount'], $des, 'compact') : '';
 
-              // Tính thời gian giữ đơn thực tế dựa trên thời điểm tạo đơn trong DB (15 phút = 900 giây)
-              $createdAt = !empty($order['created_at']) ? strtotime($order['created_at']) : time();
-              $holdSeconds = 15 * 60;
-              $remainingSeconds = max(0, min($holdSeconds, ($createdAt + $holdSeconds) - time()));
+              // Tính thời gian giữ đơn thực tế dựa trên payment_expires_at (epoch timestamp) hoặc fallback created_at UTC
+              $nowTs = time();
+              if (!empty($order['payment_expires_at'])) {
+                  $expiresAt = (int) $order['payment_expires_at'];
+              } elseif (!empty($order['created_at'])) {
+                  try {
+                      $createdUtc = new DateTimeImmutable($order['created_at'], new DateTimeZone('UTC'));
+                      $expiresAt = $createdUtc->getTimestamp() + PAYMENT_HOLD_SECONDS;
+                  } catch (Throwable) {
+                      $expiresAt = 0;
+                  }
+              } else {
+                  $expiresAt = 0;
+              }
+              $remainingSeconds = max(0, $expiresAt - $nowTs);
               $countdownDisplay = sprintf('%02d:%02d', floor($remainingSeconds / 60), $remainingSeconds % 60);
               $isExpired = ($remainingSeconds <= 0 && !$isConfirmed && !$cancelled);
 
@@ -349,6 +360,7 @@ function htp_render_account(array $a): string
     data-is-confirmed="<?= $isConfirmed ? '1' : '0' ?>" data-order-no="<?= e($order['order_no']) ?>" data-payment-panel
     data-payment-version="<?= e($version) ?>"
     data-duration-seconds="<?= (int) $remainingSeconds ?>"
+    data-expires-at="<?= (int) $expiresAt ?>"
     data-payment-state-url="<?= e(base_url('payment-state.php?order=' . rawurlencode($order['order_no']))) ?>"
     data-payment-changed="<?= e(htp_ux('changed')) ?>" data-payment-offline="<?= e(htp_ux('offline')) ?>"
     data-payment-lost="<?= e(htp_ux('session_lost')) ?>"

@@ -130,6 +130,10 @@ if ($order) {
     try {
         $order = htp_customer_order($order['order_no']);
         $receipt = htp_receipt((int)$order['id']);
+        if ((float)($order['total_amount'] ?? 0) <= 0 || (isset($receipt['status']) && $receipt['status'] === 'not_required')) {
+            header('Location: ' . base_url('success.php?order=' . rawurlencode($order['order_no'])), true, 303);
+            exit;
+        }
         $paymentHtml = $receipt ? htp_render_customer($order) : '<p>' . e(htp('legacy')) . '</p>';
     } catch (Throwable $e) {
         $error = htp_error($e);
@@ -258,7 +262,7 @@ front_header($pageTitle);
         );
       ?>
       <?php if ($canCancelTransfer): ?>
-        <form method="post" action="<?= e(base_url('payment.php?order=' . rawurlencode($order['order_no']))) ?>" onsubmit="return confirm('<?= e(client_t('cancel_order_confirm')) ?>');" style="display:inline-flex;margin:0;">
+        <form method="post" action="<?= e(base_url('payment.php?order=' . rawurlencode($order['order_no']))) ?>" onsubmit="return confirm('<?= e(client_t('cancel_order_confirm')) ?>');" style="display:inline-flex;margin:0;" data-cancel-order-form>
           <?= csrf_field() ?>
           <input type="hidden" name="action" value="cancel_pending">
           <input type="hidden" name="reorder" value="0">

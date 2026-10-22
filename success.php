@@ -34,12 +34,13 @@ if ($savedOrder && !empty($savedOrder['id'])) {
 
 // Check payment receipt state
 $receipt = ($savedOrder && !empty($savedOrder['id'])) ? htp_receipt((int)$savedOrder['id']) : null;
-$isConfirmed = $receipt && in_array($receipt['status'] ?? '', ['confirmed', 'overpaid'], true);
+$isZeroAmount = (float)($savedOrder['total_amount'] ?? 0) <= 0;
+$isConfirmed = $isZeroAmount || ($receipt && in_array($receipt['status'] ?? '', ['confirmed', 'overpaid', 'not_required'], true));
 $isTransfer = ($savedOrder['payment_method'] ?? '') === 'transfer';
 $orderNo = $no ?: ($savedOrder['order_no'] ?? '');
 
 // If customer has an unconfirmed transfer order, send them to payment.php to pay first
-if ($savedOrder && $isTransfer && !$isConfirmed) {
+if ($savedOrder && $isTransfer && !$isConfirmed && !$isZeroAmount) {
   header('Location: ' . base_url('payment.php?order=' . rawurlencode($savedOrder['order_no'])), true, 303);
   exit;
 }
@@ -81,7 +82,7 @@ front_header(t('order_sent'));
       <!-- Left Column: Payment & Fulfillment Details -->
       <main class="order-success-primary">
         <!-- A. Payment Status Card -->
-        <?php if ($savedOrder && $isTransfer && $isConfirmed): ?>
+        <?php if ($savedOrder && ($isZeroAmount || ($isTransfer && $isConfirmed))): ?>
           <section class="order-paid-status-card" aria-label="<?= e(sepay_t('sepay_success_title')) ?>">
             <div class="order-paid-badge">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">

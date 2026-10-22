@@ -321,6 +321,20 @@
   }
 }
 
+/* Auto-hide cancelled or expired payment actions. */
+.payment-page-container:has(.sepay-cancelled-card) [data-cancel-order-form],
+.payment-page-container:has(.sepay-cancelled-card) .payment-actions-bar form,
+.payment-page-container:has(.sepay-cancelled-card) .payment-info-callout,
+.payment-page-container:has(.sepay-cancelled-card) .payment-page-hero,
+body:has(.sepay-cancelled-card) [data-cancel-order-form],
+body:has(.sepay-cancelled-card) .payment-actions-bar form,
+body:has(.sepay-cancelled-card) .payment-info-callout,
+body:has(.sepay-cancelled-card) .payment-page-hero,
+.payment-page-container:has(.is-expired) [data-cancel-order-form],
+.payment-page-container:has(.is-expired) .payment-actions-bar form {
+  display: none !important;
+}
+
 /* Cancelled State Card (Modern Fintech Theme) */
 .sepay-cancelled-card {
   text-align: center;

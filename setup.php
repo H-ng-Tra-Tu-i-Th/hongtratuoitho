@@ -13,7 +13,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
         $pdo=new PDO("mysql:host={$host};dbname={$name};charset=utf8mb4",$user,$pass,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION]);
         $sql=file_get_contents(__DIR__.'/install.sql');foreach(preg_split('/;\s*(?:\r?\n|$)/',$sql) as $q){if(trim($q))$pdo->exec($q);}
         $hash=password_hash($adminPass,PASSWORD_DEFAULT);$st=$pdo->prepare('INSERT INTO admins(username,password_hash) VALUES(?,?) ON DUPLICATE KEY UPDATE password_hash=VALUES(password_hash)');$st->execute([$admin,$hash]);
-        $cfg="<?php\ndefine('DB_HOST', ".var_export($host,true).");\ndefine('DB_NAME', ".var_export($name,true).");\ndefine('DB_USER', ".var_export($user,true).");\ndefine('DB_PASS', ".var_export($pass,true).");\ndefine('APP_BASE_URL', ".var_export($base,true).");\ndefine('APP_TIMEZONE', 'Asia/Taipei');\n";
+        $cfg="<?php\ndefine('DB_HOST', ".var_export($host,true).");\ndefine('DB_NAME', ".var_export($name,true).");\ndefine('DB_USER', ".var_export($user,true).");\ndefine('DB_PASS', ".var_export($pass,true).");\ndefine('APP_BASE_URL', ".var_export($base,true).");\ndefine('APP_TIMEZONE', 'Asia/Ho_Chi_Minh');\ndefine('PAYMENT_HOLD_SECONDS', 900);\n";
         if(file_put_contents(__DIR__.'/config.local.php',$cfg)===false)throw new Exception($tx[$lang]['write']);
         if(!is_dir(__DIR__.'/uploads') && !@mkdir(__DIR__.'/uploads',0755,true)) throw new Exception('Unable to create uploads directory.');
         $done=true;

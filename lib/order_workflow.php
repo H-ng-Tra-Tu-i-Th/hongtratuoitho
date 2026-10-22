@@ -7,19 +7,23 @@ function htow_fail(string $key): never {throw new OrderWorkflowError($key);}
 function htow_schema(): void {
     static $done=false;if($done)return;$pdo=db();if($pdo->inTransaction())htow_fail('storage');
     $st=$pdo->prepare('SELECT setting_value FROM settings WHERE setting_key=?');$st->execute(['order_workflow_schema']);
-    if($st->fetchColumn()!=='19.15.0'){
+    if($st->fetchColumn()!=='19.16.0'){
         $lock='htow:'.substr(hash('sha256',(string)$pdo->query('SELECT DATABASE()')->fetchColumn()),0,40);
         $guard=$pdo->prepare('SELECT GET_LOCK(?,10)');$guard->execute([$lock]);if((int)$guard->fetchColumn()!==1)htow_fail('storage');
         try{
-            $st->execute(['order_workflow_schema']);if($st->fetchColumn()!=='19.15.0'){
+            $st->execute(['order_workflow_schema']);if($st->fetchColumn()!=='19.16.0'){
                 $check=$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='orders' AND COLUMN_NAME='status_version'");
                 if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE orders ADD COLUMN status_version INT UNSIGNED NOT NULL DEFAULT 1');
                 $check=$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='orders' AND COLUMN_NAME='checkout_request_hash'");
                 if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE orders ADD COLUMN checkout_request_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL');
                 $check=$pdo->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='orders' AND INDEX_NAME='uq_order_checkout_request'");
                 if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE orders ADD UNIQUE KEY uq_order_checkout_request (checkout_request_hash)');
+                $check=$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='orders' AND COLUMN_NAME='payment_expires_at'");
+                if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE orders ADD COLUMN payment_expires_at BIGINT UNSIGNED NULL AFTER total_amount');
+                $check=$pdo->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='orders' AND INDEX_NAME='idx_orders_payment_expiry'");
+                if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE orders ADD INDEX idx_orders_payment_expiry (status, payment_method, payment_expires_at)');
                 $pdo->exec("CREATE TABLE IF NOT EXISTS order_status_events (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED NOT NULL,from_status VARCHAR(16) NOT NULL,to_status VARCHAR(16) NOT NULL,from_version INT UNSIGNED NOT NULL,to_version INT UNSIGNED NOT NULL,admin_id BIGINT UNSIGNED NOT NULL,reason VARCHAR(1000) NOT NULL,created_at DATETIME NOT NULL,KEY idx_order_status_history(order_id,id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-                $pdo->prepare('INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)')->execute(['order_workflow_schema','19.15.0']);
+                $pdo->prepare('INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)')->execute(['order_workflow_schema','19.16.0']);
             }
         }finally{$pdo->prepare('SELECT RELEASE_LOCK(?)')->execute([$lock]);}
     }$done=true;
@@ -122,14 +126,17 @@ function htp_csv_safe(mixed $value): string {
  */
 function htow_cancel_expired_orders(int $limit = 50): int {
     $pdo = db();
-    // Orders with status 'new', payment_method = 'transfer', created > 15 mins ago,
+    // Orders with status 'new', payment_method = 'transfer', past the configured hold period,
     // where transfer_order_receipts has received_amount <= 0 or receipt status in ('pending', 'requested')
     $sql = "SELECT o.id, o.order_no, o.status_version 
             FROM orders o
             LEFT JOIN transfer_order_receipts r ON r.order_id = o.id
             WHERE o.status = 'new'
               AND o.payment_method = 'transfer'
-              AND o.created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)
+              AND (
+                  (o.payment_expires_at IS NOT NULL AND o.payment_expires_at <= UNIX_TIMESTAMP())
+                  OR (o.payment_expires_at IS NULL AND o.created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL " . (int) PAYMENT_HOLD_SECONDS . " SECOND))
+              )
               AND COALESCE(r.received_amount, 0) <= 0
               AND COALESCE(r.status, 'pending') NOT IN ('confirmed', 'overpaid')
             ORDER BY o.id ASC
@@ -141,7 +148,7 @@ function htow_cancel_expired_orders(int $limit = 50): int {
     }
 
     $cancelledCount = 0;
-    $reason = 'Tự động hủy đơn do quá hạn thời gian thanh toán (15 phút)';
+    $reason = 'Tự động hủy đơn do quá hạn thời gian thanh toán';
 
     foreach ($expiredOrders as $item) {
         $orderId = (int)$item['id'];
@@ -186,7 +193,7 @@ function htow_cancel_expired_orders(int $limit = 50): int {
 
 /**
  * Automated in-app cron: Runs on background web requests every 60 seconds without blocking.
- * Cancels pending transfer orders older than 15 minutes automatically like Node.js.
+ * Cancels pending transfer orders past the configured hold period automatically.
  */
 function htow_auto_maintenance(): void {
     $now = time();
@@ -222,5 +229,3 @@ function htow_auto_maintenance(): void {
         $pdo->prepare('SELECT RELEASE_LOCK(?)')->execute([$lockName]);
     }
 }
-
-
