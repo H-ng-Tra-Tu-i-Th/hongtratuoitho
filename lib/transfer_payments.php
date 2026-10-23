@@ -255,15 +255,30 @@ function htp_customer_allowed(array $order): bool
             return true;
     return false;
 }
-function htp_customer_order(mixed $number): array
-{
-    $no = htp_text($number, 80);
-    if ($no === '')
-        htp_fail('not_found');
-    $o = hyg_one('SELECT * FROM orders WHERE order_no=?', [$no]);
-    if (!$o || !htp_customer_allowed($o))
-        htp_fail('forbidden');
-    return $o;
+/** True while this customer has an order waiting for payment (or an open Mini Game checkout); group sharing is hidden then. */
+function htp_customer_has_unpaid(): bool {
+    try{
+        if(function_exists('hcgs_locked')&&hcgs_locked())return true;
+        $where=[];$args=[];
+        if(($mid=(int)($_SESSION['member_id']??0))>0){$where[]='o.member_id=?';$args[]=$mid;}
+        $numbers=$_SESSION['customer_payment_orders']??[];if(!is_array($numbers))$numbers=[];$numbers[]=$_SESSION['last_order_no']??null;
+        $numbers=array_values(array_unique(array_filter($numbers,fn($v)=>is_string($v)&&$v!=='')));
+        if($numbers){$where[]='o.order_no IN ('.implode(',',array_fill(0,count($numbers),'?')).')';$args=array_merge($args,$numbers);}
+        if(!$where)return false;
+        return (bool)hyg_one("SELECT 1 FROM orders o JOIN transfer_order_receipts r ON r.order_id=o.id WHERE (".implode(' OR ',$where).") AND o.status<>'cancelled' AND r.status IN ('pending','requested','partial') LIMIT 1",$args);
+    }catch(Throwable $e){return false;}
+}
+function htp_customer_order(mixed $number): array {
+    $no=htp_text($number,80);if($no==='')htp_fail('not_found');$o=hyg_one('SELECT * FROM orders WHERE order_no=?',[$no]);
+    if(!$o||!htp_customer_allowed($o))htp_fail('forbidden');return $o;
+}
+function htp_account_qr_file(array $a,bool $bytes=false): array {
+    $filename=(string)($a['qr_image']??'');$result=['qr_digest'=>'','qr_url'=>'','qr_data'=>null,'qr_mime'=>null];
+    if(!preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*\.(?:jpe?g|png|webp)$/Di',$filename))return $result;
+    $path=dirname(__DIR__).'/uploads/'.$filename;if(!is_file($path)||is_link($path)||filesize($path)>5*1024*1024)return $result;
+    $image=@getimagesize($path);$types=[IMAGETYPE_JPEG=>'image/jpeg',IMAGETYPE_PNG=>'image/png',IMAGETYPE_WEBP=>'image/webp'];if(!$image||!isset($types[$image[2]]))return $result;
+    $result['qr_digest']=hash_file('sha256',$path);$result['qr_url']=base_url('uploads/'.$filename);
+    if($bytes){$result['qr_data']=file_get_contents($path);$result['qr_mime']=$types[$image[2]];}return $result;
 }
 /** Recommended stores NEVER become recipients. Only explicit assignment or HQ account is used. */
 function htp_order_accounts(array $order, bool $bytes = false, bool $lock = false): array

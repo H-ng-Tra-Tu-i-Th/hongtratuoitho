@@ -238,3 +238,16 @@ if (checkoutForm) {
   });
   document.querySelector('[data-checkout-errors]')?.focus();
 }
+
+// Product page: multi-check dropdown shows chosen toppings and closes on outside click.
+document.querySelectorAll('[data-multi-check]').forEach(box => {
+  const summary = box.querySelector('summary');
+  const inputs = box.querySelectorAll('input[type="checkbox"]');
+  const sync = () => {
+    const names = [...inputs].filter(i => i.checked).map(i => i.dataset.label);
+    summary.textContent = names.length ? names.join(', ') : summary.dataset.placeholder;
+  };
+  inputs.forEach(i => i.addEventListener('change', sync));
+  document.addEventListener('click', e => { if (!box.contains(e.target)) box.open = false; });
+  sync();
+});

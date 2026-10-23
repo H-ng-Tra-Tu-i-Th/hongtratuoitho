@@ -225,10 +225,10 @@ if ($retry = hcq_outcome($checkoutToken, $checkoutContext)) {
         hcq_fail($checkoutContext, $groupId, htp_ux('unknown'));
     }
 }
-if ($checkoutRequest && !hash_equals($checkoutRequest['signature'], $requestSignature))
-    hcq_fail($checkoutContext, $groupId, htp('changed'));
-$no = order_no();
-hcq_saved($checkoutToken, $no, 'unknown');
+if($checkoutRequest&&!hash_equals($checkoutRequest['signature'],$requestSignature))hcq_fail($checkoutContext,$groupId,htp('changed'));
+// Resolve (or expire) the checkout Mini Game session before the order transaction opens.
+$gameSessionId=hcgs_prize_row($groupId)?hcgs_session_id():'';
+$no=order_no();hcq_saved($checkoutToken,$no,'unknown');
 // Persist the reservation before SQL. A process crash must leave an unknown result, never an open retry.
 if (session_status() !== PHP_SESSION_ACTIVE || !session_write_close())
     hcq_fail($checkoutContext, $groupId, htp_ux('unknown'));
@@ -237,7 +237,6 @@ if (!@session_start())
 $reopenedRequest = hcq_lookup($checkoutToken, $checkoutContext);
 if (!$reopenedRequest || ($reopenedRequest['state'] ?? '') !== 'unknown' || ($reopenedRequest['order_no'] ?? '') !== $no || (int) ($_SESSION['member_id'] ?? 0) !== (int) ($orderMemberId ?? 0))
     hcq_fail($checkoutContext, $groupId, htp_ux('unknown'));
-$gameSessionId = hcgs_current_for($groupId) ? hcgs_session_id() : '';
 $pdo = db();
 try {
     $pdo->beginTransaction();

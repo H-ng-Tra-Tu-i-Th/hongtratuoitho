@@ -24,7 +24,7 @@ function hym_orders_schema(): void {
 function hym_platform_orders(int $memberId): array {
     $member = hym_current_member();
     if (!$member || (int)$member['id'] !== $memberId) return [];
-    $query = db()->prepare('SELECT id,order_no,customer_name,phone,address,total_amount,payment_method,status,created_at FROM orders WHERE member_id=? ORDER BY id DESC LIMIT 50');
+    $query = db()->prepare('SELECT id,order_no,customer_name,phone,address,subtotal_amount,discount_amount,coupon_code,total_amount,payment_method,status,group_room_id,created_at FROM orders WHERE member_id=? ORDER BY id DESC LIMIT 50');
     $query->execute([$memberId]);
     return $query->fetchAll();
 }

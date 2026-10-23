@@ -7,6 +7,7 @@ if (isset($_GET['state']) && (isset($_GET['code']) || isset($_GET['error']))) {
 require __DIR__ . '/../lib/bootstrap.php';
 require __DIR__ . '/../lib/layout.php';
 require_once __DIR__ . '/../lib/promotion_views.php';
+require_once __DIR__ . '/../lib/order_detail_view.php';
 header('Cache-Control: private, no-store');
 header('X-Robots-Tag: noindex, nofollow');
 $returnOrder = $_GET['return_order'] ?? '';
@@ -223,7 +224,7 @@ front_header(mt('member_title'));
           <?php foreach ($platformOrders as $order): ?><article class="hym-order">
               <div class="hym-record-head">
                 <div><span class="hym-label"><?= e(mt('member_order_number')) ?></span>
-                  <h3><?= e($order['order_no']) ?></h3>
+                  <h3><?= e($order['order_no']) ?> <span class="hym-order-type">- <?= e(mt(empty($order['group_room_id']) ? 'member_order_single' : 'member_order_group')) ?></span></h3>
                 </div><span class="hym-order-status"><?= e(status_label((string)$order['status'])) ?></span>
               </div>
               <dl class="hym-facts">
@@ -235,7 +236,10 @@ front_header(mt('member_title'));
                   <dt><?= e(mt('member_order_amount')) ?></dt>
                   <dd><?= e(currency()) ?><?= e(money($order['total_amount'])) ?></dd>
                 </div>
-              </dl><?php if (htp_receipt((int)$order['id'])): ?><a class="btn" href="<?= e(base_url('payment.php?order=' . rawurlencode($order['order_no']))) ?>"><?= e(htp('payment_link')) ?></a><?php endif; ?>
+              </dl>
+              <?php if ($detail = order_detail_render($order)): ?><details class="hym-order-detail">
+                  <summary><?= e(mt('member_order_detail')) ?></summary><?= $detail ?>
+                </details><?php endif; ?><?php if (htp_receipt((int)$order['id'])): ?><a class="btn" href="<?= e(base_url('payment.php?order=' . rawurlencode($order['order_no']))) ?>"><?= e(htp('payment_link')) ?></a><?php endif; ?>
             </article><?php endforeach; ?>
         </div><?php endif; ?>
     </section>
