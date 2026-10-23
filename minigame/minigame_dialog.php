@@ -214,10 +214,10 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
         <!-- Nút chia sẻ trang đặt hàng lên Facebook kèm nội dung bài viết soạn sẵn -->
         <?php require __DIR__ . '/share_facebook.php'; ?>
 
-        <details class="kyuc-prize-details" data-game-prize-details <?= $prizes ? '' : 'hidden' ?>>
+        <details class="kyuc-prize-details" data-game-prize-details <?= array_filter($prizes, fn($prize) => !hgr_reward_is_zero($prize)) ? '' : 'hidden' ?>>
             <summary><?= e($prizeHeading) ?></summary>
             <ul data-game-prizes>
-                <?php foreach ($prizes as $prize): ?>
+                <?php foreach ($prizes as $prize): if (hgr_reward_is_zero($prize)) continue; ?>
                     <li>
                         <strong><?= e(hgr_label($prize)) ?></strong>
                         <span><?= e(hgr_label($prize, 'terms') . ' ' . sprintf($prizeDays, (int)($prize['valid_days'] ?? 0))) ?></span>

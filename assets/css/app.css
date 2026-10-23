@@ -1157,3 +1157,17 @@ body.front-body{font-size:17px;line-height:1.55}
 .payment-qr-dialog{border:1px solid var(--line);border-radius:18px;padding:18px;width:min(540px,calc(100vw - 24px));max-height:90vh;overflow:auto;background:#fff}.payment-qr-dialog::backdrop{background:rgba(0,0,0,.55)}.payment-qr-dialog img{max-width:100%;height:auto;margin:14px auto}.payment-qr-dialog .btn{min-height:44px}.payment-manual-copy{width:100%;margin:8px 0;user-select:text}
 .checkout-field-error{color:var(--danger);font-weight:600}.checkout-form [aria-invalid=true]{border-color:var(--danger)}.checkout-error-summary{scroll-margin-top:100px}.checkout-form[aria-busy=true] .checkout-submit{opacity:.7;cursor:wait}.payment-session-orders{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}.payment-session-orders a{overflow-wrap:anywhere;max-width:100%}
 @media(max-width:720px){.payment-account-card{grid-template-columns:1fr}.transfer-account-main dl{grid-template-columns:1fr;gap:4px}.transfer-account-main dd{margin-bottom:9px}.payment-qr{justify-items:start}.payment-financial-summary{grid-template-columns:1fr 1fr}.payment-actions{display:grid;grid-template-columns:1fr}.payment-staff-form .btn{width:100%}}
+
+/* Product page: multi-check dropdown for toppings */
+.multi-check{position:relative;width:100%}
+.multi-check summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:10px 14px;border:1px solid #dfe2e8;border-radius:12px;background:#fff;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.multi-check summary::-webkit-details-marker{display:none}
+.multi-check summary::after{content:"▾";flex:none;color:#6b7280}
+.multi-check[open] summary{border-color:#bfc5cf;box-shadow:0 3px 9px rgba(17,24,39,.10)}
+.multi-check[open] summary::after{content:"▴"}
+.multi-check-list{margin-top:6px;max-height:212px;overflow-y:auto;background:#fff;border:1px solid #dfe2e8;border-radius:12px;box-shadow:0 10px 24px rgba(17,24,39,.14);padding:6px}
+.multi-check-item{display:flex;align-items:center;gap:10px;min-height:50px;padding:6px 10px;line-height:1.3;border-radius:8px;cursor:pointer}
+.multi-check-item:hover{background:#f5f6f8}
+.multi-check-item input{width:18px;height:18px;flex:none;margin:0}
+.multi-check-item span{flex:1;min-width:0;overflow-wrap:anywhere}
+.multi-check-item b{flex:none;white-space:nowrap}

@@ -46,11 +46,13 @@ if (!$cart) redirect(base_url('index.php'));
 $promotion = $groupCheckout ? promotion_room_choice($groupCheckout['room'], $cart) : promotion_cart_choice($cart);
 if (!$groupCheckout && !$promotion['valid']) {
   $_SESSION['coupon_error'] = pt('selection_changed');
+  hcgs_release_expired();
   redirect(base_url('cart.php'));
 }
 $coupon = $groupCheckout ? $groupCheckout['coupon'] : cart_coupon_summary($cart);
 if (!$groupCheckout && $promotion['mode'] === 'reward' && (float)$coupon['discount'] <= 0) {
   $_SESSION['coupon_error'] = pt('reward_no_discount');
+  hcgs_release_expired();
   redirect(base_url('cart.php'));
 }
 $checkoutSubtotal = cart_subtotal($cart);
@@ -103,12 +105,12 @@ if (!$checkoutUnknown) {
   }
 }
 // Money prizes won in this session are summed and taken off the bill straight away.
-$gameCash = hcgs_cash_discount($cart, $coupon, $gameSession);
+// An expired session keeps applying the prizes it already won.
+$gamePrizeSession = $gameSession ?: hcgs_prize_row((string)($groupCheckout['room']['public_id'] ?? ''));
+$gameCash = hcgs_cash_discount($cart, $coupon, $gamePrizeSession);
 $checkoutTotal = max(0, $checkoutTotal - $gameCash['discount']);
-// Group money prizes are not applied (see hcgs_cash_discount); show the codes the host keeps.
-$gameCashKept = $groupCheckout && $gameSession ? array_column(hcgs_cash_coupons($gameSession), 'code') : [];
 // Free drink/topping prizes are added as 0đ gift lines with the quantity set in the prize settings.
-$gameGifts = hcgs_gift_rewards($gameSession);
+$gameGifts = hcgs_gift_rewards($gamePrizeSession);
 $gameFlash = $_SESSION['hcgs_flash'] ?? '';
 unset($_SESSION['hcgs_flash']);
 if ($groupCheckout) $GLOBALS['hyg_header_room'] = $groupCheckout['room'];
@@ -142,11 +144,15 @@ front_header(t('order_info'));
           const box = document.querySelector('[data-game-session]');
           const clock = box && box.querySelector('[data-game-session-clock]');
           if (!clock) return;
-          const end = Date.now() + Number(box.dataset.remaining) * 1000;
+          let end = Date.now() + Number(box.dataset.remaining) * 1000;
+          // The Mini Game restarts the clock after every finished play.
+          window.hcgsSetClock = function(seconds) {
+            end = Date.now() + Math.max(0, Number(seconds) || 0) * 1000;
+          };
           const tick = function() {
             const left = Math.max(0, Math.round((end - Date.now()) / 1000));
             clock.textContent = String(Math.floor(left / 60)).padStart(2, '0') + ':' + String(left % 60).padStart(2, '0');
-            // Expiry is fixed on the server; reload slightly after it so the session is already undone.
+            // Expiry is decided on the server; reload slightly after it so the session is already ended.
             if (left === 0) {
               clearInterval(timer);
               setTimeout(function() {
@@ -264,7 +270,6 @@ front_header(t('order_info'));
         <b><?= e(currency()) ?>0</b>
       </div>
     <?php endforeach; ?>
-    <?php if ($gameCashKept): ?><p class="alert info"><?= e(hcgs_text('group_cash_kept', ['codes' => implode(', ', $gameCashKept)])) ?></p><?php endif; ?>
     <div class="review-totals">
       <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong></div><?php if ($coupon['discount'] > 0): ?><div class="discount-line"><span><?= e(t('coupon_discount')) ?> · <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div><?php endif; ?><?php if ($gameCash['discount'] > 0): ?><div class="discount-line"><span>Quà Mini Game (<?= count($gameCash['codes']) ?> mã) · <?= e(implode(', ', $gameCash['codes'])) ?></span><strong>-<?= e(currency()) ?><?= money($gameCash['discount']) ?></strong></div><?php endif; ?><div class="review-total"><span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
     </div>
