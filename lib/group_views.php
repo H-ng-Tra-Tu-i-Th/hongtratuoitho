@@ -274,36 +274,37 @@ function hyg_render_room(array $r): string
                     <div class="hyg-person-total">
                       <strong><?= e(gt('member_due')) ?></strong><b><?= e(currency()) ?><?= money($payable) ?></b></div>
                   <?php endif; ?>
-                  <?php if ($own && $open && ($split || $isHost)): ?>
+                  <?php if (false): // close-test-Hai | Bỏ chọn phương thức thanh toán nội bộ nhóm ?>
+                    <?php if ($own && $open && ($split || $isHost)): ?>
+                      <form class="hyg-payment-form" method="post" action="<?= e(base_url('group/action.php')) ?>">
+                        <?= hyg_action_fields($r, 'payment_method') ?>
 
-                    <form class="hyg-payment-form" method="post" action="<?= e(base_url('group/action.php')) ?>">
-                      <?= hyg_action_fields($r, 'payment_method') ?>
-
-                      <label><?= e(gt('payment_method')) ?>
-                        <select name="payment_method" onchange="this.form.requestSubmit()">
-                          <option value="bank_transfer" <?= $memberPayment['method'] === 'bank_transfer' ? 'selected' : '' ?>>
-                            <?= e(gt('payment_transfer')) ?></option>
-                          <option value="cash" <?= $memberPayment['method'] === 'cash' ? 'selected' : '' ?>>
-                            <?= e(gt('payment_cash')) ?></option>
-                          <?php if (!$isHost): ?>
-                            <option value="host_advance" <?= $memberPayment['method'] === 'host_advance' ? 'selected' : '' ?>>
-                              <?= e(gt('payment_host_advance')) ?></option>
-                          <?php endif; ?>
-                        </select>
-                      </label>
-                    </form>
-
-                  <?php else: ?>
-                    <p class="hyg-payment-method">
-                      <?= e(gt('payment_method')) ?>：<strong><?= e(gt(['bank_transfer' => 'payment_transfer', 'cash' => 'payment_cash', 'host_advance' => 'payment_host_advance'][$memberPayment['method']] ?? 'payment_transfer')) ?></strong>
-                    </p><?php endif; ?>
+                        <label><?= e(gt('payment_method')) ?>
+                          <select name="payment_method" onchange="this.form.requestSubmit()">
+                            <option value="bank_transfer" <?= $memberPayment['method'] === 'bank_transfer' ? 'selected' : '' ?>>
+                              <?= e(gt('payment_transfer')) ?></option>
+                            <option value="cash" <?= $memberPayment['method'] === 'cash' ? 'selected' : '' ?>>
+                              <?= e(gt('payment_cash')) ?></option>
+                            <?php if (!$isHost): ?>
+                              <option value="host_advance" <?= $memberPayment['method'] === 'host_advance' ? 'selected' : '' ?>>
+                                <?= e(gt('payment_host_advance')) ?></option>
+                            <?php endif; ?>
+                          </select>
+                        </label>
+                      </form>
+                    <?php else: ?>
+                      <p class="hyg-payment-method">
+                        <?= e(gt('payment_method')) ?>：<strong><?= e(gt(['bank_transfer' => 'payment_transfer', 'cash' => 'payment_cash', 'host_advance' => 'payment_host_advance'][$memberPayment['method']] ?? 'payment_transfer')) ?></strong>
+                      </p>
+                    <?php endif; ?>
+                  <?php endif; ?>
                   <?php if ($changed && $approval && $hasPayment): ?>
                     <p class="hyg-payment-amount-changed" role="status">
                       <?= e(gt($coveredPayer ? 'payment_covered_amount_changed_hint' : ($isHost ? 'payment_host_amount_changed_hint' : 'payment_amount_changed_hint'), ['amount' => currency() . money($payable)])) ?>
                     </p><?php endif; ?>
                   <?php if ($own && $hasPayment && $open): ?>
                     <p class="hyg-muted"><?= e(gt('payment_locked_hint')) ?></p><?php endif; ?>
-                  <?php if (!$hasPayment): ?>
+                  <?php if (false && !$hasPayment): // close-test-Hai | Bỏ hiển thị không cần thanh toán ?>
                     <p class="hyg-muted"><?= e(gt('payment_none')) ?></p><?php endif; ?>
                   <?php if (false && ($own || $host) && ($canRequest || $canConfirm)): // close-test-Hai | Bỏ thu tiền nội bộ nhóm ?>
                     <p class="alert info hyg-payment-increment">
