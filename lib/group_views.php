@@ -152,7 +152,11 @@ function hyg_render_room(array $r): string
       <p class="alert info"><?= e(gt('payment_recovery')) ?></p><?php endif; ?>
     <?php if ($status === 'locked'): ?>
       <div class="alert info">
-        <?= e(gt(!empty($payment['legacy']) ? 'settlement_unavailable' : ($split ? 'waiting_split' : 'waiting'))) ?></div>
+        <?= e(gt(!empty($payment['legacy']) ? 'settlement_unavailable' : ($host ? 'waiting_host' : 'waiting_member'))) ?>
+        <?php if ($host && $cart && !$hasInvalid): ?>
+          <a class="btn small primary" style="margin-left: 12px; vertical-align: middle; display: inline-block;" href="<?= e(base_url('checkout.php?group=' . rawurlencode($r['public_id']))) ?>"><?= e(gt('continue_checkout')) ?> →</a>
+        <?php endif; ?>
+      </div>
     <?php endif; ?>
     <div class="hyg-room-grid">
 
@@ -305,7 +309,7 @@ function hyg_render_room(array $r): string
                     <p class="alert info hyg-payment-increment">
                       <strong><?= e(gt('payment_increment_label')) ?>：<?= e(currency()) ?><?= money($newPayment) ?></strong><?php if ($retainedFunds > 0): ?><br><?= e(gt($newPayment > 0 ? 'payment_increment_only' : 'payment_increment_zero', ['net' => currency() . money($retainedFunds), 'amount' => currency() . money($newPayment)])) ?><?php endif; ?>
                     </p><?php endif; ?>
-                  <?php if ($own && $newPayment > 0 && ($canRequest || $canConfirm)): ?>
+                  <?php if (false && $own && $newPayment > 0 && ($canRequest || $canConfirm)): // close-test-Hai | Bỏ thu tiền nội bộ nhóm ?>
                     <?php if ($hostCollect && $isHost): ?>
                       <p class="hyg-muted"><?= e(htp('host_contribution')) ?></p>
                     <?php else: ?>
@@ -526,7 +530,7 @@ function hyg_render_room(array $r): string
 
         <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?><?php if ($cart && !$hasInvalid): ?>
         <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'checkout') ?>
-          <button class="btn primary block" type="submit"><?= e(gt('checkout')) ?></button>
+          <button class="btn primary block" type="submit"><?= e(gt('continue_checkout')) ?></button>
         </form>
       <?php endif; ?>
     <?php endif; ?>

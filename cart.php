@@ -19,7 +19,7 @@ unset($_SESSION['coupon_message'], $_SESSION['coupon_error'], $_SESSION['hcgs_fl
 $myRooms = [];
 try {
   $device = hyg_device();
-  if ($device !== '') $myRooms = hyg_all('SELECT r.public_id,r.title,r.status,r.expires_at FROM group_rooms r JOIN group_members m ON m.room_id=r.id WHERE m.device_hash=? ORDER BY r.id DESC LIMIT 20', [$device]);
+  if ($device !== '') $myRooms = hyg_all('SELECT r.public_id,r.title,r.status,r.expires_at,(r.owner_hash=?) AS is_host FROM group_rooms r JOIN group_members m ON m.room_id=r.id WHERE m.device_hash=? ORDER BY r.id DESC LIMIT 20', [$device, $device]);
 } catch (Throwable $e) {
   $myRooms = [];
 }
@@ -49,11 +49,14 @@ try {
         if (in_array($s, ['open', 'locked'], true) && strtotime($room['expires_at'] . ' UTC') <= time()) $s = 'expired'; ?>
 
         <!-- Chỉ hiện thị những đơn hàng đang chọn món và chờ gửi đơn -->
-        <?php if (in_array($s, ['open', 'locked'], true)): ?>
-          <a href="<?= e(hyg_room_url($room['public_id'])) ?>">
-            <strong><?= e($room['title']) ?>
-            </strong>
-            <span class="hyg-status"><?= e(gt($s)) ?></span>
+        <?php if (in_array($s, ['open', 'locked'], true)):
+          $isLockedHost = ($s === 'locked' && !empty($room['is_host']));
+          $roomLink = $isLockedHost ? base_url('checkout.php?group=' . rawurlencode($room['public_id'])) : hyg_room_url($room['public_id']);
+          $statusLabel = $isLockedHost ? gt('locked_host_action') : gt($s);
+        ?>
+          <a href="<?= e($roomLink) ?>">
+            <strong><?= e($room['title']) ?></strong>
+            <span class="hyg-status <?= $isLockedHost ? 'hyg-pending' : '' ?>"><?= e($statusLabel) ?></span>
           </a>
         <?php endif; ?>
       <?php endforeach; ?>
