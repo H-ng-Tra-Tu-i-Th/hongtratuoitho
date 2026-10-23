@@ -221,7 +221,10 @@ function htp_render_session_orders(): string
 }
 function htp_render_account(array $a): string
 {
-  ob_start(); ?><article class="transfer-account-card payment-account-card">
+  ob_start(); ?>
+
+  <!-- clost-test-Hai -->
+  <!-- <article class="transfer-account-card payment-account-card">
     <div class="transfer-account-main"><?php if (!empty($a['recipient'])): ?><small><?= e(htp('recipient')) ?>：<?= e($a['recipient']) ?></small><?php endif; ?><strong><?= e($a['bank_name'] ?? '') ?></strong>
       <dl>
         <dt><?= e(t('account_number')) ?></dt>
@@ -229,12 +232,16 @@ function htp_render_account(array $a): string
         <dt><?= e(t('account_name')) ?></dt>
         <dd><?= e($a['account_name'] ?? '') ?></dd>
       </dl>
-    </div><?php if (!empty($a['qr_url'])): ?><div class="payment-qr"><a href="<?= e($a['qr_url']) ?>" target="_blank" rel="noopener noreferrer" data-payment-qr data-qr-title="<?= e(t('transfer_qr_alt')) ?>"><img loading="lazy" src="<?= e($a['qr_url']) ?>" alt="<?= e(t('transfer_qr_alt')) ?>" width="180" height="180"><span><?= e(htp_ux('qr_open')) ?></span></a><a class="btn small" href="<?= e($a['qr_url']) ?>" download="payment-qr.png"><?= e(htp_ux('qr_save')) ?></a></div><?php endif; ?>
-  </article><?php return ob_get_clean();
-          }
-          function htp_render_group_fields(): string
-          {
-            ob_start(); ?><details class="hyg-card">
+    </div><?php if (!empty($a['qr_url'])): ?>
+
+  <div class="payment-qr"><a href="<?= e($a['qr_url']) ?>" target="_blank" rel="noopener noreferrer" data-payment-qr data-qr-title="<?= e(t('transfer_qr_alt')) ?>"><img loading="lazy" src="<?= e($a['qr_url']) ?>" alt="<?= e(t('transfer_qr_alt')) ?>" width="180" height="180"><span><?= e(htp_ux('qr_open')) ?></span></a><a class="btn small" href="<?= e($a['qr_url']) ?>" download="payment-qr.png"><?= e(htp_ux('qr_save')) ?></a></div><?php endif; ?>
+
+  </article> -->
+<?php return ob_get_clean();
+}
+function htp_render_group_fields(): string
+{
+  ob_start(); ?><details class="hyg-card">
     <summary><?= e(htp('host_collect')) ?></summary>
     <p class="hyg-muted"><?= e(htp('host_help')) ?></p><label class="hyg-check"><input type="checkbox" name="collect_by_host" value="1"><span><?= e(htp('host_collect')) ?></span></label><label><?= e(htp('host_bank')) ?><input name="host_bank_name" maxlength="120" autocomplete="off"></label><label><?= e(htp('host_number')) ?><input name="host_account_number" maxlength="80" autocomplete="off"></label><label><?= e(htp('host_name')) ?><input name="host_account_name" maxlength="160" autocomplete="off"></label><label><?= e(htp('host_qr')) ?><input type="file" name="host_qr" accept="image/jpeg,image/png,image/webp"><small><?= e(htp('qr_help')) ?></small></label>
   </details><?php return ob_get_clean();
@@ -274,6 +281,8 @@ function htp_render_account(array $a): string
               $financial = $r['financial_state'] ?? $r['status'];
               $paymentUrl = base_url('payment.php?order=' . rawurlencode($order['order_no']));
               ob_start(); ?>
+
+<?php /* TẠM TẮT khối thanh toán chuyển khoản
   <section class="transfer-payment-panel" id="merchant-payment" data-payment-panel data-payment-version="<?= e($version) ?>" data-payment-state-url="<?= e(base_url('payment-state.php?order=' . rawurlencode($order['order_no']))) ?>" data-payment-changed="<?= e(htp_ux('changed')) ?>" data-payment-offline="<?= e(htp_ux('offline')) ?>" data-payment-lost="<?= e(htp_ux('session_lost')) ?>" data-payment-login="<?= e(base_url('member/index.php?return_order=' . rawurlencode($order['order_no']))) ?>" data-payment-login-label="<?= e(htp_ux('login')) ?>" data-payment-copied="<?= e(htp_ux('copied')) ?>" data-payment-copy-manual="<?= e(htp_ux('copy_manual')) ?>" data-payment-close="<?= e(htp_ux('qr_close')) ?>">
     <h2><?= e(htp('merchant_title')) ?></h2>
     <div class="hyg-person-total"><strong><?= e(htp('merchant_total')) ?></strong><?= htp_copy((string)(int)round((float)$r['amount']), t('total'), money($r['amount'])) ?> <span><?= e(currency()) ?></span></div>
@@ -293,12 +302,22 @@ function htp_render_account(array $a): string
     <?php endif;
               if ($canReport): ?>
       <?php if ($order['payment_method'] === 'cash'): ?><p><?= e(htp('cash_help')) ?></p><?php elseif (!$accounts): ?><p role="status"><?= e(htp('missing')) ?></p><?php endif; ?>
-      <?php foreach ($accounts as $a): ?><?php if ($order['payment_method'] === 'transfer'): ?><?= htp_render_account($a) ?><?php endif; ?><form method="post" action="<?= e($paymentUrl) ?>" data-payment-report data-confirm="<?= e(htp('report_prompt')) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="report"><input type="hidden" name="account_code" value="<?= e($a['code']) ?>"><input type="hidden" name="payment_quote" value="<?= e(htp_quote($order, $r, $a)) ?>"><button class="btn primary" type="submit"><?= e(htp('report')) ?></button></form><?php endforeach; ?>
+      <?php foreach ($accounts as $a): ?><?php if ($order['payment_method'] === 'transfer'): ?><?= htp_render_account($a) ?><?php endif; ?>
+
+      <!-- <form method="post" action="<?= e($paymentUrl) ?>" data-payment-report data-confirm="<?= e(htp('report_prompt')) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="report"><input type="hidden" name="account_code" value="<?= e($a['code']) ?>"><input type="hidden" name="payment_quote" value="<?= e(htp_quote($order, $r, $a)) ?>">
+        <button class="btn primary" type="submit"><?= e(htp('report')) ?></button>
+      </form> -->
+
+    <?php endforeach; ?>
   <?php endif; ?><div class="payment-reference"><span><?= e(htp('reference', ['number' => ''])) ?></span><?= htp_copy($order['order_no'], t('order_number')) ?></div>
   <p class="muted"><?= e(htp_ux('qr_verify')) ?></p>
   <p class="payment-sync-note muted" role="status" aria-live="polite" data-payment-feedback><?= e(htp_ux('live')) ?></p>
   <div class="payment-actions"><a class="btn" href="<?= e($paymentUrl) ?>" data-payment-refresh><?= e(htp('refresh')) ?></a><?= htp_contact($order) ?></div>
-  </section><?php return ob_get_clean();
+  </section>
+*/ ?>
+
+
+<?php return ob_get_clean();
             }
             function htp_render_staff(array $order): string
             {

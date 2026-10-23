@@ -1,251 +1,1292 @@
 <?php
-function supported_languages(): array { return ['vi','en','zh']; }
-function init_language(): void {
-    $requested = isset($_GET['lang']) ? strtolower((string)$_GET['lang']) : '';
-    if (in_array($requested, supported_languages(), true)) {
-        $_SESSION['lang'] = $requested;
-        setcookie('drink_order_lang', $requested, [
-            'expires' => time() + 31536000,
-            'path' => '/',
-            'samesite' => 'Lax',
-            'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
-            'httponly' => false,
-        ]);
-    }
-    if (!isset($_SESSION['lang'])) {
-        $cookie = strtolower((string)($_COOKIE['drink_order_lang'] ?? ''));
-        $_SESSION['lang'] = in_array($cookie, supported_languages(), true) ? $cookie : 'vi';
-    }
+function supported_languages(): array
+{
+  return ['vi', 'en', 'zh'];
 }
-function current_lang(): string { return $_SESSION['lang'] ?? 'vi'; }
-function html_lang(): string { return current_lang()==='vi' ? 'vi' : (current_lang()==='en' ? 'en' : 'zh-Hant'); }
-function lang_url(string $lang): string {
-    $uri = $_SERVER['REQUEST_URI'] ?? base_url('index.php');
-    $parts = parse_url($uri);
-    $path = $parts['path'] ?? '';
-    parse_str($parts['query'] ?? '', $q);
-    $q['lang'] = $lang;
-    return $path . ($q ? '?' . http_build_query($q) : '');
+function init_language(): void
+{
+  $requested = isset($_GET['lang']) ? strtolower((string)$_GET['lang']) : '';
+  if (in_array($requested, supported_languages(), true)) {
+    $_SESSION['lang'] = $requested;
+    setcookie('drink_order_lang', $requested, [
+      'expires' => time() + 31536000,
+      'path' => '/',
+      'samesite' => 'Lax',
+      'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+      'httponly' => false,
+    ]);
+  }
+  if (!isset($_SESSION['lang'])) {
+    $cookie = strtolower((string)($_COOKIE['drink_order_lang'] ?? ''));
+    $_SESSION['lang'] = in_array($cookie, supported_languages(), true) ? $cookie : 'vi';
+  }
 }
-function translations(): array {
-    static $d = null;
-    if ($d !== null) return $d;
-    $d = [
-        'vi' => [
-            'mobile_order'=>'ĐẶT ĐỒ UỐNG','hero_title'=>'Hôm nay bạn muốn uống gì?','hero_desc'=>'Chọn đồ uống, rồi chọn độ ngọt, lượng đá và topping.','cart'=>'Giỏ hàng','online_order'=>'Hệ thống đặt đồ uống','back_menu'=>'Quay lại menu','ice'=>'Lượng đá','sugar'=>'Độ ngọt','toppings'=>'Topping','shared_all'=>'Có thể thêm vào mọi đồ uống','quantity'=>'Số lượng','add_cart'=>'Thêm vào giỏ','cart_added'=>'Đã thêm vào giỏ hàng','your_order'=>'ĐƠN CỦA BẠN','cart_empty'=>'Giỏ hàng đang trống','cart_empty_desc'=>'Hãy chọn món từ menu.','total'=>'Tổng cộng','update_cart'=>'Cập nhật giỏ hàng','checkout_info'=>'Điền thông tin đặt hàng','remove'=>'Xóa','checkout'=>'THANH TOÁN','order_info'=>'Thông tin đặt hàng','customer_name'=>'Tên khách hàng','phone'=>'Số điện thoại','delivery_address'=>'Địa chỉ giao hàng','payment_method'=>'Phương thức thanh toán','transfer'=>'Chuyển khoản','cash'=>'Tiền mặt','invoice_question'=>'Xuất hóa đơn?','yes'=>'Có','no'=>'Không','submit_order'=>'Gửi đơn hàng','order_details'=>'Chi tiết đơn hàng','order_sent'=>'Đã gửi đơn hàng','order_sent_desc'=>'Chúng tôi đã nhận đơn và sẽ gọi điện xác nhận.','order_number'=>'Mã đơn hàng','return_menu'=>'Quay lại menu','not_found_drink'=>'Không tìm thấy đồ uống này. Vui lòng chọn lại từ menu.','product_not_found'=>'Không tìm thấy món này. Vui lòng chọn lại từ menu.','invalid_option'=>'Vui lòng chọn lại cỡ ly, độ ngọt và lượng đá.','incomplete_data'=>'Vui lòng điền đầy đủ thông tin bắt buộc.','order_failed'=>'Chưa gửi được đơn hàng. Vui lòng thử lại sau.','drink'=>'Đồ uống','price'=>'Giá','status'=>'Trạng thái','active'=>'Bật','inactive'=>'Tắt','save'=>'Lưu','delete'=>'Xóa','add'=>'Thêm','edit'=>'Sửa','image'=>'Hình ảnh','category'=>'Danh mục','sort'=>'Thứ tự','headquarters'=>'TRỤ SỞ','hq_admin'=>'Quản trị trụ sở','orders'=>'Đơn hàng','products'=>'Đồ uống','categories'=>'Danh mục','settings'=>'Cài đặt','logout'=>'Đăng xuất','view_store'=>'Xem trang đặt hàng ↗','order_center'=>'Trung tâm đơn hàng','new_order'=>'Đơn mới','accepted'=>'Đã nhận','completed'=>'Hoàn tất','cancelled'=>'Đã hủy','order_no'=>'Mã đơn','time'=>'Thời gian','customer'=>'Khách hàng','payment'=>'Thanh toán','amount'=>'Số tiền','view'=>'Xem','customer_info'=>'Thông tin khách hàng','name'=>'Họ tên','address'=>'Địa chỉ','invoice'=>'Hóa đơn','needed'=>'Cần','not_needed'=>'Không cần','order_status'=>'Trạng thái nhận đơn','update_status'=>'Cập nhật trạng thái','unit_price'=>'Đơn giá','subtotal'=>'Thành tiền','grand_total'=>'Tổng tiền','drink_categories'=>'Danh mục đồ uống','add_category'=>'Thêm danh mục','existing_categories'=>'Danh mục hiện có','example_category'=>'Ví dụ: Trà sữa','only_empty_category_delete'=>'Chỉ có thể xóa danh mục không có đồ uống. Xác nhận xóa?','drink_management'=>'Quản lý đồ uống','add_drink'=>'Thêm đồ uống','ice_profile'=>'Nhãn lượng đá','sugar_profile'=>'Nhãn độ ngọt','edit_drink'=>'Sửa đồ uống','drink_name'=>'Tên đồ uống','drink_image'=>'Hình đồ uống','image_help'=>'JPG / PNG / WEBP, tối đa 5MB','remove_current_image'=>'Xóa hình hiện tại','enable_drink'=>'Bật đồ uống','save_drink'=>'Lưu đồ uống','profile_error'=>'Nhãn không hợp lệ','image_too_large'=>'Hình không được vượt quá 5MB','image_type_error'=>'Chỉ chấp nhận JPG / PNG / WEBP','image_upload_failed'=>'Tải hình thất bại','shared_toppings'=>'Topping dùng chung','shared_toppings_info'=>'Topping được bật ở đây sẽ áp dụng cho tất cả đồ uống.','add_topping'=>'Thêm topping','topping_list'=>'Danh sách topping','surcharge'=>'Phụ thu','confirm_delete'=>'Xác nhận xóa?','global_options'=>'Độ ngọt / Lượng đá toàn hệ thống','global_options_info'=>'Mỗi đồ uống chọn một nhãn đá và một nhãn ngọt. Khi sửa nhãn tại đây, tất cả đồ uống dùng nhãn đó sẽ cập nhật cùng lúc.','profile_name'=>'Tên nhãn','display_options'=>'Tùy chọn hiển thị (mỗi dòng một mục)','system_settings'=>'Cài đặt hệ thống','settings_saved'=>'Đã lưu cài đặt','system_store_name'=>'Tên hệ thống / cửa hàng','currency'=>'Đơn vị tiền tệ','transfer_note'=>'Ghi chú chuyển khoản','save_settings'=>'Lưu cài đặt','login'=>'Đăng nhập','username'=>'Tài khoản','password'=>'Mật khẩu','login_error'=>'Sai tài khoản hoặc mật khẩu','language'=>'Ngôn ngữ','vietnamese'=>'Tiếng Việt','english'=>'English','chinese'=>'中文','content_languages'=>'Nội dung đa ngôn ngữ','name_vi'=>'Tên tiếng Việt','name_en'=>'Tên tiếng Anh','name_zh'=>'Tên tiếng Trung','options_vi'=>'Tùy chọn tiếng Việt (mỗi dòng một mục)','options_en'=>'Tùy chọn tiếng Anh (mỗi dòng một mục)','options_zh'=>'Tùy chọn tiếng Trung (mỗi dòng một mục)','store_name_vi'=>'Tên cửa hàng tiếng Việt','store_name_en'=>'Tên cửa hàng tiếng Anh','store_name_zh'=>'Tên cửa hàng tiếng Trung','setup_title'=>'Cài đặt hệ thống đặt đồ uống','setup_done'=>'Cài đặt hoàn tất.','enter_admin'=>'Vào quản trị trụ sở','view_front'=>'Xem trang đặt hàng','setup_security'=>'Để an toàn, sau khi cài đặt hãy đổi tên hoặc xóa setup.php trong cPanel.','db_host'=>'Máy chủ cơ sở dữ liệu','db_name'=>'Tên cơ sở dữ liệu','db_user'=>'Tài khoản cơ sở dữ liệu','db_pass'=>'Mật khẩu cơ sở dữ liệu','website_url'=>'Địa chỉ website','admin_user'=>'Tài khoản quản trị trụ sở','admin_pass'=>'Mật khẩu quản trị trụ sở','create_system'=>'Tạo hệ thống','setup_validation'=>'Vui lòng điền thông tin cơ sở dữ liệu; mật khẩu quản trị phải có ít nhất 8 ký tự.','config_write_failed'=>'Không thể ghi config.local.php. Hãy kiểm tra quyền ghi thư mục.','default_store_name'=>'Hồng Trà Tuổi Thơ Đặt đồ uống trực tuyến','default_transfer_note'=>'Thông tin chuyển khoản sẽ do trụ sở cung cấp riêng.','language_fields_help'=>'Tiếng Việt là ngôn ngữ mặc định. Nếu bản dịch để trống, hệ thống sẽ tự động dùng tiếng Việt hoặc tên cũ.','all'=>'Tất cả','csrf_expired'=>'Trang đã hết hạn. Vui lòng quay lại trang trước, tải lại rồi thử lại.','order_not_found'=>'Không tìm thấy đơn hàng','cup_size'=>'Kích cỡ ly','choose_size'=>'Chọn kích cỡ','enable_sizes'=>'Sản phẩm có ly L / XL','sized_drink_help'=>'Bật mục này để đặt giá riêng cho ly L và XL.','single_price'=>'Giá một cỡ','price_l'=>'Giá ly L','price_xl'=>'Giá ly XL','size_price_required'=>'Vui lòng nhập giá hợp lệ cho cả ly L và XL.','order_note'=>'Ghi chú đơn hàng','order_note_placeholder'=>'Ví dụ: thời gian giao mong muốn, lưu ý khi liên hệ','invoice_details'=>'Thông tin xuất hóa đơn','company_name'=>'Tên công ty','tax_id'=>'Mã số thuế','company_address'=>'Địa chỉ công ty','company_representative'=>'Người đại diện công ty','optional'=>'Không bắt buộc','company_phone'=>'Số điện thoại công ty','invoice_email'=>'Email nhận hóa đơn','invoice_fields_required'=>'Nếu cần hóa đơn, vui lòng điền đủ các mục bắt buộc.','preorder_notice'=>'Lưu ý trước khi đặt hàng','checkout_confirmation_notice'=>'Chúng tôi sẽ gọi điện xác nhận đơn trước khi chính thức xử lý và giao hàng.','checkout_data_usage_notice'=>'Thông tin đặt hàng dùng để xác nhận và giao đơn. Đơn đặt khi đăng nhập được lưu trong tài khoản trên website. Đặt hàng với tư cách khách không tự tạo tài khoản; dữ liệu trên website không được gửi về iPOS.','order_notification_email'=>'Email nhận thông báo đơn hàng','order_notification_email_help'=>'Khi khách gửi đơn, hệ thống sẽ gửi bản sao chi tiết đơn hàng đến email này bằng chức năng gửi mail của máy chủ cPanel. Để trống nếu không cần gửi email.','invalid_email'=>'Vui lòng nhập địa chỉ email hợp lệ.','invoice_info'=>'Thông tin hóa đơn','customer_note'=>'Ghi chú khách hàng'
-        ],
-        'en' => [
-            'mobile_order'=>'MOBILE ORDER','hero_title'=>'What would you like to drink today?','hero_desc'=>'Choose a drink, then pick sweetness, ice and toppings.','cart'=>'Cart','online_order'=>'Online ordering system','back_menu'=>'Back to menu','ice'=>'Ice','sugar'=>'Sweetness','toppings'=>'Toppings','shared_all'=>'Available for all drinks','quantity'=>'Quantity','add_cart'=>'Add to cart','cart_added'=>'Added to cart','your_order'=>'YOUR ORDER','cart_empty'=>'Your cart is empty','cart_empty_desc'=>'Choose something from the menu.','total'=>'Total','update_cart'=>'Update cart','checkout_info'=>'Enter order details','remove'=>'Remove','checkout'=>'CHECKOUT','order_info'=>'Order information','customer_name'=>'Customer name','phone'=>'Phone','delivery_address'=>'Delivery address','payment_method'=>'Payment method','transfer'=>'Bank transfer','cash'=>'Cash','invoice_question'=>'Issue an invoice?','yes'=>'Yes','no'=>'No','submit_order'=>'Submit order','order_details'=>'Order details','order_sent'=>'Order sent','order_sent_desc'=>'We have your order and will call you to confirm.','order_number'=>'Order number','return_menu'=>'Back to menu','not_found_drink'=>'This drink could not be found. Please choose again from the menu.','product_not_found'=>'This item could not be found. Please choose again from the menu.','invalid_option'=>'Please choose the cup size, sweetness and ice again.','incomplete_data'=>'Please fill in all required fields.','order_failed'=>'Your order could not be sent. Please try again later.','drink'=>'Drink','price'=>'Price','status'=>'Status','active'=>'Active','inactive'=>'Inactive','save'=>'Save','delete'=>'Delete','add'=>'Add','edit'=>'Edit','image'=>'Image','category'=>'Category','sort'=>'Sort','headquarters'=>'HEADQUARTERS','hq_admin'=>'Headquarters Admin','orders'=>'Orders','products'=>'Drinks','categories'=>'Categories','settings'=>'Settings','logout'=>'Log out','view_store'=>'View storefront ↗','order_center'=>'Order Center','new_order'=>'New','accepted'=>'Accepted','completed'=>'Completed','cancelled'=>'Cancelled','order_no'=>'Order No.','time'=>'Time','customer'=>'Customer','payment'=>'Payment','amount'=>'Amount','view'=>'View','customer_info'=>'Customer information','name'=>'Name','address'=>'Address','invoice'=>'Invoice','needed'=>'Required','not_needed'=>'Not required','order_status'=>'Order status','update_status'=>'Update status','unit_price'=>'Unit price','subtotal'=>'Subtotal','grand_total'=>'Grand total','drink_categories'=>'Drink Categories','add_category'=>'Add category','existing_categories'=>'Existing categories','example_category'=>'Example: Milk Tea','only_empty_category_delete'=>'Only categories without drinks can be deleted. Delete it?','drink_management'=>'Drink Management','add_drink'=>'Add drink','ice_profile'=>'Ice profile','sugar_profile'=>'Sweetness profile','edit_drink'=>'Edit drink','drink_name'=>'Drink name','drink_image'=>'Drink image','image_help'=>'JPG / PNG / WEBP, maximum 5MB','remove_current_image'=>'Remove current image','enable_drink'=>'Enable drink','save_drink'=>'Save drink','profile_error'=>'Invalid profile','image_too_large'=>'Image must not exceed 5MB','image_type_error'=>'Only JPG / PNG / WEBP are accepted','image_upload_failed'=>'Image upload failed','shared_toppings'=>'Shared Toppings','shared_toppings_info'=>'Enabled toppings here are available for all drinks.','add_topping'=>'Add topping','topping_list'=>'Topping list','surcharge'=>'Surcharge','confirm_delete'=>'Delete this item?','global_options'=>'Global Sweetness / Ice','global_options_info'=>'Each drink uses one ice profile and one sweetness profile. Editing a profile here updates every drink using it.','profile_name'=>'Profile name','display_options'=>'Display options (one per line)','system_settings'=>'System Settings','settings_saved'=>'Settings saved','system_store_name'=>'System / store name','currency'=>'Currency symbol','transfer_note'=>'Transfer note','save_settings'=>'Save settings','login'=>'Log in','username'=>'Username','password'=>'Password','login_error'=>'Incorrect username or password','language'=>'Language','vietnamese'=>'Tiếng Việt','english'=>'English','chinese'=>'中文','content_languages'=>'Multilingual content','name_vi'=>'Vietnamese name','name_en'=>'English name','name_zh'=>'Chinese name','options_vi'=>'Vietnamese options (one per line)','options_en'=>'English options (one per line)','options_zh'=>'Chinese options (one per line)','store_name_vi'=>'Vietnamese store name','store_name_en'=>'English store name','store_name_zh'=>'Chinese store name','setup_title'=>'Install Ordering System','setup_done'=>'Installation complete.','enter_admin'=>'Open headquarters admin','view_front'=>'View storefront','setup_security'=>'For security, rename or delete setup.php in cPanel after installation.','db_host'=>'Database host','db_name'=>'Database name','db_user'=>'Database username','db_pass'=>'Database password','website_url'=>'Website URL','admin_user'=>'Headquarters admin username','admin_pass'=>'Headquarters admin password','create_system'=>'Create system','setup_validation'=>'Enter the database details. The admin password must be at least 8 characters.','config_write_failed'=>'Unable to write config.local.php. Check folder write permissions.','default_store_name'=>'Hồng Trà Tuổi Thơ Online Ordering','default_transfer_note'=>'Bank transfer details will be provided separately by headquarters.','language_fields_help'=>'Vietnamese is the default language. If a translation is blank, the system falls back to Vietnamese or the legacy name.','all'=>'All','csrf_expired'=>'This page has expired. Go back, refresh the page and try again.','order_not_found'=>'Order not found','cup_size'=>'Cup size','choose_size'=>'Choose size','enable_sizes'=>'This drink has L / XL sizes','sized_drink_help'=>'Enable this to set separate prices for L and XL.','single_price'=>'Single-size price','price_l'=>'L price','price_xl'=>'XL price','size_price_required'=>'Enter valid prices for both L and XL.','order_note'=>'Order notes','order_note_placeholder'=>'Example: preferred delivery time, contact instructions','invoice_details'=>'Invoice information','company_name'=>'Company name','tax_id'=>'Tax ID','company_address'=>'Company address','company_representative'=>'Company representative','optional'=>'Optional','company_phone'=>'Company phone','invoice_email'=>'Invoice delivery email','invoice_fields_required'=>'If you need an invoice, complete the required fields.','preorder_notice'=>'Important before placing your order','checkout_confirmation_notice'=>'We will call to confirm your order before it is finalized, processed and delivered.','checkout_data_usage_notice'=>'We use your order details to confirm and deliver your order. Orders placed while signed in are saved to your website account. Guest checkout does not create an account, and website data is not sent to iPOS.','order_notification_email'=>'Order notification email','order_notification_email_help'=>'When a customer submits an order, the system sends a copy of the order details to this address using the cPanel server mail function. Leave blank to disable email notifications.','invalid_email'=>'Enter a valid email address.','invoice_info'=>'Invoice information','customer_note'=>'Customer note'
-        ],
-        'zh' => [
-            'mobile_order'=>'MOBILE ORDER','hero_title'=>'今天想喝什麼？','hero_desc'=>'選好飲料，再挑甜度、冰量與配料。','cart'=>'購物車','online_order'=>'線上點餐系統','back_menu'=>'返回菜單','ice'=>'冰量','sugar'=>'甜度','toppings'=>'配料','shared_all'=>'所有飲品都可加選','quantity'=>'數量','add_cart'=>'加入購物車','cart_added'=>'已加入購物車','your_order'=>'YOUR ORDER','cart_empty'=>'購物車還是空的','cart_empty_desc'=>'先到菜單選購吧。','total'=>'合計','update_cart'=>'更新購物車','checkout_info'=>'前往填寫資料','remove'=>'刪除','checkout'=>'CHECKOUT','order_info'=>'訂購資料','customer_name'=>'客戶姓名','phone'=>'電話','delivery_address'=>'寄送地址','payment_method'=>'付款方式','transfer'=>'轉帳','cash'=>'現金','invoice_question'=>'是否開立發票','yes'=>'是','no'=>'否','submit_order'=>'送出訂單','order_details'=>'訂購明細','order_sent'=>'訂單已送出','order_sent_desc'=>'我們已收到訂單，會電話聯絡你確認。','order_number'=>'訂單編號','return_menu'=>'返回菜單','not_found_drink'=>'找不到這款飲料，請回菜單重新選擇。','product_not_found'=>'找不到這項商品，請回菜單重新選擇。','invalid_option'=>'請重新選擇杯型、甜度與冰量。','incomplete_data'=>'請填寫所有必填資料。','order_failed'=>'訂單未能送出，請稍後再試。','drink'=>'飲料','price'=>'價格','status'=>'狀態','active'=>'啟用','inactive'=>'停用','save'=>'儲存','delete'=>'刪除','add'=>'新增','edit'=>'編輯','image'=>'圖片','category'=>'分類','sort'=>'排序','headquarters'=>'總部','hq_admin'=>'總部後台','orders'=>'訂單','products'=>'飲料','categories'=>'分類','settings'=>'設定','logout'=>'登出','view_store'=>'查看前台 ↗','order_center'=>'訂單中心','new_order'=>'新訂單','accepted'=>'已接單','completed'=>'已完成','cancelled'=>'取消','order_no'=>'訂單編號','time'=>'時間','customer'=>'客戶','payment'=>'付款','amount'=>'金額','view'=>'查看','customer_info'=>'客戶資料','name'=>'姓名','address'=>'地址','invoice'=>'發票','needed'=>'需要','not_needed'=>'不需要','order_status'=>'接單狀態','update_status'=>'更新狀態','unit_price'=>'單價','subtotal'=>'小計','grand_total'=>'總金額','drink_categories'=>'飲料分類','add_category'=>'新增分類','existing_categories'=>'現有分類','example_category'=>'例如：奶茶系列','only_empty_category_delete'=>'只有沒有飲料的分類才能刪除，確定？','drink_management'=>'飲料管理','add_drink'=>'新增飲料','ice_profile'=>'冰量標籤','sugar_profile'=>'甜度標籤','edit_drink'=>'編輯飲料','drink_name'=>'飲料名稱','drink_image'=>'飲料圖片','image_help'=>'JPG / PNG / WEBP，最大 5MB','remove_current_image'=>'移除目前圖片','enable_drink'=>'啟用飲料','save_drink'=>'儲存飲料','profile_error'=>'標籤錯誤','image_too_large'=>'圖片不可超過 5MB','image_type_error'=>'只接受 JPG / PNG / WEBP','image_upload_failed'=>'圖片上傳失敗','shared_toppings'=>'共用配料','shared_toppings_info'=>'這裡的啟用配料會套用到所有飲料品項。','add_topping'=>'新增配料','topping_list'=>'配料清單','surcharge'=>'加價','confirm_delete'=>'確定刪除？','global_options'=>'全域甜度 / 冰量','global_options_info'=>'每個飲料只要選擇一個冰量標籤與甜度標籤；修改這裡後，所有使用該標籤的飲料會一起更新。','profile_name'=>'標籤名稱','display_options'=>'顯示選項（每行一個）','system_settings'=>'系統設定','settings_saved'=>'設定已儲存','system_store_name'=>'系統/店名','currency'=>'貨幣單位','transfer_note'=>'轉帳備註','save_settings'=>'儲存設定','login'=>'登入','username'=>'帳號','password'=>'密碼','login_error'=>'帳號或密碼錯誤','language'=>'語言','vietnamese'=>'Tiếng Việt','english'=>'English','chinese'=>'中文','content_languages'=>'多語系內容','name_vi'=>'越南文名稱','name_en'=>'英文名稱','name_zh'=>'中文名稱','options_vi'=>'越南文選項（每行一個）','options_en'=>'英文選項（每行一個）','options_zh'=>'中文選項（每行一個）','store_name_vi'=>'越南文店名','store_name_en'=>'英文店名','store_name_zh'=>'中文店名','setup_title'=>'點餐系統安裝','setup_done'=>'安裝完成。','enter_admin'=>'進入總部後台','view_front'=>'查看前台','setup_security'=>'安全起見，安裝完成後可在 cPanel 將 setup.php 改名或刪除。','db_host'=>'資料庫主機','db_name'=>'資料庫名稱','db_user'=>'資料庫帳號','db_pass'=>'資料庫密碼','website_url'=>'網站網址','admin_user'=>'總部管理帳號','admin_pass'=>'總部管理密碼','create_system'=>'建立系統','setup_validation'=>'請填寫資料庫資料，後台密碼至少 8 碼。','config_write_failed'=>'無法寫入 config.local.php，請確認資料夾可寫入。','default_store_name'=>'Hồng Trà Tuổi Thơ 線上點餐','default_transfer_note'=>'轉帳資訊請由總部另行提供','language_fields_help'=>'越南文為預設語言；若其他語言留白，系統會回退使用越南文或原始名稱。','all'=>'全部','csrf_expired'=>'頁面已逾時，請返回上一頁重新整理後再試。','order_not_found'=>'找不到訂單','cup_size'=>'杯型','choose_size'=>'選擇杯型','enable_sizes'=>'此飲料提供 L / XL 杯型','sized_drink_help'=>'啟用後可分別設定 L 杯與 XL 杯價格。','single_price'=>'單一杯型價格','price_l'=>'L 杯價格','price_xl'=>'XL 杯價格','size_price_required'=>'請正確設定 L 杯與 XL 杯價格。','order_note'=>'訂單備註','order_note_placeholder'=>'例如：希望配送的時間、聯絡注意事項','invoice_details'=>'發票資料','company_name'=>'公司名稱','tax_id'=>'統一稅號','company_address'=>'公司地址','company_representative'=>'公司代表人','optional'=>'選填','company_phone'=>'公司電話','invoice_email'=>'發票寄送 Email','invoice_fields_required'=>'需要發票時，請填妥必填資料。','preorder_notice'=>'下單前注意事項','checkout_confirmation_notice'=>'訂單經電話確認後才正式成立，並安排處理與配送。','checkout_data_usage_notice'=>'訂購資料用於確認與配送。登入會員後下單，訂單會保存在你的平台帳號；訪客下單不會自動建立會員，平台資料不會回傳至 iPOS。','order_notification_email'=>'訂單接收 Email','order_notification_email_help'=>'客戶送出訂單後，系統會透過 cPanel 主機的郵件功能，將訂單明細副本寄送至此 Email；留白則不寄送。','invalid_email'=>'請填寫正確的 Email 地址。','invoice_info'=>'發票資料','customer_note'=>'客戶備註'
-        ],
-    ];
-    $extra=[
-      'vi'=>['standalone_toppings'=>'Topping mua riêng','standalone_topping'=>'TOPPING MUA RIÊNG','standalone_topping_info'=>'Có thể bật từng topping để bán riêng với trang sản phẩm, hình ảnh, mô tả và giá bán riêng.','allow_standalone_sale'=>'Cho phép bán riêng','allow_standalone_sale_help'=>'Khi bật, topping sẽ xuất hiện như một sản phẩm riêng trên trang đặt hàng.','standalone_sale'=>'Bán riêng','standalone_price'=>'Giá bán riêng','standalone_price_required'=>'Vui lòng nhập giá bán riêng hợp lệ.','topping_image'=>'Hình topping','description_vi'=>'Mô tả tiếng Việt','description_en'=>'Mô tả tiếng Anh','description_zh'=>'Mô tả tiếng Trung','view_product_page'=>'Xem trang sản phẩm','topping_not_found'=>'Không tìm thấy topping này. Vui lòng chọn lại từ menu.'],
-      'en'=>['standalone_toppings'=>'Toppings for individual purchase','standalone_topping'=>'INDIVIDUAL TOPPING','standalone_topping_info'=>'Each topping can optionally be sold separately with its own product page, image, description, and retail price.','allow_standalone_sale'=>'Allow individual sale','allow_standalone_sale_help'=>'When enabled, this topping appears as its own product on the storefront.','standalone_sale'=>'Individual sale','standalone_price'=>'Retail price','standalone_price_required'=>'Enter a valid retail price.','topping_image'=>'Topping image','description_vi'=>'Vietnamese description','description_en'=>'English description','description_zh'=>'Chinese description','view_product_page'=>'View product page','topping_not_found'=>'This topping could not be found. Please choose again from the menu.'],
-      'zh'=>['standalone_toppings'=>'單獨購買配料','standalone_topping'=>'單購配料','standalone_topping_info'=>'每個配料可選擇是否開放單獨販售；開啟後會擁有獨立商品頁、圖片、介紹與單售價格。','allow_standalone_sale'=>'允許單獨販售','allow_standalone_sale_help'=>'啟用後，此配料會像一般商品一樣顯示在前台，可進入獨立介紹頁購買。','standalone_sale'=>'單獨販售','standalone_price'=>'單售價格','standalone_price_required'=>'請輸入正確的單售價格。','topping_image'=>'配料圖片','description_vi'=>'越南文介紹','description_en'=>'英文介紹','description_zh'=>'中文介紹','view_product_page'=>'查看商品頁','topping_not_found'=>'找不到這項配料，請回菜單重新選擇。']
-    ];
-    foreach($extra as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-    $extra2=[
-      'vi'=>[
-        'homepage_banner'=>'Banner quảng cáo trang chủ','homepage_banner_help'=>'Tải banner quảng cáo và liên kết trực tiếp đến một đồ uống hoặc topping bán riêng.','enable_banner'=>'Hiển thị banner trang chủ','banner_image'=>'Hình banner','banner_ratio_help'=>'Khuyến nghị ảnh ngang 16:9 hoặc 3:1; JPG / PNG / WEBP.','banner_link_type'=>'Loại sản phẩm liên kết','banner_link_product'=>'Sản phẩm được liên kết','new_hot_recommendations'=>'Món mới / Bán chạy','featured_eyebrow'=>'GỢI Ý CHO BẠN','new_badge'=>'Mới','hot_badge'=>'Bán chạy','hot_products'=>'SẢN PHẨM BÁN CHẠY','mark_new'=>'Đánh dấu món mới','mark_hot'=>'Đánh dấu bán chạy','coupon_system'=>'Ưu đãi','enable_buy4get1'=>'Bật ưu đãi Mua 4 Tặng 1','buy4get1_help'=>'Mỗi 5 ly đồ uống đủ điều kiện sẽ được giảm giá bằng giá đồ uống cơ bản thấp nhất. Topping thêm vào đồ uống không được giảm; topping mua riêng cũng không tính số lượng.','coupon'=>'Mã ưu đãi','coupon_code'=>'Mã coupon','buy4get1_title'=>'Mua 4 Tặng 1','buy4get1_desc'=>'Cứ 5 ly đồ uống được giảm giá phần đồ uống của 1 ly. Không giảm tiền topping; topping mua riêng không tính vào số ly.','apply_coupon'=>'Áp dụng','remove_coupon'=>'Bỏ mã','coupon_applied'=>'Đã áp dụng ưu đãi.','coupon_removed'=>'Đã bỏ ưu đãi.','coupon_invalid'=>'Ưu đãi này hiện chưa dùng được.','coupon_discount'=>'Giảm giá coupon','coupon_progress'=>'Đã chọn {qty} ly đồ uống, được giảm {free} ly.','applied'=>'Đã áp dụng'
-      ],
-      'en'=>[
-        'homepage_banner'=>'Homepage advertising banner','homepage_banner_help'=>'Upload a promotional banner and link it directly to a drink or a standalone topping.','enable_banner'=>'Show homepage banner','banner_image'=>'Banner image','banner_ratio_help'=>'Recommended horizontal image: 16:9 or 3:1; JPG / PNG / WEBP.','banner_link_type'=>'Linked product type','banner_link_product'=>'Linked product','new_hot_recommendations'=>'New / Best sellers','featured_eyebrow'=>'RECOMMENDED FOR YOU','new_badge'=>'New','hot_badge'=>'Best seller','hot_products'=>'BEST SELLERS','mark_new'=>'Mark as new','mark_hot'=>'Mark as best seller','coupon_system'=>'Offers','enable_buy4get1'=>'Enable Buy 4 Get 1','buy4get1_help'=>'For every 5 eligible drinks, the lowest base drink price is discounted. Drink toppings are not discounted, and standalone toppings do not count toward eligibility.','coupon'=>'Coupon','coupon_code'=>'Coupon code','buy4get1_title'=>'Buy 4 Get 1','buy4get1_desc'=>'For every 5 drinks, get the base price of 1 drink off. Toppings are not discounted; standalone toppings do not count.','apply_coupon'=>'Apply','remove_coupon'=>'Remove','coupon_applied'=>'Offer applied.','coupon_removed'=>'Offer removed.','coupon_invalid'=>'This offer is unavailable right now.','coupon_discount'=>'Coupon discount','coupon_progress'=>'{qty} drinks selected; {free} drinks discounted.','applied'=>'Applied'
-      ],
-      'zh'=>[
-        'homepage_banner'=>'首頁廣告橫幅','homepage_banner_help'=>'上傳首頁廣告橫幅，並直接連結到指定飲料或可單購配料。','enable_banner'=>'顯示首頁廣告橫幅','banner_image'=>'廣告橫幅圖片','banner_ratio_help'=>'建議使用 16:9 或 3:1 橫向圖片；JPG / PNG / WEBP。','banner_link_type'=>'連結商品類型','banner_link_product'=>'連結商品','new_hot_recommendations'=>'新品上市 / 熱銷推薦','featured_eyebrow'=>'為你推薦','new_badge'=>'新品','hot_badge'=>'熱銷','hot_products'=>'熱銷商品','mark_new'=>'標記為新品','mark_hot'=>'標記為熱銷','coupon_system'=>'優惠券','enable_buy4get1'=>'啟用買4送1','buy4get1_help'=>'每滿 5 杯符合資格的飲料，折抵其中最低的一杯「飲料基礎價格」。飲料加料費不折抵；單購配料也不列入買4送1杯數。','coupon'=>'優惠券','coupon_code'=>'優惠券代碼','buy4get1_title'=>'買4送1','buy4get1_desc'=>'每滿 5 杯飲料可折抵 1 杯的飲料本體價格；加料不折抵，單購配料不計杯數。','apply_coupon'=>'套用優惠券','remove_coupon'=>'移除優惠券','coupon_applied'=>'已套用優惠券。','coupon_removed'=>'已移除優惠券。','coupon_invalid'=>'這張優惠券目前無法使用。','coupon_discount'=>'優惠折抵','coupon_progress'=>'已選 {qty} 杯飲料，可折抵 {free} 杯。','applied'=>'已套用'
-      ]
-    ];
-    foreach($extra2 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-    $extra3=[
-      'vi'=>[
-        'available_coupon'=>'ƯU ĐÃI ĐANG CÓ',
-        'tap_to_apply_coupon'=>'Chạm để áp dụng ưu đãi',
-        'coupon_apply_hint'=>'Chọn ưu đãi để áp dụng cho đơn này.',
-        'buy4get1_desc'=>'Cứ 5 ly đồ uống được giảm giá phần đồ uống của 1 ly. Không giảm tiền topping; topping mua riêng không tính vào số ly.'
-      ],
-      'en'=>[
-        'available_coupon'=>'AVAILABLE COUPON',
-        'tap_to_apply_coupon'=>'Tap to apply this offer',
-        'coupon_apply_hint'=>'Choose this offer to apply it to your order.',
-        'buy4get1_desc'=>'For every 5 drinks, get the base price of 1 drink off. Toppings are not discounted; standalone toppings do not count.'
-      ],
-      'zh'=>[
-        'available_coupon'=>'可用優惠券',
-        'tap_to_apply_coupon'=>'點一下即可套用此優惠',
-        'coupon_apply_hint'=>'點選優惠券，即可套用至本次訂單。',
-        'buy4get1_desc'=>'每滿 5 杯飲料可折抵 1 杯的飲料本體價格；加料不折抵，單購配料不計杯數。'
-      ]
-    ];
-    foreach($extra3 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra4=[
-      'vi'=>[
-        'sold_cups'=>'Đã đặt {qty} ly','recommended_toppings'=>'Topping gợi ý','other_toppings'=>'Topping khác','recommended_toppings_help'=>'Chọn các topping được ưu tiên hiển thị cho riêng đồ uống này. Khách vẫn có thể chọn topping khác.','cumulative_orders'=>'Số ly đã đặt','show_sales_count'=>'Hiển thị số lượng đặt tích lũy ở trang khách','show_sales_count_help'=>'Tính số lượng đồ uống từ tất cả đơn đã gửi thành công; topping mua riêng không được tính.','order_alert_settings'=>'Thông báo đơn hàng mới','enable_order_alert'=>'Bật âm thanh báo đơn mới','order_alert_sound'=>'Âm thanh thông báo','order_alert_sound_help'=>'Có thể tải MP3 / WAV / OGG. Nếu để trống, hệ thống dùng tiếng bíp mặc định.','order_alert_duration'=>'Thời gian chuông','seconds'=>'giây','remove_sound'=>'Xóa âm thanh hiện tại','test_sound'=>'Thử âm thanh','enable_sound'=>'Bật âm thanh nhận đơn','sound_ready'=>'Âm thanh đã sẵn sàng','new_order_alert'=>'Có đơn hàng mới','view_order'=>'Xem đơn hàng','stop_sound'=>'Dừng chuông','game_center'=>'Mini Game','game_chances'=>'Lượt chơi','play_game'=>'Bắt đầu trò chơi','game_no_chances'=>'Hiện chưa có lượt chơi.','game_instructions'=>'Lật thẻ và ghép tất cả các cặp hình giống nhau. Hoàn thành trò chơi sẽ dùng 1 lượt chơi.','game_complete'=>'Hoàn thành trò chơi!','game_complete_desc'=>'Đã dùng 1 lượt chơi.','game_pending_note'=>'Chọn Mua 10 nhận lượt rút thưởng: mỗi {cups} ly trong cùng một đơn hoàn tất nhận 1 lượt; 10 ly được 1 lượt, 20 ly được 2 lượt. Không cộng ly giữa các đơn; không dùng cùng Mua 4 tặng 1 hoặc mã phần thưởng.','game_settings'=>'Cài đặt Mini Game','enable_minigame'=>'Bật Mini Game lật thẻ','game_cups_per_chance'=>'Số ly để nhận 1 lượt chơi','anonymous_game_note'=>'Lượt chơi được lưu trong trình duyệt này. Hãy dùng cùng trình duyệt để xem và chơi.','game_awarded'=>'Lượt chơi đã cấp','game_eligible_qty'=>'Số ly đủ điều kiện','game_wallets'=>'Ví lượt chơi','wallet'=>'Ví','available'=>'Còn lại','earned'=>'Đã nhận','played'=>'Đã chơi','no_data'=>'Chưa có dữ liệu','client_interface'=>'Giao diện khách hàng','recommended'=>'Gợi ý'
-      ],
-      'en'=>[
-        'sold_cups'=>'{qty} cups ordered','recommended_toppings'=>'Recommended toppings','other_toppings'=>'Other toppings','recommended_toppings_help'=>'Choose toppings to highlight for this drink. Customers can still select any other shared topping.','cumulative_orders'=>'Cumulative orders','show_sales_count'=>'Show cumulative drink order count on storefront','show_sales_count_help'=>'Counts drink quantities from all successfully submitted orders; standalone toppings are excluded.','order_alert_settings'=>'New order alerts','enable_order_alert'=>'Enable new-order sound alert','order_alert_sound'=>'Alert sound','order_alert_sound_help'=>'Upload MP3 / WAV / OGG. If empty, a built-in beep is used.','order_alert_duration'=>'Ring duration','seconds'=>'seconds','remove_sound'=>'Remove current sound','test_sound'=>'Test sound','enable_sound'=>'Enable order sound','sound_ready'=>'Order sound ready','new_order_alert'=>'New order received','view_order'=>'View order','stop_sound'=>'Stop sound','game_center'=>'Mini Game','game_chances'=>'Game chances','play_game'=>'Play game','game_no_chances'=>'No plays available yet.','game_instructions'=>'Flip the cards and match all pairs of identical pictures. Completing the game uses 1 play.','game_complete'=>'Game completed!','game_complete_desc'=>'Used 1 play.','game_pending_note'=>'Choose Buy 10 for a prize draw: every {cups} drinks in one completed order earns 1 chance; 10 drinks earn 1, 20 earn 2. Cups do not carry over between orders. Cannot be combined with Buy 4 get 1 or a prize code.','game_settings'=>'Mini Game settings','enable_minigame'=>'Enable flip-card Mini Game','game_cups_per_chance'=>'Drinks required per game chance','anonymous_game_note'=>'Your plays are saved in this browser. Use the same browser to view and use them.','game_awarded'=>'Game chances awarded','game_eligible_qty'=>'Eligible drink quantity','game_wallets'=>'Game wallets','wallet'=>'Wallet','available'=>'Available','earned'=>'Earned','played'=>'Played','no_data'=>'No data yet','client_interface'=>'Customer interface','recommended'=>'Recommended'
-      ],
-      'zh'=>[
-        'sold_cups'=>'累積訂購 {qty} 杯','recommended_toppings'=>'推薦配料','other_toppings'=>'其他配料','recommended_toppings_help'=>'設定此飲料優先顯示的推薦配料；客戶仍可選擇其他共用配料。','cumulative_orders'=>'累積訂購數量','show_sales_count'=>'前台顯示飲品累積訂購數量','show_sales_count_help'=>'統計所有已成功送出訂單中的飲料杯數；單獨購買配料不列入。','order_alert_settings'=>'新訂單提示通知','enable_order_alert'=>'啟用新訂單聲音提醒','order_alert_sound'=>'通知音效','order_alert_sound_help'=>'可上傳 MP3 / WAV / OGG；未上傳時使用系統內建提示音。','order_alert_duration'=>'鈴響持續時間','seconds'=>'秒','remove_sound'=>'移除目前音效','test_sound'=>'測試音效','enable_sound'=>'啟用接單聲音','sound_ready'=>'接單聲音已啟用','new_order_alert'=>'收到新訂單','view_order'=>'查看訂單','stop_sound'=>'停止鈴聲','game_center'=>'Mini Game','game_chances'=>'遊戲次數','play_game'=>'開始遊戲','game_no_chances'=>'目前沒有可用的遊戲次數。','game_instructions'=>'翻開卡牌，配對全部相同圖案即可完成遊戲。完成後扣除 1 次遊戲機會。','game_complete'=>'遊戲完成！','game_complete_desc'=>'這次使用了 1 次遊戲機會。','game_pending_note'=>'選擇買10抽獎，單筆訂單每滿 {cups} 杯飲料可獲1次抽獎機會：10杯1次、20杯2次，完成後發放。杯數不跨訂單累計，不能與買4送1或獎項序號共用。','game_settings'=>'Mini Game 設定','enable_minigame'=>'啟用翻牌 Mini Game','game_cups_per_chance'=>'每幾杯獲得 1 次遊戲機會','anonymous_game_note'=>'遊戲次數保存在目前使用的瀏覽器，請用同一瀏覽器查看與遊玩。','game_awarded'=>'已發放遊戲次數','game_eligible_qty'=>'符合資格杯數','game_wallets'=>'遊戲次數錢包','wallet'=>'錢包','available'=>'可用次數','earned'=>'累積獲得','played'=>'已遊玩','no_data'=>'目前尚無資料','client_interface'=>'客戶介面','recommended'=>'推薦'
-      ]
-    ];
-    foreach($extra4 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra5=[
-      'vi'=>[
-        'game_reward_amount'=>'Giá trị coupon thưởng sau khi hoàn thành game','game_reward_amount_help'=>'Nếu lớn hơn 0, mỗi lần hoàn thành game sẽ nhận 1 coupon dùng một lần. Coupon chỉ giảm phần giá đồ uống, không giảm topping.','game_reward_coupon'=>'Coupon thưởng Mini Game','game_reward_received'=>'Đã nhận ưu đãi trò chơi. Bạn có thể chọn dùng trong giỏ hàng.','fixed_drink_discount'=>'Giảm phần giá đồ uống','single_coupon_only'=>'Mỗi đơn dùng 1 ưu đãi; không kết hợp nhiều ưu đãi.'
-      ],
-      'en'=>[
-        'game_reward_amount'=>'Reward coupon value after completing the game','game_reward_amount_help'=>'If greater than 0, each completed game issues one single-use coupon. It discounts drink base prices only, not topping surcharges.','game_reward_coupon'=>'Mini Game reward coupon','game_reward_received'=>'You received a game offer. Select it in your cart to use it.','fixed_drink_discount'=>'Discount on the drink base price','single_coupon_only'=>'Use 1 offer per order. Offers cannot be combined.'
-      ],
-      'zh'=>[
-        'game_reward_amount'=>'完成遊戲後的獎勵優惠券金額','game_reward_amount_help'=>'設定大於 0 時，每完成一次翻牌遊戲會發放一張一次性優惠券；只折抵飲料本體價格，不折抵加料。','game_reward_coupon'=>'Mini Game 獎勵優惠券','game_reward_received'=>'已獲得遊戲優惠券，可在購物車選用。','fixed_drink_discount'=>'折抵飲料本體金額','single_coupon_only'=>'每筆訂單僅選一種優惠，買4送1、買10抽獎與獎項序號不能共用。'
-      ]
-    ];
-    foreach($extra5 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra6=[
-      'vi'=>['social_media'=>'Mạng xã hội','follow_us'=>'THEO DÕI CHÚNG TÔI'],
-      'en'=>['social_media'=>'Social Media','follow_us'=>'FOLLOW US'],
-      'zh'=>['social_media'=>'社群媒體','follow_us'=>'關注我們']
-    ];
-    foreach($extra6 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra7=[
-      'vi'=>[
-        'transfer_accounts'=>'Thông tin chuyển khoản','add_transfer_account'=>'Thêm tài khoản nhận chuyển khoản','existing_transfer_accounts'=>'Tài khoản chuyển khoản hiện có','bank_name'=>'Ngân hàng','account_number'=>'Số tài khoản','account_name'=>'Tên chủ tài khoản','qr_image'=>'Ảnh QR chuyển khoản','qr_image_help'=>'JPG / PNG / WEBP, tối đa 5MB.','remove_qr'=>'Xóa ảnh QR hiện tại','bank_account_added'=>'Đã thêm thông tin chuyển khoản.','bank_account_updated'=>'Đã cập nhật thông tin chuyển khoản.','bank_account_deleted'=>'Đã xóa thông tin chuyển khoản.','bank_fields_required'=>'Vui lòng nhập ngân hàng, số tài khoản và tên chủ tài khoản.','no_transfer_accounts'=>'Chưa có tài khoản chuyển khoản.','transfer_payment_info'=>'Thông tin chuyển khoản','transfer_payment_help'=>'Vui lòng chuyển khoản vào một tài khoản dưới đây. Chúng tôi sẽ gọi điện xác nhận đơn trước khi xử lý.','transfer_qr_alt'=>'Mã QR chuyển khoản','payment_accounts'=>'Tài khoản thanh toán'
-      ],
-      'en'=>[
-        'transfer_accounts'=>'Transfer accounts','add_transfer_account'=>'Add transfer account','existing_transfer_accounts'=>'Existing transfer accounts','bank_name'=>'Bank','account_number'=>'Account number','account_name'=>'Account holder','qr_image'=>'Transfer QR image','qr_image_help'=>'JPG / PNG / WEBP, up to 5MB.','remove_qr'=>'Remove current QR image','bank_account_added'=>'Transfer account added.','bank_account_updated'=>'Transfer account updated.','bank_account_deleted'=>'Transfer account deleted.','bank_fields_required'=>'Enter the bank, account number, and account holder.','no_transfer_accounts'=>'No transfer accounts have been configured.','transfer_payment_info'=>'Bank transfer information','transfer_payment_help'=>'Transfer to one of the accounts below. We will call to confirm your order before processing it.','transfer_qr_alt'=>'Bank transfer QR code','payment_accounts'=>'Payment accounts'
-      ],
-      'zh'=>[
-        'transfer_accounts'=>'轉帳資訊','add_transfer_account'=>'新增轉帳帳戶','existing_transfer_accounts'=>'目前轉帳帳戶','bank_name'=>'銀行名稱','account_number'=>'銀行帳號','account_name'=>'戶名','qr_image'=>'轉帳 QR 圖片','qr_image_help'=>'JPG / PNG / WEBP，最大 5MB。','remove_qr'=>'移除目前 QR 圖片','bank_account_added'=>'已新增轉帳資訊。','bank_account_updated'=>'已更新轉帳資訊。','bank_account_deleted'=>'已刪除轉帳資訊。','bank_fields_required'=>'請填寫銀行名稱、銀行帳號與戶名。','no_transfer_accounts'=>'目前尚未設定轉帳帳戶。','transfer_payment_info'=>'銀行轉帳資訊','transfer_payment_help'=>'請轉帳至下方任一帳戶；我們會電話確認訂單後安排處理。','transfer_qr_alt'=>'銀行轉帳 QR Code','payment_accounts'=>'付款帳戶'
-      ]
-    ];
-    foreach($extra7 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-    $paymentMessages=[
-      'vi'=>['transfer_payment_later'=>'Cửa hàng sẽ cung cấp thông tin chuyển khoản khi xác nhận đơn hàng. Vui lòng đợi thông tin trước khi chuyển tiền.'],
-      'en'=>['transfer_payment_later'=>'The store will provide transfer details when confirming your order. Please wait for those details before transferring.'],
-      'zh'=>['transfer_payment_later'=>'店家會在確認訂單時另行提供轉帳資訊，請取得資訊後再轉帳。'],
-    ];
-    foreach($paymentMessages as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra8=[
-      'vi'=>[
-        'edit_topping'=>'Sửa topping','topping_name'=>'Tên topping','topping_description'=>'Mô tả topping','enable_topping'=>'Bật topping','save_topping'=>'Lưu topping','back_to_list'=>'Quay lại danh sách',
-        'notification_sender_email'=>'Email gửi thông báo','notification_sender_email_help'=>'Địa chỉ gửi cố định của hệ thống. Hộp thư này đã được tạo trên cPanel.'
-      ],
-      'en'=>[
-        'edit_topping'=>'Edit topping','topping_name'=>'Topping name','topping_description'=>'Topping description','enable_topping'=>'Enable topping','save_topping'=>'Save topping','back_to_list'=>'Back to list',
-        'notification_sender_email'=>'Notification sender email','notification_sender_email_help'=>'Fixed sender address used by the system. This mailbox should exist in cPanel.'
-      ],
-      'zh'=>[
-        'edit_topping'=>'編輯配料','topping_name'=>'配料名稱','topping_description'=>'配料介紹','enable_topping'=>'啟用配料','save_topping'=>'儲存配料','back_to_list'=>'返回清單',
-        'notification_sender_email'=>'通知寄件 Email','notification_sender_email_help'=>'系統固定使用此寄件地址；此信箱需已在 cPanel 建立。'
-      ]
-    ];
-    foreach($extra8 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra9=[
-      'vi'=>[
-        'minutes'=>'phút','until_accepted'=>'Cho đến khi nhận đơn','order_alert_duration_help'=>'Chọn số giây, số phút hoặc phát liên tục cho đến khi đơn hàng được chuyển khỏi trạng thái đơn mới.',
-        'email_notification_settings'=>'Thông báo Email','email_php_mail'=>'Chức năng PHP mail()','email_server_transport'=>'Cấu hình gửi thư của máy chủ','email_available'=>'Khả dụng','email_unavailable'=>'Không khả dụng','send_test_email'=>'Gửi Email thử','email_test_help'=>'Lưu cài đặt hiện tại và gửi một thư thử đến Email nhận đơn. mail() trả về thành công chỉ có nghĩa máy chủ đã nhận yêu cầu gửi; hãy kiểm tra cả thư rác.','email_test_recipient_required'=>'Vui lòng nhập Email nhận đơn trước khi gửi thử.','email_test_accepted'=>'Máy chủ đã chấp nhận yêu cầu gửi thư thử đến {email}. Hãy kiểm tra hộp thư đến và thư rác.','email_test_failed'=>'Không thể gửi thư thử. Mã chẩn đoán: {detail}'
-      ],
-      'en'=>[
-        'minutes'=>'minutes','until_accepted'=>'Until order is accepted','order_alert_duration_help'=>'Choose seconds, minutes, or keep ringing until the order is moved out of New status.',
-        'email_notification_settings'=>'Email notifications','email_php_mail'=>'PHP mail() function','email_server_transport'=>'Server mail transport','email_available'=>'Available','email_unavailable'=>'Unavailable','send_test_email'=>'Send test email','email_test_help'=>'Saves the current settings and sends a test message to the order recipient. A successful mail() result only means the server accepted the send request; also check spam.','email_test_recipient_required'=>'Enter the order notification email before sending a test.','email_test_accepted'=>'The server accepted a test email to {email}. Check the inbox and spam folder.','email_test_failed'=>'The test email could not be sent. Diagnostic code: {detail}'
-      ],
-      'zh'=>[
-        'minutes'=>'分','until_accepted'=>'直到接單','order_alert_duration_help'=>'可選擇秒、分，或持續鈴響直到訂單離開「新訂單」狀態。','email_notification_settings'=>'Email 通知設定','email_php_mail'=>'PHP mail() 功能','email_server_transport'=>'主機寄信方式','email_available'=>'可使用','email_unavailable'=>'不可使用','send_test_email'=>'寄送測試信','email_test_help'=>'會先儲存目前設定，再寄一封測試信到「訂單接收 Email」。mail() 顯示成功只代表主機接受寄送要求，仍請檢查收件匣與垃圾郵件。','email_test_recipient_required'=>'請先填寫訂單接收 Email，再寄送測試信。','email_test_accepted'=>'主機已接受寄往 {email} 的測試信寄送要求，請檢查收件匣與垃圾郵件。','email_test_failed'=>'測試信寄送失敗。診斷代碼：{detail}'
-      ]
-    ];
-    foreach($extra9 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra10=[
-      'vi'=>[
-        'order_email_delivery'=>'Gửi Email đơn hàng','email_status'=>'Trạng thái Email','email_status_sent'=>'Đã gửi','email_status_failed'=>'Gửi thất bại','email_status_pending'=>'Chưa gửi','email_attempts'=>'Số lần thử','email_sent_at'=>'Thời gian gửi','email_diagnostic'=>'Mã chẩn đoán','resend_order_email'=>'Gửi lại Email đơn hàng','order_email_resent'=>'Máy chủ đã chấp nhận Email đơn hàng gửi lại.','order_email_resend_failed'=>'Không thể gửi lại Email đơn hàng. Mã chẩn đoán: {detail}','email_recipient'=>'Email nhận đơn','order_notification_emails'=>'Danh sách Email nhận đơn','order_notification_emails_help'=>'Có thể thêm tối đa 10 địa chỉ. Hệ thống sẽ gửi riêng một email đến từng địa chỉ, không cần chuyển tiếp.','add_email_recipient'=>'Thêm Email','email_status_partial'=>'Gửi một phần','email_test_accepted_multi'=>'Máy chủ đã chấp nhận thư thử đến {count} địa chỉ Email.'
-      ],
-      'en'=>[
-        'order_email_delivery'=>'Order email delivery','email_status'=>'Email status','email_status_sent'=>'Sent','email_status_failed'=>'Failed','email_status_pending'=>'Pending','email_attempts'=>'Attempts','email_sent_at'=>'Sent at','email_diagnostic'=>'Diagnostic code','resend_order_email'=>'Resend order email','order_email_resent'=>'The server accepted the resent order email.','order_email_resend_failed'=>'The order email could not be resent. Diagnostic code: {detail}','email_recipient'=>'Order recipient email','order_notification_emails'=>'Order notification recipients','order_notification_emails_help'=>'Add up to 10 addresses. The system sends a separate original email to each address without forwarding.','add_email_recipient'=>'Add email','email_status_partial'=>'Partially sent','email_test_accepted_multi'=>'The server accepted test messages for {count} email addresses.'
-      ],
-      'zh'=>[
-        'order_email_delivery'=>'訂單 Email 寄送','email_status'=>'Email 狀態','email_status_sent'=>'已寄送','email_status_failed'=>'寄送失敗','email_status_pending'=>'尚未寄送','email_attempts'=>'嘗試次數','email_sent_at'=>'寄送時間','email_diagnostic'=>'診斷代碼','resend_order_email'=>'重新寄送訂單 Email','order_email_resent'=>'主機已接受重新寄送的訂單 Email。','order_email_resend_failed'=>'訂單 Email 重新寄送失敗。診斷代碼：{detail}','email_recipient'=>'訂單接收 Email','order_notification_emails'=>'訂單接收 Email 清單（可多筆）','order_notification_emails_help'=>'最多可新增 10 個地址；按右側「新增 Email」加入更多收件人。系統會直接分別寄送，不需要轉寄。','add_email_recipient'=>'新增 Email','email_status_partial'=>'部分寄送成功','email_test_accepted_multi'=>'主機已接受寄往 {count} 個 Email 地址的測試信。'
-      ]
-    ];
-    foreach($extra10 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra11=[
-      'vi'=>[
-        'sound_source_default'=>'Âm thanh mặc định','sound_source_default_help'=>'Dùng tiếng bíp mặc định của hệ thống.','sound_source_custom'=>'Âm thanh tự tải lên','sound_source_custom_ready'=>'Đã có tệp âm thanh tùy chỉnh và có thể chọn sử dụng.','sound_source_custom_missing'=>'Hãy tải tệp âm thanh trước để bật lựa chọn này.','upload_custom_sound'=>'Tải / thay đổi âm thanh tùy chỉnh','current_custom_sound'=>'Âm thanh tùy chỉnh hiện có','currently_in_use'=>'Đang sử dụng','saved_not_in_use'=>'Đã lưu, chưa sử dụng','no_custom_sound'=>'Chưa có âm thanh tùy chỉnh. Tải MP3 / WAV / OGG để sử dụng.','test_sound_current_choice_help'=>'Nút thử sẽ phát lựa chọn hiện tại; tệp vừa chọn có thể thử trước khi lưu.'
-      ],
-      'en'=>[
-        'sound_source_default'=>'System default sound','sound_source_default_help'=>'Use the built-in notification beep.','sound_source_custom'=>'Uploaded custom sound','sound_source_custom_ready'=>'A custom audio file is saved and can be selected.','sound_source_custom_missing'=>'Upload an audio file first to enable this option.','upload_custom_sound'=>'Upload / replace custom sound','current_custom_sound'=>'Current custom sound','currently_in_use'=>'In use','saved_not_in_use'=>'Saved, not in use','no_custom_sound'=>'No custom sound is saved. Upload MP3 / WAV / OGG to use one.','test_sound_current_choice_help'=>'Test plays the currently selected option; a newly chosen file can be previewed before saving.'
-      ],
-      'zh'=>[
-        'sound_source_default'=>'系統預設音效','sound_source_default_help'=>'使用系統內建的提示音。','sound_source_custom'=>'自訂上傳音效','sound_source_custom_ready'=>'目前已有自訂音效，可切換使用。','sound_source_custom_missing'=>'請先上傳音效檔，才能選擇自訂音效。','upload_custom_sound'=>'上傳／更換自訂音效','current_custom_sound'=>'目前自訂音效','currently_in_use'=>'目前使用中','saved_not_in_use'=>'已保存，未使用','no_custom_sound'=>'目前尚未上傳自訂音效；可上傳 MP3 / WAV / OGG。','test_sound_current_choice_help'=>'「測試音效」會播放目前選擇的音效；剛選取、尚未儲存的新檔案也可以直接試聽。'
-      ]
-    ];
-    foreach($extra11 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra12=[
-      'vi'=>[
-        'catalog_topping_category'=>'TOPPING','theme_settings'=>'Màu chủ đạo','theme_settings_help'=>'Chọn màu chủ đạo dùng cho giao diện khách hàng và khu vực quản trị.','theme_default'=>'Màu hiện tại','theme_default_help'=>'Giữ tông đen/xám hiện tại.','theme_deep_red'=>'Đỏ đậm','theme_deep_red_help'=>'Dùng đỏ đậm làm màu nhấn chính.'
-      ],
-      'en'=>[
-        'catalog_topping_category'=>'TOPPING','theme_settings'=>'Primary color theme','theme_settings_help'=>'Choose the primary accent used across the storefront and admin interface.','theme_default'=>'Current theme','theme_default_help'=>'Keep the existing dark charcoal color scheme.','theme_deep_red'=>'Deep red','theme_deep_red_help'=>'Use a deep red primary accent.'
-      ],
-      'zh'=>[
-        'catalog_topping_category'=>'配料','theme_settings'=>'主色系','theme_settings_help'=>'選擇客戶前台與管理後台使用的主要強調色。','theme_default'=>'目前配色','theme_default_help'=>'維持目前的深色／黑灰配色。','theme_deep_red'=>'深紅色','theme_deep_red_help'=>'使用深紅色作為主要強調色。'
-      ]
-    ];
-    foreach($extra12 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-
-    $extra13=[
-      'vi'=>[
-        'mobile_push_settings'=>'Ứng dụng quản trị & thông báo đẩy','mobile_push_help'=>'Cài trang quản trị lên màn hình chính và bật thông báo để nhận cảnh báo đơn hàng ngay cả khi ứng dụng không mở.','enable_mobile_push'=>'Bật thông báo đơn hàng trên thiết bị này','disable_mobile_push'=>'Tắt thông báo trên thiết bị này','push_enabled'=>'Thiết bị này đã bật thông báo đẩy.','push_disabled'=>'Thiết bị này chưa bật thông báo đẩy.','push_not_supported'=>'Trình duyệt hoặc chế độ hiện tại không hỗ trợ Web Push.','push_permission_denied'=>'Quyền thông báo đã bị từ chối. Hãy bật lại trong cài đặt hệ thống.','push_server_status'=>'Máy chủ Web Push','push_devices'=>'Thiết bị đang đăng ký','push_ready'=>'Sẵn sàng','push_unavailable'=>'Chưa sẵn sàng','install_admin_app'=>'Cài ứng dụng quản trị','install_android_help'=>'Android: mở trang quản trị bằng Chrome → menu ⋮ → Cài đặt / Tạo lối tắt → Cài đặt.','install_ios_help'=>'iPhone/iPad: thêm trang quản trị vào Màn hình chính, mở ứng dụng từ biểu tượng đó rồi nhấn bật thông báo.'
-      ],
-      'en'=>[
-        'mobile_push_settings'=>'Admin app & push notifications','mobile_push_help'=>'Install the admin area to the Home Screen and enable push notifications to receive new-order alerts even when the app is not open.','enable_mobile_push'=>'Enable order push on this device','disable_mobile_push'=>'Disable push on this device','push_enabled'=>'Push notifications are enabled on this device.','push_disabled'=>'Push notifications are not enabled on this device.','push_not_supported'=>'Web Push is not supported in this browser or mode.','push_permission_denied'=>'Notification permission was denied. Re-enable it in system settings.','push_server_status'=>'Web Push server','push_devices'=>'Subscribed devices','push_ready'=>'Ready','push_unavailable'=>'Not ready','install_admin_app'=>'Install admin app','install_android_help'=>'Android: open Admin in Chrome → ⋮ menu → Install / Create shortcut → Install.','install_ios_help'=>'iPhone/iPad: add the Admin page to the Home Screen, open it from the icon, then enable notifications.'
-      ],
-      'zh'=>[
-        'mobile_push_settings'=>'管理 App／訂單推播','mobile_push_help'=>'將管理後台安裝到手機主畫面並啟用 Web Push，即使 App 沒有開啟，也能收到新訂單系統通知。','enable_mobile_push'=>'啟用此手機訂單推播','disable_mobile_push'=>'停用此手機推播','push_enabled'=>'此裝置已啟用訂單推播。','push_disabled'=>'此裝置尚未啟用訂單推播。','push_not_supported'=>'目前瀏覽器或使用模式不支援 Web Push。','push_permission_denied'=>'通知權限已被拒絕，請到手機系統設定重新開啟。','push_server_status'=>'Web Push 伺服器','push_devices'=>'已訂閱裝置','push_ready'=>'可使用','push_unavailable'=>'尚未就緒','install_admin_app'=>'安裝管理後台 App','install_android_help'=>'Android：用 Chrome 開啟管理後台 → ⋮ →「安裝並建立捷徑／安裝」。','install_ios_help'=>'iPhone／iPad：先將管理後台加入主畫面，從主畫面圖示開啟後，再按「啟用此手機訂單推播」。'
-      ]
-    ];
-    foreach($extra13 as $lang=>$items) $d[$lang]=array_merge($d[$lang],$items);
-    return $d;
+function current_lang(): string
+{
+  return $_SESSION['lang'] ?? 'vi';
 }
-function t(string $key, array $vars=[]): string {
-    $d = translations(); $lang=current_lang();
-    $text = $d[$lang][$key] ?? $d['vi'][$key] ?? $key;
-    foreach ($vars as $k=>$v) $text=str_replace('{'.$k.'}',(string)$v,$text);
-    return $text;
+function html_lang(): string
+{
+  return current_lang() === 'vi' ? 'vi' : (current_lang() === 'en' ? 'en' : 'zh-Hant');
 }
-function language_switcher(string $class='language-switcher'): string {
-    $labels=['vi'=>'Tiếng Việt','en'=>'English','zh'=>'中文'];
-    // Explicit SVG dimensions prevent the globe from expanding to the browser's
-    // default SVG size while a newly deployed stylesheet is still refreshing.
-    $globe='<svg class="language-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.2-2.35 3.4-5.35 3.4-9S14.2 5.35 12 3m0 18c-2.2-2.35-3.4-5.35-3.4-9S9.8 5.35 12 3M3.6 9h16.8M3.6 15h16.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    $out='<div class="'.e($class).'" role="group" aria-label="'.e(t('language')).'">'.$globe;
-    foreach($labels as $code=>$label){
-        $active=current_lang()===$code?' active':'';
-        $current=current_lang()===$code?' aria-current="true"':'';
-        $out.='<a class="lang-pill'.$active.'" href="'.e(lang_url($code)).'"'.$current.'>'.e($label).'</a>';
-    }
-    return $out.'</div>';
+function lang_url(string $lang): string
+{
+  $uri = $_SERVER['REQUEST_URI'] ?? base_url('index.php');
+  $parts = parse_url($uri);
+  $path = $parts['path'] ?? '';
+  parse_str($parts['query'] ?? '', $q);
+  $q['lang'] = $lang;
+  return $path . ($q ? '?' . http_build_query($q) : '');
 }
-function localized_name(array $row, string $base='name'): string {
-    $lang=current_lang();
-    foreach (["{$base}_{$lang}", "{$base}_vi", $base] as $key) {
-        if (isset($row[$key]) && trim((string)$row[$key])!=='') return (string)$row[$key];
-    }
-    return '';
+function translations(): array
+{
+  static $d = null;
+  if ($d !== null) return $d;
+  $d = [
+    'vi' => [
+      'mobile_order' => 'ĐẶT ĐỒ UỐNG',
+      'hero_title' => 'Hôm nay bạn muốn uống gì?',
+      'hero_desc' => 'Chọn đồ uống, rồi chọn độ ngọt, lượng đá và topping.',
+      'cart' => 'Giỏ hàng',
+      'online_order' => 'Hệ thống đặt đồ uống',
+      'back_menu' => 'Quay lại menu',
+      'ice' => 'Lượng đá',
+      'sugar' => 'Độ ngọt',
+      'toppings' => 'Topping',
+      'shared_all' => 'Có thể thêm vào mọi đồ uống',
+      'quantity' => 'Số lượng',
+      'add_cart' => 'Thêm vào giỏ',
+      'cart_added' => 'Đã thêm vào giỏ hàng',
+      'your_order' => 'ĐƠN CỦA BẠN',
+      'cart_empty' => 'Giỏ hàng đang trống',
+      'cart_empty_desc' => 'Hãy chọn món từ menu.',
+      'total' => 'Tổng cộng',
+      'update_cart' => 'Cập nhật giỏ hàng',
+      'checkout_info' => 'Điền thông tin đặt hàng',
+      'remove' => 'Xóa',
+      'checkout' => 'THANH TOÁN',
+      'order_info' => 'Thông tin đặt hàng',
+      'customer_name' => 'Tên khách hàng',
+      'phone' => 'Số điện thoại',
+      'delivery_address' => 'Địa chỉ giao hàng',
+      'payment_method' => 'Phương thức thanh toán',
+      'transfer' => 'Chuyển khoản',
+      'cash' => 'Tiền mặt',
+      'invoice_question' => 'Xuất hóa đơn?',
+      'yes' => 'Có',
+      'no' => 'Không',
+      'submit_order' => 'Gửi đơn hàng',
+      'order_details' => 'Chi tiết đơn hàng',
+      'order_sent' => 'Đã gửi đơn hàng',
+      'order_sent_desc' => 'Chúng tôi đã nhận đơn và sẽ gọi điện xác nhận.',
+      'order_number' => 'Mã đơn hàng',
+      'return_menu' => 'Quay lại menu',
+      'not_found_drink' => 'Không tìm thấy đồ uống này. Vui lòng chọn lại từ menu.',
+      'product_not_found' => 'Không tìm thấy món này. Vui lòng chọn lại từ menu.',
+      'invalid_option' => 'Vui lòng chọn lại cỡ ly, độ ngọt và lượng đá.',
+      'incomplete_data' => 'Vui lòng điền đầy đủ thông tin bắt buộc.',
+      'order_failed' => 'Chưa gửi được đơn hàng. Vui lòng thử lại sau.',
+      'drink' => 'Đồ uống',
+      'price' => 'Giá',
+      'status' => 'Trạng thái',
+      'active' => 'Bật',
+      'inactive' => 'Tắt',
+      'save' => 'Lưu',
+      'delete' => 'Xóa',
+      'add' => 'Thêm',
+      'edit' => 'Sửa',
+      'image' => 'Hình ảnh',
+      'category' => 'Danh mục',
+      'sort' => 'Thứ tự',
+      'headquarters' => 'TRỤ SỞ',
+      'hq_admin' => 'Quản trị trụ sở',
+      'orders' => 'Đơn hàng',
+      'products' => 'Đồ uống',
+      'categories' => 'Danh mục',
+      'settings' => 'Cài đặt',
+      'logout' => 'Đăng xuất',
+      'view_store' => 'Xem trang đặt hàng ↗',
+      'order_center' => 'Trung tâm đơn hàng',
+      'new_order' => 'Đơn mới',
+      'accepted' => 'Đã nhận',
+      'completed' => 'Hoàn tất',
+      'cancelled' => 'Đã hủy',
+      'order_no' => 'Mã đơn',
+      'time' => 'Thời gian',
+      'customer' => 'Khách hàng',
+      'payment' => 'Thanh toán',
+      'amount' => 'Số tiền',
+      'view' => 'Xem',
+      'customer_info' => 'Thông tin khách hàng',
+      'name' => 'Họ tên',
+      'address' => 'Địa chỉ',
+      'invoice' => 'Hóa đơn',
+      'needed' => 'Cần',
+      'not_needed' => 'Không cần',
+      'order_status' => 'Trạng thái nhận đơn',
+      'update_status' => 'Cập nhật trạng thái',
+      'unit_price' => 'Đơn giá',
+      'subtotal' => 'Thành tiền',
+      'grand_total' => 'Tổng tiền',
+      'drink_categories' => 'Danh mục đồ uống',
+      'add_category' => 'Thêm danh mục',
+      'existing_categories' => 'Danh mục hiện có',
+      'example_category' => 'Ví dụ: Trà sữa',
+      'only_empty_category_delete' => 'Chỉ có thể xóa danh mục không có đồ uống. Xác nhận xóa?',
+      'drink_management' => 'Quản lý đồ uống',
+      'add_drink' => 'Thêm đồ uống',
+      'ice_profile' => 'Nhãn lượng đá',
+      'sugar_profile' => 'Nhãn độ ngọt',
+      'edit_drink' => 'Sửa đồ uống',
+      'drink_name' => 'Tên đồ uống',
+      'drink_image' => 'Hình đồ uống',
+      'image_help' => 'JPG / PNG / WEBP, tối đa 5MB',
+      'remove_current_image' => 'Xóa hình hiện tại',
+      'enable_drink' => 'Bật đồ uống',
+      'save_drink' => 'Lưu đồ uống',
+      'profile_error' => 'Nhãn không hợp lệ',
+      'image_too_large' => 'Hình không được vượt quá 5MB',
+      'image_type_error' => 'Chỉ chấp nhận JPG / PNG / WEBP',
+      'image_upload_failed' => 'Tải hình thất bại',
+      'shared_toppings' => 'Topping dùng chung',
+      'shared_toppings_info' => 'Topping được bật ở đây sẽ áp dụng cho tất cả đồ uống.',
+      'add_topping' => 'Thêm topping',
+      'topping_list' => 'Danh sách topping',
+      'surcharge' => 'Phụ thu',
+      'confirm_delete' => 'Xác nhận xóa?',
+      'global_options' => 'Độ ngọt / Lượng đá toàn hệ thống',
+      'global_options_info' => 'Mỗi đồ uống chọn một nhãn đá và một nhãn ngọt. Khi sửa nhãn tại đây, tất cả đồ uống dùng nhãn đó sẽ cập nhật cùng lúc.',
+      'profile_name' => 'Tên nhãn',
+      'display_options' => 'Tùy chọn hiển thị (mỗi dòng một mục)',
+      'system_settings' => 'Cài đặt hệ thống',
+      'settings_saved' => 'Đã lưu cài đặt',
+      'system_store_name' => 'Tên hệ thống / cửa hàng',
+      'currency' => 'Đơn vị tiền tệ',
+      'transfer_note' => 'Ghi chú chuyển khoản',
+      'save_settings' => 'Lưu cài đặt',
+      'login' => 'Đăng nhập',
+      'username' => 'Tài khoản',
+      'password' => 'Mật khẩu',
+      'login_error' => 'Sai tài khoản hoặc mật khẩu',
+      'language' => 'Ngôn ngữ',
+      'vietnamese' => 'Tiếng Việt',
+      'english' => 'English',
+      'chinese' => '中文',
+      'content_languages' => 'Nội dung đa ngôn ngữ',
+      'name_vi' => 'Tên tiếng Việt',
+      'name_en' => 'Tên tiếng Anh',
+      'name_zh' => 'Tên tiếng Trung',
+      'options_vi' => 'Tùy chọn tiếng Việt (mỗi dòng một mục)',
+      'options_en' => 'Tùy chọn tiếng Anh (mỗi dòng một mục)',
+      'options_zh' => 'Tùy chọn tiếng Trung (mỗi dòng một mục)',
+      'store_name_vi' => 'Tên cửa hàng tiếng Việt',
+      'store_name_en' => 'Tên cửa hàng tiếng Anh',
+      'store_name_zh' => 'Tên cửa hàng tiếng Trung',
+      'setup_title' => 'Cài đặt hệ thống đặt đồ uống',
+      'setup_done' => 'Cài đặt hoàn tất.',
+      'enter_admin' => 'Vào quản trị trụ sở',
+      'view_front' => 'Xem trang đặt hàng',
+      'setup_security' => 'Để an toàn, sau khi cài đặt hãy đổi tên hoặc xóa setup.php trong cPanel.',
+      'db_host' => 'Máy chủ cơ sở dữ liệu',
+      'db_name' => 'Tên cơ sở dữ liệu',
+      'db_user' => 'Tài khoản cơ sở dữ liệu',
+      'db_pass' => 'Mật khẩu cơ sở dữ liệu',
+      'website_url' => 'Địa chỉ website',
+      'admin_user' => 'Tài khoản quản trị trụ sở',
+      'admin_pass' => 'Mật khẩu quản trị trụ sở',
+      'create_system' => 'Tạo hệ thống',
+      'setup_validation' => 'Vui lòng điền thông tin cơ sở dữ liệu; mật khẩu quản trị phải có ít nhất 8 ký tự.',
+      'config_write_failed' => 'Không thể ghi config.local.php. Hãy kiểm tra quyền ghi thư mục.',
+      'default_store_name' => 'Hồng Trà Tuổi Thơ Đặt đồ uống trực tuyến',
+      'default_transfer_note' => 'Thông tin chuyển khoản sẽ do trụ sở cung cấp riêng.',
+      'language_fields_help' => 'Tiếng Việt là ngôn ngữ mặc định. Nếu bản dịch để trống, hệ thống sẽ tự động dùng tiếng Việt hoặc tên cũ.',
+      'all' => 'Tất cả',
+      'csrf_expired' => 'Trang đã hết hạn. Vui lòng quay lại trang trước, tải lại rồi thử lại.',
+      'order_not_found' => 'Không tìm thấy đơn hàng',
+      'cup_size' => 'Kích cỡ ly',
+      'choose_size' => 'Chọn kích cỡ',
+      'enable_sizes' => 'Sản phẩm có ly L / XL',
+      'sized_drink_help' => 'Bật mục này để đặt giá riêng cho ly L và XL.',
+      'single_price' => 'Giá một cỡ',
+      'price_l' => 'Giá ly L',
+      'price_xl' => 'Giá ly XL',
+      'size_price_required' => 'Vui lòng nhập giá hợp lệ cho cả ly L và XL.',
+      'order_note' => 'Ghi chú đơn hàng',
+      'order_note_placeholder' => 'Ví dụ: thời gian giao mong muốn, lưu ý khi liên hệ',
+      'invoice_details' => 'Thông tin xuất hóa đơn',
+      'company_name' => 'Tên công ty',
+      'tax_id' => 'Mã số thuế',
+      'company_address' => 'Địa chỉ công ty',
+      'company_representative' => 'Người đại diện công ty',
+      'optional' => 'Không bắt buộc',
+      'company_phone' => 'Số điện thoại công ty',
+      'invoice_email' => 'Email nhận hóa đơn',
+      'invoice_fields_required' => 'Nếu cần hóa đơn, vui lòng điền đủ các mục bắt buộc.',
+      'preorder_notice' => 'Lưu ý trước khi đặt hàng',
+      'checkout_confirmation_notice' => 'Chúng tôi sẽ gọi điện xác nhận đơn trước khi chính thức xử lý và giao hàng.',
+      'checkout_data_usage_notice' => 'Thông tin đặt hàng dùng để xác nhận và giao đơn. Đơn đặt khi đăng nhập được lưu trong tài khoản trên website. Đặt hàng với tư cách khách không tự tạo tài khoản; dữ liệu trên website không được gửi về iPOS.',
+      'order_notification_email' => 'Email nhận thông báo đơn hàng',
+      'order_notification_email_help' => 'Khi khách gửi đơn, hệ thống sẽ gửi bản sao chi tiết đơn hàng đến email này bằng chức năng gửi mail của máy chủ cPanel. Để trống nếu không cần gửi email.',
+      'invalid_email' => 'Vui lòng nhập địa chỉ email hợp lệ.',
+      'invoice_info' => 'Thông tin hóa đơn',
+      'customer_note' => 'Ghi chú khách hàng'
+    ],
+    'en' => [
+      'mobile_order' => 'MOBILE ORDER',
+      'hero_title' => 'What would you like to drink today?',
+      'hero_desc' => 'Choose a drink, then pick sweetness, ice and toppings.',
+      'cart' => 'Cart',
+      'online_order' => 'Online ordering system',
+      'back_menu' => 'Back to menu',
+      'ice' => 'Ice',
+      'sugar' => 'Sweetness',
+      'toppings' => 'Toppings',
+      'shared_all' => 'Available for all drinks',
+      'quantity' => 'Quantity',
+      'add_cart' => 'Add to cart',
+      'cart_added' => 'Added to cart',
+      'your_order' => 'YOUR ORDER',
+      'cart_empty' => 'Your cart is empty',
+      'cart_empty_desc' => 'Choose something from the menu.',
+      'total' => 'Total',
+      'update_cart' => 'Update cart',
+      'checkout_info' => 'Enter order details',
+      'remove' => 'Remove',
+      'checkout' => 'CHECKOUT',
+      'order_info' => 'Order information',
+      'customer_name' => 'Customer name',
+      'phone' => 'Phone',
+      'delivery_address' => 'Delivery address',
+      'payment_method' => 'Payment method',
+      'transfer' => 'Bank transfer',
+      'cash' => 'Cash',
+      'invoice_question' => 'Issue an invoice?',
+      'yes' => 'Yes',
+      'no' => 'No',
+      'submit_order' => 'Submit order',
+      'order_details' => 'Order details',
+      'order_sent' => 'Order sent',
+      'order_sent_desc' => 'We have your order and will call you to confirm.',
+      'order_number' => 'Order number',
+      'return_menu' => 'Back to menu',
+      'not_found_drink' => 'This drink could not be found. Please choose again from the menu.',
+      'product_not_found' => 'This item could not be found. Please choose again from the menu.',
+      'invalid_option' => 'Please choose the cup size, sweetness and ice again.',
+      'incomplete_data' => 'Please fill in all required fields.',
+      'order_failed' => 'Your order could not be sent. Please try again later.',
+      'drink' => 'Drink',
+      'price' => 'Price',
+      'status' => 'Status',
+      'active' => 'Active',
+      'inactive' => 'Inactive',
+      'save' => 'Save',
+      'delete' => 'Delete',
+      'add' => 'Add',
+      'edit' => 'Edit',
+      'image' => 'Image',
+      'category' => 'Category',
+      'sort' => 'Sort',
+      'headquarters' => 'HEADQUARTERS',
+      'hq_admin' => 'Headquarters Admin',
+      'orders' => 'Orders',
+      'products' => 'Drinks',
+      'categories' => 'Categories',
+      'settings' => 'Settings',
+      'logout' => 'Log out',
+      'view_store' => 'View storefront ↗',
+      'order_center' => 'Order Center',
+      'new_order' => 'New',
+      'accepted' => 'Accepted',
+      'completed' => 'Completed',
+      'cancelled' => 'Cancelled',
+      'order_no' => 'Order No.',
+      'time' => 'Time',
+      'customer' => 'Customer',
+      'payment' => 'Payment',
+      'amount' => 'Amount',
+      'view' => 'View',
+      'customer_info' => 'Customer information',
+      'name' => 'Name',
+      'address' => 'Address',
+      'invoice' => 'Invoice',
+      'needed' => 'Required',
+      'not_needed' => 'Not required',
+      'order_status' => 'Order status',
+      'update_status' => 'Update status',
+      'unit_price' => 'Unit price',
+      'subtotal' => 'Subtotal',
+      'grand_total' => 'Grand total',
+      'drink_categories' => 'Drink Categories',
+      'add_category' => 'Add category',
+      'existing_categories' => 'Existing categories',
+      'example_category' => 'Example: Milk Tea',
+      'only_empty_category_delete' => 'Only categories without drinks can be deleted. Delete it?',
+      'drink_management' => 'Drink Management',
+      'add_drink' => 'Add drink',
+      'ice_profile' => 'Ice profile',
+      'sugar_profile' => 'Sweetness profile',
+      'edit_drink' => 'Edit drink',
+      'drink_name' => 'Drink name',
+      'drink_image' => 'Drink image',
+      'image_help' => 'JPG / PNG / WEBP, maximum 5MB',
+      'remove_current_image' => 'Remove current image',
+      'enable_drink' => 'Enable drink',
+      'save_drink' => 'Save drink',
+      'profile_error' => 'Invalid profile',
+      'image_too_large' => 'Image must not exceed 5MB',
+      'image_type_error' => 'Only JPG / PNG / WEBP are accepted',
+      'image_upload_failed' => 'Image upload failed',
+      'shared_toppings' => 'Shared Toppings',
+      'shared_toppings_info' => 'Enabled toppings here are available for all drinks.',
+      'add_topping' => 'Add topping',
+      'topping_list' => 'Topping list',
+      'surcharge' => 'Surcharge',
+      'confirm_delete' => 'Delete this item?',
+      'global_options' => 'Global Sweetness / Ice',
+      'global_options_info' => 'Each drink uses one ice profile and one sweetness profile. Editing a profile here updates every drink using it.',
+      'profile_name' => 'Profile name',
+      'display_options' => 'Display options (one per line)',
+      'system_settings' => 'System Settings',
+      'settings_saved' => 'Settings saved',
+      'system_store_name' => 'System / store name',
+      'currency' => 'Currency symbol',
+      'transfer_note' => 'Transfer note',
+      'save_settings' => 'Save settings',
+      'login' => 'Log in',
+      'username' => 'Username',
+      'password' => 'Password',
+      'login_error' => 'Incorrect username or password',
+      'language' => 'Language',
+      'vietnamese' => 'Tiếng Việt',
+      'english' => 'English',
+      'chinese' => '中文',
+      'content_languages' => 'Multilingual content',
+      'name_vi' => 'Vietnamese name',
+      'name_en' => 'English name',
+      'name_zh' => 'Chinese name',
+      'options_vi' => 'Vietnamese options (one per line)',
+      'options_en' => 'English options (one per line)',
+      'options_zh' => 'Chinese options (one per line)',
+      'store_name_vi' => 'Vietnamese store name',
+      'store_name_en' => 'English store name',
+      'store_name_zh' => 'Chinese store name',
+      'setup_title' => 'Install Ordering System',
+      'setup_done' => 'Installation complete.',
+      'enter_admin' => 'Open headquarters admin',
+      'view_front' => 'View storefront',
+      'setup_security' => 'For security, rename or delete setup.php in cPanel after installation.',
+      'db_host' => 'Database host',
+      'db_name' => 'Database name',
+      'db_user' => 'Database username',
+      'db_pass' => 'Database password',
+      'website_url' => 'Website URL',
+      'admin_user' => 'Headquarters admin username',
+      'admin_pass' => 'Headquarters admin password',
+      'create_system' => 'Create system',
+      'setup_validation' => 'Enter the database details. The admin password must be at least 8 characters.',
+      'config_write_failed' => 'Unable to write config.local.php. Check folder write permissions.',
+      'default_store_name' => 'Hồng Trà Tuổi Thơ Online Ordering',
+      'default_transfer_note' => 'Bank transfer details will be provided separately by headquarters.',
+      'language_fields_help' => 'Vietnamese is the default language. If a translation is blank, the system falls back to Vietnamese or the legacy name.',
+      'all' => 'All',
+      'csrf_expired' => 'This page has expired. Go back, refresh the page and try again.',
+      'order_not_found' => 'Order not found',
+      'cup_size' => 'Cup size',
+      'choose_size' => 'Choose size',
+      'enable_sizes' => 'This drink has L / XL sizes',
+      'sized_drink_help' => 'Enable this to set separate prices for L and XL.',
+      'single_price' => 'Single-size price',
+      'price_l' => 'L price',
+      'price_xl' => 'XL price',
+      'size_price_required' => 'Enter valid prices for both L and XL.',
+      'order_note' => 'Order notes',
+      'order_note_placeholder' => 'Example: preferred delivery time, contact instructions',
+      'invoice_details' => 'Invoice information',
+      'company_name' => 'Company name',
+      'tax_id' => 'Tax ID',
+      'company_address' => 'Company address',
+      'company_representative' => 'Company representative',
+      'optional' => 'Optional',
+      'company_phone' => 'Company phone',
+      'invoice_email' => 'Invoice delivery email',
+      'invoice_fields_required' => 'If you need an invoice, complete the required fields.',
+      'preorder_notice' => 'Important before placing your order',
+      'checkout_confirmation_notice' => 'We will call to confirm your order before it is finalized, processed and delivered.',
+      'checkout_data_usage_notice' => 'We use your order details to confirm and deliver your order. Orders placed while signed in are saved to your website account. Guest checkout does not create an account, and website data is not sent to iPOS.',
+      'order_notification_email' => 'Order notification email',
+      'order_notification_email_help' => 'When a customer submits an order, the system sends a copy of the order details to this address using the cPanel server mail function. Leave blank to disable email notifications.',
+      'invalid_email' => 'Enter a valid email address.',
+      'invoice_info' => 'Invoice information',
+      'customer_note' => 'Customer note'
+    ],
+    'zh' => [
+      'mobile_order' => 'MOBILE ORDER',
+      'hero_title' => '今天想喝什麼？',
+      'hero_desc' => '選好飲料，再挑甜度、冰量與配料。',
+      'cart' => '購物車',
+      'online_order' => '線上點餐系統',
+      'back_menu' => '返回菜單',
+      'ice' => '冰量',
+      'sugar' => '甜度',
+      'toppings' => '配料',
+      'shared_all' => '所有飲品都可加選',
+      'quantity' => '數量',
+      'add_cart' => '加入購物車',
+      'cart_added' => '已加入購物車',
+      'your_order' => 'YOUR ORDER',
+      'cart_empty' => '購物車還是空的',
+      'cart_empty_desc' => '先到菜單選購吧。',
+      'total' => '合計',
+      'update_cart' => '更新購物車',
+      'checkout_info' => '前往填寫資料',
+      'remove' => '刪除',
+      'checkout' => 'CHECKOUT',
+      'order_info' => '訂購資料',
+      'customer_name' => '客戶姓名',
+      'phone' => '電話',
+      'delivery_address' => '寄送地址',
+      'payment_method' => '付款方式',
+      'transfer' => '轉帳',
+      'cash' => '現金',
+      'invoice_question' => '是否開立發票',
+      'yes' => '是',
+      'no' => '否',
+      'submit_order' => '送出訂單',
+      'order_details' => '訂購明細',
+      'order_sent' => '訂單已送出',
+      'order_sent_desc' => '我們已收到訂單，會電話聯絡你確認。',
+      'order_number' => '訂單編號',
+      'return_menu' => '返回菜單',
+      'not_found_drink' => '找不到這款飲料，請回菜單重新選擇。',
+      'product_not_found' => '找不到這項商品，請回菜單重新選擇。',
+      'invalid_option' => '請重新選擇杯型、甜度與冰量。',
+      'incomplete_data' => '請填寫所有必填資料。',
+      'order_failed' => '訂單未能送出，請稍後再試。',
+      'drink' => '飲料',
+      'price' => '價格',
+      'status' => '狀態',
+      'active' => '啟用',
+      'inactive' => '停用',
+      'save' => '儲存',
+      'delete' => '刪除',
+      'add' => '新增',
+      'edit' => '編輯',
+      'image' => '圖片',
+      'category' => '分類',
+      'sort' => '排序',
+      'headquarters' => '總部',
+      'hq_admin' => '總部後台',
+      'orders' => '訂單',
+      'products' => '飲料',
+      'categories' => '分類',
+      'settings' => '設定',
+      'logout' => '登出',
+      'view_store' => '查看前台 ↗',
+      'order_center' => '訂單中心',
+      'new_order' => '新訂單',
+      'accepted' => '已接單',
+      'completed' => '已完成',
+      'cancelled' => '取消',
+      'order_no' => '訂單編號',
+      'time' => '時間',
+      'customer' => '客戶',
+      'payment' => '付款',
+      'amount' => '金額',
+      'view' => '查看',
+      'customer_info' => '客戶資料',
+      'name' => '姓名',
+      'address' => '地址',
+      'invoice' => '發票',
+      'needed' => '需要',
+      'not_needed' => '不需要',
+      'order_status' => '接單狀態',
+      'update_status' => '更新狀態',
+      'unit_price' => '單價',
+      'subtotal' => '小計',
+      'grand_total' => '總金額',
+      'drink_categories' => '飲料分類',
+      'add_category' => '新增分類',
+      'existing_categories' => '現有分類',
+      'example_category' => '例如：奶茶系列',
+      'only_empty_category_delete' => '只有沒有飲料的分類才能刪除，確定？',
+      'drink_management' => '飲料管理',
+      'add_drink' => '新增飲料',
+      'ice_profile' => '冰量標籤',
+      'sugar_profile' => '甜度標籤',
+      'edit_drink' => '編輯飲料',
+      'drink_name' => '飲料名稱',
+      'drink_image' => '飲料圖片',
+      'image_help' => 'JPG / PNG / WEBP，最大 5MB',
+      'remove_current_image' => '移除目前圖片',
+      'enable_drink' => '啟用飲料',
+      'save_drink' => '儲存飲料',
+      'profile_error' => '標籤錯誤',
+      'image_too_large' => '圖片不可超過 5MB',
+      'image_type_error' => '只接受 JPG / PNG / WEBP',
+      'image_upload_failed' => '圖片上傳失敗',
+      'shared_toppings' => '共用配料',
+      'shared_toppings_info' => '這裡的啟用配料會套用到所有飲料品項。',
+      'add_topping' => '新增配料',
+      'topping_list' => '配料清單',
+      'surcharge' => '加價',
+      'confirm_delete' => '確定刪除？',
+      'global_options' => '全域甜度 / 冰量',
+      'global_options_info' => '每個飲料只要選擇一個冰量標籤與甜度標籤；修改這裡後，所有使用該標籤的飲料會一起更新。',
+      'profile_name' => '標籤名稱',
+      'display_options' => '顯示選項（每行一個）',
+      'system_settings' => '系統設定',
+      'settings_saved' => '設定已儲存',
+      'system_store_name' => '系統/店名',
+      'currency' => '貨幣單位',
+      'transfer_note' => '轉帳備註',
+      'save_settings' => '儲存設定',
+      'login' => '登入',
+      'username' => '帳號',
+      'password' => '密碼',
+      'login_error' => '帳號或密碼錯誤',
+      'language' => '語言',
+      'vietnamese' => 'Tiếng Việt',
+      'english' => 'English',
+      'chinese' => '中文',
+      'content_languages' => '多語系內容',
+      'name_vi' => '越南文名稱',
+      'name_en' => '英文名稱',
+      'name_zh' => '中文名稱',
+      'options_vi' => '越南文選項（每行一個）',
+      'options_en' => '英文選項（每行一個）',
+      'options_zh' => '中文選項（每行一個）',
+      'store_name_vi' => '越南文店名',
+      'store_name_en' => '英文店名',
+      'store_name_zh' => '中文店名',
+      'setup_title' => '點餐系統安裝',
+      'setup_done' => '安裝完成。',
+      'enter_admin' => '進入總部後台',
+      'view_front' => '查看前台',
+      'setup_security' => '安全起見，安裝完成後可在 cPanel 將 setup.php 改名或刪除。',
+      'db_host' => '資料庫主機',
+      'db_name' => '資料庫名稱',
+      'db_user' => '資料庫帳號',
+      'db_pass' => '資料庫密碼',
+      'website_url' => '網站網址',
+      'admin_user' => '總部管理帳號',
+      'admin_pass' => '總部管理密碼',
+      'create_system' => '建立系統',
+      'setup_validation' => '請填寫資料庫資料，後台密碼至少 8 碼。',
+      'config_write_failed' => '無法寫入 config.local.php，請確認資料夾可寫入。',
+      'default_store_name' => 'Hồng Trà Tuổi Thơ 線上點餐',
+      'default_transfer_note' => '轉帳資訊請由總部另行提供',
+      'language_fields_help' => '越南文為預設語言；若其他語言留白，系統會回退使用越南文或原始名稱。',
+      'all' => '全部',
+      'csrf_expired' => '頁面已逾時，請返回上一頁重新整理後再試。',
+      'order_not_found' => '找不到訂單',
+      'cup_size' => '杯型',
+      'choose_size' => '選擇杯型',
+      'enable_sizes' => '此飲料提供 L / XL 杯型',
+      'sized_drink_help' => '啟用後可分別設定 L 杯與 XL 杯價格。',
+      'single_price' => '單一杯型價格',
+      'price_l' => 'L 杯價格',
+      'price_xl' => 'XL 杯價格',
+      'size_price_required' => '請正確設定 L 杯與 XL 杯價格。',
+      'order_note' => '訂單備註',
+      'order_note_placeholder' => '例如：希望配送的時間、聯絡注意事項',
+      'invoice_details' => '發票資料',
+      'company_name' => '公司名稱',
+      'tax_id' => '統一稅號',
+      'company_address' => '公司地址',
+      'company_representative' => '公司代表人',
+      'optional' => '選填',
+      'company_phone' => '公司電話',
+      'invoice_email' => '發票寄送 Email',
+      'invoice_fields_required' => '需要發票時，請填妥必填資料。',
+      'preorder_notice' => '下單前注意事項',
+      'checkout_confirmation_notice' => '訂單經電話確認後才正式成立，並安排處理與配送。',
+      'checkout_data_usage_notice' => '訂購資料用於確認與配送。登入會員後下單，訂單會保存在你的平台帳號；訪客下單不會自動建立會員，平台資料不會回傳至 iPOS。',
+      'order_notification_email' => '訂單接收 Email',
+      'order_notification_email_help' => '客戶送出訂單後，系統會透過 cPanel 主機的郵件功能，將訂單明細副本寄送至此 Email；留白則不寄送。',
+      'invalid_email' => '請填寫正確的 Email 地址。',
+      'invoice_info' => '發票資料',
+      'customer_note' => '客戶備註'
+    ],
+  ];
+  $extra = [
+    'vi' => ['standalone_toppings' => 'Topping mua riêng', 'standalone_topping' => 'TOPPING MUA RIÊNG', 'standalone_topping_info' => 'Có thể bật từng topping để bán riêng với trang sản phẩm, hình ảnh, mô tả và giá bán riêng.', 'allow_standalone_sale' => 'Cho phép bán riêng', 'allow_standalone_sale_help' => 'Khi bật, topping sẽ xuất hiện như một sản phẩm riêng trên trang đặt hàng.', 'standalone_sale' => 'Bán riêng', 'standalone_price' => 'Giá bán riêng', 'standalone_price_required' => 'Vui lòng nhập giá bán riêng hợp lệ.', 'topping_image' => 'Hình topping', 'description_vi' => 'Mô tả tiếng Việt', 'description_en' => 'Mô tả tiếng Anh', 'description_zh' => 'Mô tả tiếng Trung', 'view_product_page' => 'Xem trang sản phẩm', 'topping_not_found' => 'Không tìm thấy topping này. Vui lòng chọn lại từ menu.'],
+    'en' => ['standalone_toppings' => 'Toppings for individual purchase', 'standalone_topping' => 'INDIVIDUAL TOPPING', 'standalone_topping_info' => 'Each topping can optionally be sold separately with its own product page, image, description, and retail price.', 'allow_standalone_sale' => 'Allow individual sale', 'allow_standalone_sale_help' => 'When enabled, this topping appears as its own product on the storefront.', 'standalone_sale' => 'Individual sale', 'standalone_price' => 'Retail price', 'standalone_price_required' => 'Enter a valid retail price.', 'topping_image' => 'Topping image', 'description_vi' => 'Vietnamese description', 'description_en' => 'English description', 'description_zh' => 'Chinese description', 'view_product_page' => 'View product page', 'topping_not_found' => 'This topping could not be found. Please choose again from the menu.'],
+    'zh' => ['standalone_toppings' => '單獨購買配料', 'standalone_topping' => '單購配料', 'standalone_topping_info' => '每個配料可選擇是否開放單獨販售；開啟後會擁有獨立商品頁、圖片、介紹與單售價格。', 'allow_standalone_sale' => '允許單獨販售', 'allow_standalone_sale_help' => '啟用後，此配料會像一般商品一樣顯示在前台，可進入獨立介紹頁購買。', 'standalone_sale' => '單獨販售', 'standalone_price' => '單售價格', 'standalone_price_required' => '請輸入正確的單售價格。', 'topping_image' => '配料圖片', 'description_vi' => '越南文介紹', 'description_en' => '英文介紹', 'description_zh' => '中文介紹', 'view_product_page' => '查看商品頁', 'topping_not_found' => '找不到這項配料，請回菜單重新選擇。']
+  ];
+  foreach ($extra as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+  $extra2 = [
+    'vi' => [
+      'homepage_banner' => 'Banner quảng cáo trang chủ',
+      'homepage_banner_help' => 'Tải banner quảng cáo và liên kết trực tiếp đến một đồ uống hoặc topping bán riêng.',
+      'enable_banner' => 'Hiển thị banner trang chủ',
+      'banner_image' => 'Hình banner',
+      'banner_ratio_help' => 'Khuyến nghị ảnh ngang 16:9 hoặc 3:1; JPG / PNG / WEBP.',
+      'banner_link_type' => 'Loại sản phẩm liên kết',
+      'banner_link_product' => 'Sản phẩm được liên kết',
+      'new_hot_recommendations' => 'Món mới / Bán chạy',
+      'featured_eyebrow' => 'GỢI Ý CHO BẠN',
+      'new_badge' => 'Mới',
+      'hot_badge' => 'Bán chạy',
+      'hot_products' => 'SẢN PHẨM BÁN CHẠY',
+      'mark_new' => 'Đánh dấu món mới',
+      'mark_hot' => 'Đánh dấu bán chạy',
+      'coupon_system' => 'Ưu đãi',
+      'enable_buy4get1' => 'Bật ưu đãi Mua 4 Tặng 1',
+      'buy4get1_help' => 'Mỗi 5 ly đồ uống đủ điều kiện sẽ được giảm giá bằng giá đồ uống cơ bản thấp nhất. Topping thêm vào đồ uống không được giảm; topping mua riêng cũng không tính số lượng.',
+      'coupon' => 'Mã ưu đãi',
+      'coupon_code' => 'Mã coupon',
+      'buy4get1_title' => 'Mua 4 Tặng 1',
+      'buy4get1_desc' => 'Cứ 5 ly đồ uống được giảm giá phần đồ uống của 1 ly. Không giảm tiền topping; topping mua riêng không tính vào số ly.',
+      'apply_coupon' => 'Áp dụng',
+      'remove_coupon' => 'Bỏ mã',
+      'coupon_applied' => 'Đã áp dụng ưu đãi.',
+      'coupon_removed' => 'Đã bỏ ưu đãi.',
+      'coupon_invalid' => 'Ưu đãi này hiện chưa dùng được.',
+      'coupon_discount' => 'Giảm giá coupon',
+      'coupon_progress' => 'Đã chọn {qty} ly đồ uống, được giảm {free} ly.',
+      'applied' => 'Đã áp dụng'
+    ],
+    'en' => [
+      'homepage_banner' => 'Homepage advertising banner',
+      'homepage_banner_help' => 'Upload a promotional banner and link it directly to a drink or a standalone topping.',
+      'enable_banner' => 'Show homepage banner',
+      'banner_image' => 'Banner image',
+      'banner_ratio_help' => 'Recommended horizontal image: 16:9 or 3:1; JPG / PNG / WEBP.',
+      'banner_link_type' => 'Linked product type',
+      'banner_link_product' => 'Linked product',
+      'new_hot_recommendations' => 'New / Best sellers',
+      'featured_eyebrow' => 'RECOMMENDED FOR YOU',
+      'new_badge' => 'New',
+      'hot_badge' => 'Best seller',
+      'hot_products' => 'BEST SELLERS',
+      'mark_new' => 'Mark as new',
+      'mark_hot' => 'Mark as best seller',
+      'coupon_system' => 'Offers',
+      'enable_buy4get1' => 'Enable Buy 4 Get 1',
+      'buy4get1_help' => 'For every 5 eligible drinks, the lowest base drink price is discounted. Drink toppings are not discounted, and standalone toppings do not count toward eligibility.',
+      'coupon' => 'Coupon',
+      'coupon_code' => 'Coupon code',
+      'buy4get1_title' => 'Buy 4 Get 1',
+      'buy4get1_desc' => 'For every 5 drinks, get the base price of 1 drink off. Toppings are not discounted; standalone toppings do not count.',
+      'apply_coupon' => 'Apply',
+      'remove_coupon' => 'Remove',
+      'coupon_applied' => 'Offer applied.',
+      'coupon_removed' => 'Offer removed.',
+      'coupon_invalid' => 'This offer is unavailable right now.',
+      'coupon_discount' => 'Coupon discount',
+      'coupon_progress' => '{qty} drinks selected; {free} drinks discounted.',
+      'applied' => 'Applied'
+    ],
+    'zh' => [
+      'homepage_banner' => '首頁廣告橫幅',
+      'homepage_banner_help' => '上傳首頁廣告橫幅，並直接連結到指定飲料或可單購配料。',
+      'enable_banner' => '顯示首頁廣告橫幅',
+      'banner_image' => '廣告橫幅圖片',
+      'banner_ratio_help' => '建議使用 16:9 或 3:1 橫向圖片；JPG / PNG / WEBP。',
+      'banner_link_type' => '連結商品類型',
+      'banner_link_product' => '連結商品',
+      'new_hot_recommendations' => '新品上市 / 熱銷推薦',
+      'featured_eyebrow' => '為你推薦',
+      'new_badge' => '新品',
+      'hot_badge' => '熱銷',
+      'hot_products' => '熱銷商品',
+      'mark_new' => '標記為新品',
+      'mark_hot' => '標記為熱銷',
+      'coupon_system' => '優惠券',
+      'enable_buy4get1' => '啟用買4送1',
+      'buy4get1_help' => '每滿 5 杯符合資格的飲料，折抵其中最低的一杯「飲料基礎價格」。飲料加料費不折抵；單購配料也不列入買4送1杯數。',
+      'coupon' => '優惠券',
+      'coupon_code' => '優惠券代碼',
+      'buy4get1_title' => '買4送1',
+      'buy4get1_desc' => '每滿 5 杯飲料可折抵 1 杯的飲料本體價格；加料不折抵，單購配料不計杯數。',
+      'apply_coupon' => '套用優惠券',
+      'remove_coupon' => '移除優惠券',
+      'coupon_applied' => '已套用優惠券。',
+      'coupon_removed' => '已移除優惠券。',
+      'coupon_invalid' => '這張優惠券目前無法使用。',
+      'coupon_discount' => '優惠折抵',
+      'coupon_progress' => '已選 {qty} 杯飲料，可折抵 {free} 杯。',
+      'applied' => '已套用'
+    ]
+  ];
+  foreach ($extra2 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+  $extra3 = [
+    'vi' => [
+      'available_coupon' => 'ƯU ĐÃI ĐANG CÓ',
+      'tap_to_apply_coupon' => 'Chạm để áp dụng ưu đãi',
+      'coupon_apply_hint' => 'Chọn ưu đãi để áp dụng cho đơn này.',
+      'buy4get1_desc' => 'Cứ 5 ly đồ uống được giảm giá phần đồ uống của 1 ly. Không giảm tiền topping; topping mua riêng không tính vào số ly.'
+    ],
+    'en' => [
+      'available_coupon' => 'AVAILABLE COUPON',
+      'tap_to_apply_coupon' => 'Tap to apply this offer',
+      'coupon_apply_hint' => 'Choose this offer to apply it to your order.',
+      'buy4get1_desc' => 'For every 5 drinks, get the base price of 1 drink off. Toppings are not discounted; standalone toppings do not count.'
+    ],
+    'zh' => [
+      'available_coupon' => '可用優惠券',
+      'tap_to_apply_coupon' => '點一下即可套用此優惠',
+      'coupon_apply_hint' => '點選優惠券，即可套用至本次訂單。',
+      'buy4get1_desc' => '每滿 5 杯飲料可折抵 1 杯的飲料本體價格；加料不折抵，單購配料不計杯數。'
+    ]
+  ];
+  foreach ($extra3 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra4 = [
+    'vi' => [
+      'sold_cups' => 'Đã đặt {qty} ly',
+      'recommended_toppings' => 'Topping gợi ý',
+      'other_toppings' => 'Topping khác',
+      'recommended_toppings_help' => 'Chọn các topping được ưu tiên hiển thị cho riêng đồ uống này. Khách vẫn có thể chọn topping khác.',
+      'cumulative_orders' => 'Số ly đã đặt',
+      'show_sales_count' => 'Hiển thị số lượng đặt tích lũy ở trang khách',
+      'show_sales_count_help' => 'Tính số lượng đồ uống từ tất cả đơn đã gửi thành công; topping mua riêng không được tính.',
+      'order_alert_settings' => 'Thông báo đơn hàng mới',
+      'enable_order_alert' => 'Bật âm thanh báo đơn mới',
+      'order_alert_sound' => 'Âm thanh thông báo',
+      'order_alert_sound_help' => 'Có thể tải MP3 / WAV / OGG. Nếu để trống, hệ thống dùng tiếng bíp mặc định.',
+      'order_alert_duration' => 'Thời gian chuông',
+      'seconds' => 'giây',
+      'remove_sound' => 'Xóa âm thanh hiện tại',
+      'test_sound' => 'Thử âm thanh',
+      'enable_sound' => 'Bật âm thanh nhận đơn',
+      'sound_ready' => 'Âm thanh đã sẵn sàng',
+      'new_order_alert' => 'Có đơn hàng mới',
+      'view_order' => 'Xem đơn hàng',
+      'stop_sound' => 'Dừng chuông',
+      'game_center' => 'Mini Game',
+      'game_chances' => 'Lượt chơi',
+      'play_game' => 'Bắt đầu trò chơi',
+      'game_no_chances' => 'Hiện chưa có lượt chơi.',
+      'game_instructions' => 'Lật thẻ và ghép tất cả các cặp hình giống nhau. Hoàn thành trò chơi sẽ dùng 1 lượt chơi.',
+      'game_complete' => 'Hoàn thành trò chơi!',
+      'game_complete_desc' => 'Đã dùng 1 lượt chơi.',
+      'game_pending_note' => 'Chọn Mua 10 nhận lượt rút thưởng: mỗi {cups} ly trong cùng một đơn hoàn tất nhận 1 lượt; 10 ly được 1 lượt, 20 ly được 2 lượt. Không cộng ly giữa các đơn; không dùng cùng Mua 4 tặng 1 hoặc mã phần thưởng.',
+      'game_settings' => 'Cài đặt Mini Game',
+      'enable_minigame' => 'Bật Mini Game lật thẻ',
+      'game_cups_per_chance' => 'Số ly để nhận 1 lượt chơi',
+      'anonymous_game_note' => 'Lượt chơi được lưu trong trình duyệt này. Hãy dùng cùng trình duyệt để xem và chơi.',
+      'game_awarded' => 'Lượt chơi đã cấp',
+      'game_eligible_qty' => 'Số ly đủ điều kiện',
+      'game_wallets' => 'Ví lượt chơi',
+      'wallet' => 'Ví',
+      'available' => 'Còn lại',
+      'earned' => 'Đã nhận',
+      'played' => 'Đã chơi',
+      'no_data' => 'Chưa có dữ liệu',
+      'client_interface' => 'Giao diện khách hàng',
+      'recommended' => 'Gợi ý'
+    ],
+    'en' => [
+      'sold_cups' => '{qty} cups ordered',
+      'recommended_toppings' => 'Recommended toppings',
+      'other_toppings' => 'Other toppings',
+      'recommended_toppings_help' => 'Choose toppings to highlight for this drink. Customers can still select any other shared topping.',
+      'cumulative_orders' => 'Cumulative orders',
+      'show_sales_count' => 'Show cumulative drink order count on storefront',
+      'show_sales_count_help' => 'Counts drink quantities from all successfully submitted orders; standalone toppings are excluded.',
+      'order_alert_settings' => 'New order alerts',
+      'enable_order_alert' => 'Enable new-order sound alert',
+      'order_alert_sound' => 'Alert sound',
+      'order_alert_sound_help' => 'Upload MP3 / WAV / OGG. If empty, a built-in beep is used.',
+      'order_alert_duration' => 'Ring duration',
+      'seconds' => 'seconds',
+      'remove_sound' => 'Remove current sound',
+      'test_sound' => 'Test sound',
+      'enable_sound' => 'Enable order sound',
+      'sound_ready' => 'Order sound ready',
+      'new_order_alert' => 'New order received',
+      'view_order' => 'View order',
+      'stop_sound' => 'Stop sound',
+      'game_center' => 'Mini Game',
+      'game_chances' => 'Game chances',
+      'play_game' => 'Play game',
+      'game_no_chances' => 'No plays available yet.',
+      'game_instructions' => 'Flip the cards and match all pairs of identical pictures. Completing the game uses 1 play.',
+      'game_complete' => 'Game completed!',
+      'game_complete_desc' => 'Used 1 play.',
+      'game_pending_note' => 'Choose Buy 10 for a prize draw: every {cups} drinks in one completed order earns 1 chance; 10 drinks earn 1, 20 earn 2. Cups do not carry over between orders. Cannot be combined with Buy 4 get 1 or a prize code.',
+      'game_settings' => 'Mini Game settings',
+      'enable_minigame' => 'Enable flip-card Mini Game',
+      'game_cups_per_chance' => 'Drinks required per game chance',
+      'anonymous_game_note' => 'Your plays are saved in this browser. Use the same browser to view and use them.',
+      'game_awarded' => 'Game chances awarded',
+      'game_eligible_qty' => 'Eligible drink quantity',
+      'game_wallets' => 'Game wallets',
+      'wallet' => 'Wallet',
+      'available' => 'Available',
+      'earned' => 'Earned',
+      'played' => 'Played',
+      'no_data' => 'No data yet',
+      'client_interface' => 'Customer interface',
+      'recommended' => 'Recommended'
+    ],
+    'zh' => [
+      'sold_cups' => '累積訂購 {qty} 杯',
+      'recommended_toppings' => '推薦配料',
+      'other_toppings' => '其他配料',
+      'recommended_toppings_help' => '設定此飲料優先顯示的推薦配料；客戶仍可選擇其他共用配料。',
+      'cumulative_orders' => '累積訂購數量',
+      'show_sales_count' => '前台顯示飲品累積訂購數量',
+      'show_sales_count_help' => '統計所有已成功送出訂單中的飲料杯數；單獨購買配料不列入。',
+      'order_alert_settings' => '新訂單提示通知',
+      'enable_order_alert' => '啟用新訂單聲音提醒',
+      'order_alert_sound' => '通知音效',
+      'order_alert_sound_help' => '可上傳 MP3 / WAV / OGG；未上傳時使用系統內建提示音。',
+      'order_alert_duration' => '鈴響持續時間',
+      'seconds' => '秒',
+      'remove_sound' => '移除目前音效',
+      'test_sound' => '測試音效',
+      'enable_sound' => '啟用接單聲音',
+      'sound_ready' => '接單聲音已啟用',
+      'new_order_alert' => '收到新訂單',
+      'view_order' => '查看訂單',
+      'stop_sound' => '停止鈴聲',
+      'game_center' => 'Mini Game',
+      'game_chances' => '遊戲次數',
+      'play_game' => '開始遊戲',
+      'game_no_chances' => '目前沒有可用的遊戲次數。',
+      'game_instructions' => '翻開卡牌，配對全部相同圖案即可完成遊戲。完成後扣除 1 次遊戲機會。',
+      'game_complete' => '遊戲完成！',
+      'game_complete_desc' => '這次使用了 1 次遊戲機會。',
+      'game_pending_note' => '選擇買10抽獎，單筆訂單每滿 {cups} 杯飲料可獲1次抽獎機會：10杯1次、20杯2次，完成後發放。杯數不跨訂單累計，不能與買4送1或獎項序號共用。',
+      'game_settings' => 'Mini Game 設定',
+      'enable_minigame' => '啟用翻牌 Mini Game',
+      'game_cups_per_chance' => '每幾杯獲得 1 次遊戲機會',
+      'anonymous_game_note' => '遊戲次數保存在目前使用的瀏覽器，請用同一瀏覽器查看與遊玩。',
+      'game_awarded' => '已發放遊戲次數',
+      'game_eligible_qty' => '符合資格杯數',
+      'game_wallets' => '遊戲次數錢包',
+      'wallet' => '錢包',
+      'available' => '可用次數',
+      'earned' => '累積獲得',
+      'played' => '已遊玩',
+      'no_data' => '目前尚無資料',
+      'client_interface' => '客戶介面',
+      'recommended' => '推薦'
+    ]
+  ];
+  foreach ($extra4 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra5 = [
+    'vi' => [
+      'game_reward_amount' => 'Giá trị coupon thưởng sau khi hoàn thành game',
+      'game_reward_amount_help' => 'Nếu lớn hơn 0, mỗi lần hoàn thành game sẽ nhận 1 coupon dùng một lần. Coupon chỉ giảm phần giá đồ uống, không giảm topping.',
+      'game_reward_coupon' => 'Coupon thưởng Mini Game',
+      'game_reward_received' => 'Đã nhận ưu đãi trò chơi. Bạn có thể chọn dùng trong giỏ hàng.',
+      'fixed_drink_discount' => 'Giảm phần giá đồ uống',
+      'single_coupon_only' => 'Mỗi đơn dùng 1 ưu đãi; không kết hợp nhiều ưu đãi.'
+    ],
+    'en' => [
+      'game_reward_amount' => 'Reward coupon value after completing the game',
+      'game_reward_amount_help' => 'If greater than 0, each completed game issues one single-use coupon. It discounts drink base prices only, not topping surcharges.',
+      'game_reward_coupon' => 'Mini Game reward coupon',
+      'game_reward_received' => 'You received a game offer. Select it in your cart to use it.',
+      'fixed_drink_discount' => 'Discount on the drink base price',
+      'single_coupon_only' => 'Use 1 offer per order. Offers cannot be combined.'
+    ],
+    'zh' => [
+      'game_reward_amount' => '完成遊戲後的獎勵優惠券金額',
+      'game_reward_amount_help' => '設定大於 0 時，每完成一次翻牌遊戲會發放一張一次性優惠券；只折抵飲料本體價格，不折抵加料。',
+      'game_reward_coupon' => 'Mini Game 獎勵優惠券',
+      'game_reward_received' => '已獲得遊戲優惠券，可在購物車選用。',
+      'fixed_drink_discount' => '折抵飲料本體金額',
+      'single_coupon_only' => '每筆訂單僅選一種優惠，買4送1、買10抽獎與獎項序號不能共用。'
+    ]
+  ];
+  foreach ($extra5 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra6 = [
+    'vi' => ['social_media' => 'Mạng xã hội', 'follow_us' => 'THEO DÕI CHÚNG TÔI'],
+    'en' => ['social_media' => 'Social Media', 'follow_us' => 'FOLLOW US'],
+    'zh' => ['social_media' => '社群媒體', 'follow_us' => '關注我們']
+  ];
+  foreach ($extra6 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra7 = [
+    'vi' => [
+      'transfer_accounts' => 'Thông tin chuyển khoản',
+      'add_transfer_account' => 'Thêm tài khoản nhận chuyển khoản',
+      'existing_transfer_accounts' => 'Tài khoản chuyển khoản hiện có',
+      'bank_name' => 'Ngân hàng',
+      'account_number' => 'Số tài khoản',
+      'account_name' => 'Tên chủ tài khoản',
+      'qr_image' => 'Ảnh QR chuyển khoản',
+      'qr_image_help' => 'JPG / PNG / WEBP, tối đa 5MB.',
+      'remove_qr' => 'Xóa ảnh QR hiện tại',
+      'bank_account_added' => 'Đã thêm thông tin chuyển khoản.',
+      'bank_account_updated' => 'Đã cập nhật thông tin chuyển khoản.',
+      'bank_account_deleted' => 'Đã xóa thông tin chuyển khoản.',
+      'bank_fields_required' => 'Vui lòng nhập ngân hàng, số tài khoản và tên chủ tài khoản.',
+      'no_transfer_accounts' => 'Chưa có tài khoản chuyển khoản.',
+      'transfer_payment_info' => 'Thông tin chuyển khoản',
+      'transfer_payment_help' => 'Vui lòng chuyển khoản vào một tài khoản dưới đây. Chúng tôi sẽ gọi điện xác nhận đơn trước khi xử lý.',
+      'transfer_qr_alt' => 'Mã QR chuyển khoản',
+      'payment_accounts' => 'Tài khoản thanh toán'
+    ],
+    'en' => [
+      'transfer_accounts' => 'Transfer accounts',
+      'add_transfer_account' => 'Add transfer account',
+      'existing_transfer_accounts' => 'Existing transfer accounts',
+      'bank_name' => 'Bank',
+      'account_number' => 'Account number',
+      'account_name' => 'Account holder',
+      'qr_image' => 'Transfer QR image',
+      'qr_image_help' => 'JPG / PNG / WEBP, up to 5MB.',
+      'remove_qr' => 'Remove current QR image',
+      'bank_account_added' => 'Transfer account added.',
+      'bank_account_updated' => 'Transfer account updated.',
+      'bank_account_deleted' => 'Transfer account deleted.',
+      'bank_fields_required' => 'Enter the bank, account number, and account holder.',
+      'no_transfer_accounts' => 'No transfer accounts have been configured.',
+      'transfer_payment_info' => 'Bank transfer information',
+      'transfer_payment_help' => 'Transfer to one of the accounts below. We will call to confirm your order before processing it.',
+      'transfer_qr_alt' => 'Bank transfer QR code',
+      'payment_accounts' => 'Payment accounts'
+    ],
+    'zh' => [
+      'transfer_accounts' => '轉帳資訊',
+      'add_transfer_account' => '新增轉帳帳戶',
+      'existing_transfer_accounts' => '目前轉帳帳戶',
+      'bank_name' => '銀行名稱',
+      'account_number' => '銀行帳號',
+      'account_name' => '戶名',
+      'qr_image' => '轉帳 QR 圖片',
+      'qr_image_help' => 'JPG / PNG / WEBP，最大 5MB。',
+      'remove_qr' => '移除目前 QR 圖片',
+      'bank_account_added' => '已新增轉帳資訊。',
+      'bank_account_updated' => '已更新轉帳資訊。',
+      'bank_account_deleted' => '已刪除轉帳資訊。',
+      'bank_fields_required' => '請填寫銀行名稱、銀行帳號與戶名。',
+      'no_transfer_accounts' => '目前尚未設定轉帳帳戶。',
+      'transfer_payment_info' => '銀行轉帳資訊',
+      'transfer_payment_help' => '請轉帳至下方任一帳戶；我們會電話確認訂單後安排處理。',
+      'transfer_qr_alt' => '銀行轉帳 QR Code',
+      'payment_accounts' => '付款帳戶'
+    ]
+  ];
+  foreach ($extra7 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+  $paymentMessages = [
+    'vi' => ['transfer_payment_later' => 'Cửa hàng sẽ cung cấp thông tin chuyển khoản khi xác nhận đơn hàng. Vui lòng đợi thông tin trước khi chuyển tiền.'],
+    'en' => ['transfer_payment_later' => 'The store will provide transfer details when confirming your order. Please wait for those details before transferring.'],
+    'zh' => ['transfer_payment_later' => '店家會在確認訂單時另行提供轉帳資訊，請取得資訊後再轉帳。'],
+  ];
+  foreach ($paymentMessages as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra8 = [
+    'vi' => [
+      'edit_topping' => 'Sửa topping',
+      'topping_name' => 'Tên topping',
+      'topping_description' => 'Mô tả topping',
+      'enable_topping' => 'Bật topping',
+      'save_topping' => 'Lưu topping',
+      'back_to_list' => 'Quay lại danh sách',
+      'notification_sender_email' => 'Email gửi thông báo',
+      'notification_sender_email_help' => 'Địa chỉ gửi cố định của hệ thống. Hộp thư này đã được tạo trên cPanel.'
+    ],
+    'en' => [
+      'edit_topping' => 'Edit topping',
+      'topping_name' => 'Topping name',
+      'topping_description' => 'Topping description',
+      'enable_topping' => 'Enable topping',
+      'save_topping' => 'Save topping',
+      'back_to_list' => 'Back to list',
+      'notification_sender_email' => 'Notification sender email',
+      'notification_sender_email_help' => 'Fixed sender address used by the system. This mailbox should exist in cPanel.'
+    ],
+    'zh' => [
+      'edit_topping' => '編輯配料',
+      'topping_name' => '配料名稱',
+      'topping_description' => '配料介紹',
+      'enable_topping' => '啟用配料',
+      'save_topping' => '儲存配料',
+      'back_to_list' => '返回清單',
+      'notification_sender_email' => '通知寄件 Email',
+      'notification_sender_email_help' => '系統固定使用此寄件地址；此信箱需已在 cPanel 建立。'
+    ]
+  ];
+  foreach ($extra8 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra9 = [
+    'vi' => [
+      'minutes' => 'phút',
+      'until_accepted' => 'Cho đến khi nhận đơn',
+      'order_alert_duration_help' => 'Chọn số giây, số phút hoặc phát liên tục cho đến khi đơn hàng được chuyển khỏi trạng thái đơn mới.',
+      'email_notification_settings' => 'Thông báo Email',
+      'email_php_mail' => 'Chức năng PHP mail()',
+      'email_server_transport' => 'Cấu hình gửi thư của máy chủ',
+      'email_available' => 'Khả dụng',
+      'email_unavailable' => 'Không khả dụng',
+      'send_test_email' => 'Gửi Email thử',
+      'email_test_help' => 'Lưu cài đặt hiện tại và gửi một thư thử đến Email nhận đơn. mail() trả về thành công chỉ có nghĩa máy chủ đã nhận yêu cầu gửi; hãy kiểm tra cả thư rác.',
+      'email_test_recipient_required' => 'Vui lòng nhập Email nhận đơn trước khi gửi thử.',
+      'email_test_accepted' => 'Máy chủ đã chấp nhận yêu cầu gửi thư thử đến {email}. Hãy kiểm tra hộp thư đến và thư rác.',
+      'email_test_failed' => 'Không thể gửi thư thử. Mã chẩn đoán: {detail}'
+    ],
+    'en' => [
+      'minutes' => 'minutes',
+      'until_accepted' => 'Until order is accepted',
+      'order_alert_duration_help' => 'Choose seconds, minutes, or keep ringing until the order is moved out of New status.',
+      'email_notification_settings' => 'Email notifications',
+      'email_php_mail' => 'PHP mail() function',
+      'email_server_transport' => 'Server mail transport',
+      'email_available' => 'Available',
+      'email_unavailable' => 'Unavailable',
+      'send_test_email' => 'Send test email',
+      'email_test_help' => 'Saves the current settings and sends a test message to the order recipient. A successful mail() result only means the server accepted the send request; also check spam.',
+      'email_test_recipient_required' => 'Enter the order notification email before sending a test.',
+      'email_test_accepted' => 'The server accepted a test email to {email}. Check the inbox and spam folder.',
+      'email_test_failed' => 'The test email could not be sent. Diagnostic code: {detail}'
+    ],
+    'zh' => [
+      'minutes' => '分',
+      'until_accepted' => '直到接單',
+      'order_alert_duration_help' => '可選擇秒、分，或持續鈴響直到訂單離開「新訂單」狀態。',
+      'email_notification_settings' => 'Email 通知設定',
+      'email_php_mail' => 'PHP mail() 功能',
+      'email_server_transport' => '主機寄信方式',
+      'email_available' => '可使用',
+      'email_unavailable' => '不可使用',
+      'send_test_email' => '寄送測試信',
+      'email_test_help' => '會先儲存目前設定，再寄一封測試信到「訂單接收 Email」。mail() 顯示成功只代表主機接受寄送要求，仍請檢查收件匣與垃圾郵件。',
+      'email_test_recipient_required' => '請先填寫訂單接收 Email，再寄送測試信。',
+      'email_test_accepted' => '主機已接受寄往 {email} 的測試信寄送要求，請檢查收件匣與垃圾郵件。',
+      'email_test_failed' => '測試信寄送失敗。診斷代碼：{detail}'
+    ]
+  ];
+  foreach ($extra9 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra10 = [
+    'vi' => [
+      'order_email_delivery' => 'Gửi Email đơn hàng',
+      'email_status' => 'Trạng thái Email',
+      'email_status_sent' => 'Đã gửi',
+      'email_status_failed' => 'Gửi thất bại',
+      'email_status_pending' => 'Chưa gửi',
+      'email_attempts' => 'Số lần thử',
+      'email_sent_at' => 'Thời gian gửi',
+      'email_diagnostic' => 'Mã chẩn đoán',
+      'resend_order_email' => 'Gửi lại Email đơn hàng',
+      'order_email_resent' => 'Máy chủ đã chấp nhận Email đơn hàng gửi lại.',
+      'order_email_resend_failed' => 'Không thể gửi lại Email đơn hàng. Mã chẩn đoán: {detail}',
+      'email_recipient' => 'Email nhận đơn',
+      'order_notification_emails' => 'Danh sách Email nhận đơn',
+      'order_notification_emails_help' => 'Có thể thêm tối đa 10 địa chỉ. Hệ thống sẽ gửi riêng một email đến từng địa chỉ, không cần chuyển tiếp.',
+      'add_email_recipient' => 'Thêm Email',
+      'email_status_partial' => 'Gửi một phần',
+      'email_test_accepted_multi' => 'Máy chủ đã chấp nhận thư thử đến {count} địa chỉ Email.'
+    ],
+    'en' => [
+      'order_email_delivery' => 'Order email delivery',
+      'email_status' => 'Email status',
+      'email_status_sent' => 'Sent',
+      'email_status_failed' => 'Failed',
+      'email_status_pending' => 'Pending',
+      'email_attempts' => 'Attempts',
+      'email_sent_at' => 'Sent at',
+      'email_diagnostic' => 'Diagnostic code',
+      'resend_order_email' => 'Resend order email',
+      'order_email_resent' => 'The server accepted the resent order email.',
+      'order_email_resend_failed' => 'The order email could not be resent. Diagnostic code: {detail}',
+      'email_recipient' => 'Order recipient email',
+      'order_notification_emails' => 'Order notification recipients',
+      'order_notification_emails_help' => 'Add up to 10 addresses. The system sends a separate original email to each address without forwarding.',
+      'add_email_recipient' => 'Add email',
+      'email_status_partial' => 'Partially sent',
+      'email_test_accepted_multi' => 'The server accepted test messages for {count} email addresses.'
+    ],
+    'zh' => [
+      'order_email_delivery' => '訂單 Email 寄送',
+      'email_status' => 'Email 狀態',
+      'email_status_sent' => '已寄送',
+      'email_status_failed' => '寄送失敗',
+      'email_status_pending' => '尚未寄送',
+      'email_attempts' => '嘗試次數',
+      'email_sent_at' => '寄送時間',
+      'email_diagnostic' => '診斷代碼',
+      'resend_order_email' => '重新寄送訂單 Email',
+      'order_email_resent' => '主機已接受重新寄送的訂單 Email。',
+      'order_email_resend_failed' => '訂單 Email 重新寄送失敗。診斷代碼：{detail}',
+      'email_recipient' => '訂單接收 Email',
+      'order_notification_emails' => '訂單接收 Email 清單（可多筆）',
+      'order_notification_emails_help' => '最多可新增 10 個地址；按右側「新增 Email」加入更多收件人。系統會直接分別寄送，不需要轉寄。',
+      'add_email_recipient' => '新增 Email',
+      'email_status_partial' => '部分寄送成功',
+      'email_test_accepted_multi' => '主機已接受寄往 {count} 個 Email 地址的測試信。'
+    ]
+  ];
+  foreach ($extra10 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra11 = [
+    'vi' => [
+      'sound_source_default' => 'Âm thanh mặc định',
+      'sound_source_default_help' => 'Dùng tiếng bíp mặc định của hệ thống.',
+      'sound_source_custom' => 'Âm thanh tự tải lên',
+      'sound_source_custom_ready' => 'Đã có tệp âm thanh tùy chỉnh và có thể chọn sử dụng.',
+      'sound_source_custom_missing' => 'Hãy tải tệp âm thanh trước để bật lựa chọn này.',
+      'upload_custom_sound' => 'Tải / thay đổi âm thanh tùy chỉnh',
+      'current_custom_sound' => 'Âm thanh tùy chỉnh hiện có',
+      'currently_in_use' => 'Đang sử dụng',
+      'saved_not_in_use' => 'Đã lưu, chưa sử dụng',
+      'no_custom_sound' => 'Chưa có âm thanh tùy chỉnh. Tải MP3 / WAV / OGG để sử dụng.',
+      'test_sound_current_choice_help' => 'Nút thử sẽ phát lựa chọn hiện tại; tệp vừa chọn có thể thử trước khi lưu.'
+    ],
+    'en' => [
+      'sound_source_default' => 'System default sound',
+      'sound_source_default_help' => 'Use the built-in notification beep.',
+      'sound_source_custom' => 'Uploaded custom sound',
+      'sound_source_custom_ready' => 'A custom audio file is saved and can be selected.',
+      'sound_source_custom_missing' => 'Upload an audio file first to enable this option.',
+      'upload_custom_sound' => 'Upload / replace custom sound',
+      'current_custom_sound' => 'Current custom sound',
+      'currently_in_use' => 'In use',
+      'saved_not_in_use' => 'Saved, not in use',
+      'no_custom_sound' => 'No custom sound is saved. Upload MP3 / WAV / OGG to use one.',
+      'test_sound_current_choice_help' => 'Test plays the currently selected option; a newly chosen file can be previewed before saving.'
+    ],
+    'zh' => [
+      'sound_source_default' => '系統預設音效',
+      'sound_source_default_help' => '使用系統內建的提示音。',
+      'sound_source_custom' => '自訂上傳音效',
+      'sound_source_custom_ready' => '目前已有自訂音效，可切換使用。',
+      'sound_source_custom_missing' => '請先上傳音效檔，才能選擇自訂音效。',
+      'upload_custom_sound' => '上傳／更換自訂音效',
+      'current_custom_sound' => '目前自訂音效',
+      'currently_in_use' => '目前使用中',
+      'saved_not_in_use' => '已保存，未使用',
+      'no_custom_sound' => '目前尚未上傳自訂音效；可上傳 MP3 / WAV / OGG。',
+      'test_sound_current_choice_help' => '「測試音效」會播放目前選擇的音效；剛選取、尚未儲存的新檔案也可以直接試聽。'
+    ]
+  ];
+  foreach ($extra11 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra12 = [
+    'vi' => [
+      'catalog_topping_category' => 'TOPPING',
+      'theme_settings' => 'Màu chủ đạo',
+      'theme_settings_help' => 'Chọn màu chủ đạo dùng cho giao diện khách hàng và khu vực quản trị.',
+      'theme_default' => 'Màu hiện tại',
+      'theme_default_help' => 'Giữ tông đen/xám hiện tại.',
+      'theme_deep_red' => 'Đỏ đậm',
+      'theme_deep_red_help' => 'Dùng đỏ đậm làm màu nhấn chính.'
+    ],
+    'en' => [
+      'catalog_topping_category' => 'TOPPING',
+      'theme_settings' => 'Primary color theme',
+      'theme_settings_help' => 'Choose the primary accent used across the storefront and admin interface.',
+      'theme_default' => 'Current theme',
+      'theme_default_help' => 'Keep the existing dark charcoal color scheme.',
+      'theme_deep_red' => 'Deep red',
+      'theme_deep_red_help' => 'Use a deep red primary accent.'
+    ],
+    'zh' => [
+      'catalog_topping_category' => '配料',
+      'theme_settings' => '主色系',
+      'theme_settings_help' => '選擇客戶前台與管理後台使用的主要強調色。',
+      'theme_default' => '目前配色',
+      'theme_default_help' => '維持目前的深色／黑灰配色。',
+      'theme_deep_red' => '深紅色',
+      'theme_deep_red_help' => '使用深紅色作為主要強調色。'
+    ]
+  ];
+  foreach ($extra12 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+
+  $extra13 = [
+    'vi' => [
+      'mobile_push_settings' => 'Ứng dụng quản trị & thông báo đẩy',
+      'mobile_push_help' => 'Cài trang quản trị lên màn hình chính và bật thông báo để nhận cảnh báo đơn hàng ngay cả khi ứng dụng không mở.',
+      'enable_mobile_push' => 'Bật thông báo đơn hàng trên thiết bị này',
+      'disable_mobile_push' => 'Tắt thông báo trên thiết bị này',
+      'push_enabled' => 'Thiết bị này đã bật thông báo đẩy.',
+      'push_disabled' => 'Thiết bị này chưa bật thông báo đẩy.',
+      'push_not_supported' => 'Trình duyệt hoặc chế độ hiện tại không hỗ trợ Web Push.',
+      'push_permission_denied' => 'Quyền thông báo đã bị từ chối. Hãy bật lại trong cài đặt hệ thống.',
+      'push_server_status' => 'Máy chủ Web Push',
+      'push_devices' => 'Thiết bị đang đăng ký',
+      'push_ready' => 'Sẵn sàng',
+      'push_unavailable' => 'Chưa sẵn sàng',
+      'install_admin_app' => 'Cài ứng dụng quản trị',
+      'install_android_help' => 'Android: mở trang quản trị bằng Chrome → menu ⋮ → Cài đặt / Tạo lối tắt → Cài đặt.',
+      'install_ios_help' => 'iPhone/iPad: thêm trang quản trị vào Màn hình chính, mở ứng dụng từ biểu tượng đó rồi nhấn bật thông báo.'
+    ],
+    'en' => [
+      'mobile_push_settings' => 'Admin app & push notifications',
+      'mobile_push_help' => 'Install the admin area to the Home Screen and enable push notifications to receive new-order alerts even when the app is not open.',
+      'enable_mobile_push' => 'Enable order push on this device',
+      'disable_mobile_push' => 'Disable push on this device',
+      'push_enabled' => 'Push notifications are enabled on this device.',
+      'push_disabled' => 'Push notifications are not enabled on this device.',
+      'push_not_supported' => 'Web Push is not supported in this browser or mode.',
+      'push_permission_denied' => 'Notification permission was denied. Re-enable it in system settings.',
+      'push_server_status' => 'Web Push server',
+      'push_devices' => 'Subscribed devices',
+      'push_ready' => 'Ready',
+      'push_unavailable' => 'Not ready',
+      'install_admin_app' => 'Install admin app',
+      'install_android_help' => 'Android: open Admin in Chrome → ⋮ menu → Install / Create shortcut → Install.',
+      'install_ios_help' => 'iPhone/iPad: add the Admin page to the Home Screen, open it from the icon, then enable notifications.'
+    ],
+    'zh' => [
+      'mobile_push_settings' => '管理 App／訂單推播',
+      'mobile_push_help' => '將管理後台安裝到手機主畫面並啟用 Web Push，即使 App 沒有開啟，也能收到新訂單系統通知。',
+      'enable_mobile_push' => '啟用此手機訂單推播',
+      'disable_mobile_push' => '停用此手機推播',
+      'push_enabled' => '此裝置已啟用訂單推播。',
+      'push_disabled' => '此裝置尚未啟用訂單推播。',
+      'push_not_supported' => '目前瀏覽器或使用模式不支援 Web Push。',
+      'push_permission_denied' => '通知權限已被拒絕，請到手機系統設定重新開啟。',
+      'push_server_status' => 'Web Push 伺服器',
+      'push_devices' => '已訂閱裝置',
+      'push_ready' => '可使用',
+      'push_unavailable' => '尚未就緒',
+      'install_admin_app' => '安裝管理後台 App',
+      'install_android_help' => 'Android：用 Chrome 開啟管理後台 → ⋮ →「安裝並建立捷徑／安裝」。',
+      'install_ios_help' => 'iPhone／iPad：先將管理後台加入主畫面，從主畫面圖示開啟後，再按「啟用此手機訂單推播」。'
+    ]
+  ];
+  foreach ($extra13 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+  return $d;
 }
-function store_name(): string {
-    $lang=current_lang();
-    return setting('store_name_'.$lang, setting('store_name_vi', setting('store_name', t('default_store_name'))));
+function t(string $key, array $vars = []): string
+{
+  $d = translations();
+  $lang = current_lang();
+  $text = $d[$lang][$key] ?? $d['vi'][$key] ?? $key;
+  foreach ($vars as $k => $v) $text = str_replace('{' . $k . '}', (string)$v, $text);
+  return $text;
 }
-function payment_label(string $code): string { return $code==='split' ? gt('pay_split') : ($code==='transfer' ? t('transfer') : t('cash')); }
-function status_label(string $code): string { return ['new'=>t('new_order'),'accepted'=>t('accepted'),'done'=>t('completed'),'cancelled'=>t('cancelled')][$code] ?? $code; }
+function language_switcher(string $class = 'language-switcher'): string
+{
+  $labels = ['vi' => 'Tiếng Việt', 'en' => 'English', 'zh' => '中文'];
+  // Explicit SVG dimensions prevent the globe from expanding to the browser's
+  // default SVG size while a newly deployed stylesheet is still refreshing.
+  $globe = '<svg class="language-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.2-2.35 3.4-5.35 3.4-9S14.2 5.35 12 3m0 18c-2.2-2.35-3.4-5.35-3.4-9S9.8 5.35 12 3M3.6 9h16.8M3.6 15h16.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  $out = '<div class="' . e($class) . '" role="group" aria-label="' . e(t('language')) . '">' . $globe;
+  foreach ($labels as $code => $label) {
+    $active = current_lang() === $code ? ' active' : '';
+    $current = current_lang() === $code ? ' aria-current="true"' : '';
+    $out .= '<a class="lang-pill' . $active . '" href="' . e(lang_url($code)) . '"' . $current . '>' . e($label) . '</a>';
+  }
+  return $out . '</div>';
+}
+function localized_name(array $row, string $base = 'name'): string
+{
+  $lang = current_lang();
+  foreach (["{$base}_{$lang}", "{$base}_vi", $base] as $key) {
+    if (isset($row[$key]) && trim((string)$row[$key]) !== '') return (string)$row[$key];
+  }
+  return '';
+}
+function store_name(): string
+{
+  $lang = current_lang();
+  return setting('store_name_' . $lang, setting('store_name_vi', setting('store_name', t('default_store_name'))));
+}
+function payment_label(string $code): string
+{
+  return $code === 'split' ? gt('pay_split') : ($code === 'transfer' ? t('transfer') : t('cash'));
+}
+function status_label(string $code): string
+{
+  return ['new' => t('new_order'), 'accepted' => t('accepted'), 'done' => t('completed'), 'cancelled' => t('cancelled')][$code] ?? $code;
+}

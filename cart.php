@@ -12,10 +12,30 @@ $couponMsg = $_SESSION['coupon_message'] ?? '';
 $couponErr = $_SESSION['coupon_error'] ?? '';
 $gameFlash = $_SESSION['hcgs_flash'] ?? '';
 unset($_SESSION['coupon_message'], $_SESSION['coupon_error'], $_SESSION['hcgs_flash']);
+// Groups this device joined, same list as group/ "Nhóm của tôi".
+$myRooms = [];
+try {
+  $device = hyg_device();
+  if ($device !== '') $myRooms = hyg_all('SELECT r.public_id,r.title,r.status,r.expires_at FROM group_rooms r JOIN group_members m ON m.room_id=r.id WHERE m.device_hash=? ORDER BY r.id DESC LIMIT 20', [$device]);
+} catch (Throwable $e) {
+  $myRooms = [];
+}
 ?>
 <?php if($gameFlash):?><div class="alert danger" role="alert"><?=e($gameFlash)?></div><?php endif;?>
 <div class="section-head"><div><span class="eyebrow"><?=e(t('your_order'))?></span><h1><?=e(t('cart'))?></h1></div></div>
 <section class="hyg-entry"><div><strong><?=e(gt('share_cart'))?></strong><p><?=e(gt('copy_hint'))?></p></div><a class="btn primary" href="<?=e(hym_login_gate_url('group'))?>"><?=e(gt('create'))?></a></section>
+<?php if($myRooms): ?>
+<section class="hyg-card">
+  <h2><?=e(gt('my_groups'))?></h2>
+  <div class="hyg-room-list">
+    <?php foreach($myRooms as $room):
+      $s = $room['status'];
+      if(in_array($s, ['open','locked'], true) && strtotime($room['expires_at'].' UTC') <= time()) $s = 'expired'; ?>
+      <a href="<?=e(hyg_room_url($room['public_id']))?>"><strong><?=e($room['title'])?></strong><span class="hyg-status"><?=e(gt($s))?></span></a>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
 <?php if(!$cart): ?>
 <div class="empty"><h2><?=e(t('cart_empty'))?></h2><p><?=e(t('cart_empty_desc'))?></p><a class="btn primary" href="<?=e(base_url('index.php'))?>"><?=e(t('return_menu'))?></a></div>
 <?php else: ?>
