@@ -1,7 +1,7 @@
 /**
- * HUIYI Tea - Goong Maps Location & Nearest Store Selector
+ * HUIYI Tea - Google Maps Location & Nearest Store Selector
  * Implements:
- * 1. GoongMapService (AutoComplete, Place Detail, Forward Geocode, Distance Matrix)
+ * 1. GoogleMapService (Forward/Reverse Geocode, Routes Matrix)
  * 2. LocationOrderManager (GPS/Manual Coordinates resolution, Nearest Store calculation, Manual selection)
  * 3. UI Controller (Banner, Modal, Debounced Autocomplete, GPS trigger)
  */
@@ -21,13 +21,19 @@
     return text;
   }
 
-  class GoongMapService {
+  class GoogleMapService {
     constructor(config = {}) {
       this.endpoint = (config.endpoint || "/api/location.php").replace(
         /\/+$/,
         "",
       );
       this.timeoutMs = config.timeoutMs || 8000;
+    }
+
+    // Address suggestions require Places API, which is intentionally not used.
+    // Address resolution is handled by the server-side Google Geocoding API.
+    async placeAutoComplete() {
+      return [];
     }
 
     async fetchWithTimeout(url, signal) {
@@ -103,8 +109,8 @@
   }
 
   class LocationOrderManager {
-    constructor(goongService, initialStores = []) {
-      this.goongService = goongService;
+    constructor(mapService, initialStores = []) {
+      this.mapService = mapService;
       this.state = {
         userLocation: null,
         userAddress: "",
@@ -152,9 +158,9 @@
         if (params.method === "gps") {
           coords = await this.getGPSLocation();
           address = `Tọa độ GPS (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`;
-          if (this.goongService && this.goongService.apiKey) {
+          if (this.mapService && this.mapService.endpoint) {
             try {
-              const rev = await this.goongService.reverseGeocode(
+              const rev = await this.mapService.reverseGeocode(
                 coords.lat,
                 coords.lng,
               );
@@ -169,11 +175,11 @@
             }
           }
         } else if (params.method === "place_id") {
-          const detail = await this.goongService.placeDetail(params.placeId);
+          const detail = await this.mapService.placeDetail(params.placeId);
           coords = detail.coordinates;
           address = params.description || detail.formattedAddress;
         } else if (params.method === "manual_address") {
-          const geo = await this.goongService.forwardGeocode(params.address);
+          const geo = await this.mapService.forwardGeocode(params.address);
           coords = geo.coordinates;
           address = geo.formattedAddress || params.address;
         }
@@ -229,7 +235,7 @@
             lat: s.lat,
             lng: s.lng,
           }));
-          const elements = await this.goongService.distanceMatrix(
+          const elements = await this.mapService.distanceMatrix(
             userCoords,
             destinations,
             "bike",
@@ -332,8 +338,8 @@
 
     const locationEndpoint =
       wrap.getAttribute("data-location-endpoint") || "/api/location.php";
-    const goong = new GoongMapService({ endpoint: locationEndpoint });
-    const manager = new LocationOrderManager(goong);
+    const googleMaps = new GoogleMapService({ endpoint: locationEndpoint });
+    const manager = new LocationOrderManager(googleMaps);
 
     const bannerEl = wrap.querySelector("[data-location-banner]");
     const bannerStoreTitle = wrap.querySelector("[data-banner-store-name]");
@@ -518,13 +524,13 @@
               )
             : "";
 
-          // Tính số km từ Goong Maps API (distance.value là mét -> chia 1000 để ra km)
+          // Tính số km từ Google Routes API (distance.value là mét -> chia 1000 để ra km)
           const distanceKm = (state.selectedStore.distance.value || 0) / 1000;
           const isFreeship = distanceKm <= 3.0;
 
           // In test console log để dễ theo dõi
           console.log(
-            `[Goong Map] Khoảng cách: ${distanceKm.toFixed(2)} km -> ${isFreeship ? "Miễn phí giao hàng (Freeship)" : "Tính phí theo Grab"}`,
+            `[Google Maps] Khoảng cách: ${distanceKm.toFixed(2)} km -> ${isFreeship ? "Miễn phí giao hàng (Freeship)" : "Tính phí theo Grab"}`,
           );
 
           // Cập nhật nhãn phí ship trên Banner chi nhánh
@@ -611,7 +617,7 @@
       renderStoreModalList(state.storesWithDistance, state.selectedStore);
     });
 
-    // DISABLED: dùng JSON cục bộ (nút GPS gọi Geolocation + Goong Reverse Geocode)
+    // DISABLED: dùng JSON cục bộ (nút GPS gọi Geolocation + Google Reverse Geocode)
     /*
     if (btnGps) {
       btnGps.addEventListener('click', async (e) => {
@@ -634,7 +640,7 @@
           if (resolvedAddr) {
             setAddressVerified(resolvedAddr);
           }
-          if (apiKey) {
+          if (googleMaps && googleMaps.endpoint) {
             await manager.calculateNearestStore(coords);
           }
         } catch (err) {
@@ -649,8 +655,8 @@
       });
     }
 
-    // AutoComplete Debounced Search gọi Goong Maps API
-    if (addressInput && autocompleteDropdown && apiKey) {
+    // AutoComplete Debounced Search gọi Google Maps API
+    if (addressInput && autocompleteDropdown && googleMaps && googleMaps.endpoint) {
       let activeController = null;
 
       const debouncedSearch = LocationOrderManager.debounce(async (val) => {
@@ -658,7 +664,7 @@
         activeController = new AbortController();
 
         try {
-          const predictions = await goong.placeAutoComplete(val, activeController.signal);
+          const predictions = await googleMaps.placeAutoComplete(val, activeController.signal);
           renderPredictions(predictions);
         } catch (err) {
           if (err.name !== 'AbortError') console.warn(err);
@@ -745,7 +751,7 @@
     }
 
     async function handleAddressLookup(text) {
-      if (!apiKey || !text || text.length < 4) return false;
+      if (!googleMaps || !googleMaps.endpoint || !text || text.length < 4) return false;
       try {
         const coords = await manager.resolveUserCoordinates({
           method: 'manual_address',
@@ -759,7 +765,7 @@
       }
     }
 
-    if (checkoutForm && apiKey) {
+    if (checkoutForm && googleMaps && googleMaps.endpoint) {
       checkoutForm.addEventListener('submit', (e) => {
         if (!isAddressVerified) {
           e.preventDefault();
@@ -771,7 +777,7 @@
 
             const currentVal = addressInput.value.trim();
             if (currentVal.length >= 3 && autocompleteDropdown) {
-              goong.placeAutoComplete(currentVal).then((preds) => {
+              googleMaps.placeAutoComplete(currentVal).then((preds) => {
                 if (preds && preds.length > 0) {
                   autocompleteDropdown.innerHTML = preds
                     .map(
@@ -923,11 +929,118 @@
         }
       }
 
+      // ---------- Helpers khớp địa chỉ chuẩn xác như member-location.js ----------
+      const norm = (s) =>
+        String(s || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d")
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim();
+      const bare = (s) =>
+        norm(s).replace(/^(thanh pho|tinh|phuong|xa|thi tran|dac khu)\s+/, "");
+      const locationKey = (s) =>
+        bare(s)
+          .replace(/\b(city|province|district|ward|commune)\b/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      const has = (hay, needle) => !!needle && ` ${hay} `.includes(` ${needle} `);
+      const byLen = (a) => [...a].sort((x, y) => y.name.length - x.name.length);
+      const escRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      function stripNames(text, names) {
+        let s = String(text || "");
+        [...names, "Việt Nam"]
+          .filter(Boolean)
+          .sort((a, b) => b.length - a.length)
+          .forEach((n) => {
+            s = s.replace(
+              new RegExp(`(?<![\\p{L}\\p{N}])${escRe(n)}(?![\\p{L}\\p{N}])`, "giu"),
+              "",
+            );
+          });
+        return s
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean)
+          .join(", ");
+      }
+
+      const matchProv = (name, addr) => {
+        if (!provincesData || !Array.isArray(provincesData)) return null;
+        const na = norm(addr);
+        const names = Array.isArray(name) ? name : (name ? [name] : []);
+        return (
+          provincesData.find((p) =>
+            names.some(
+              (candidate) =>
+                candidate && locationKey(p.name) === locationKey(candidate),
+            ),
+          ) ||
+          byLen(provincesData).find(
+            (p) => has(na, p._k) || has(na, locationKey(p.name)),
+          ) ||
+          null
+        );
+      };
+
+      const matchWard = (p, name, addr) => {
+        if (!p || !Array.isArray(p.wards)) return null;
+        const na = norm(addr);
+        const names = Array.isArray(name) ? name : (name ? [name] : []);
+        return (
+          p.wards.find(
+            (w) =>
+              names.some(
+                (candidate) =>
+                  candidate &&
+                  w._ns.some((n) => locationKey(n) === locationKey(candidate)),
+              ),
+          ) ||
+          byLen(p.wards).find((w) =>
+            w._ks.some((k) => has(na, k) || has(na, locationKey(k))),
+          ) ||
+          null
+        );
+      };
+
+      const pickProv = (p) => {
+        selectedProvinceObj = p;
+        if (provinceInput) {
+          provinceInput.value = p.name;
+          provinceInput.classList.remove("has-location-error");
+          provinceInput.classList.add("is-location-verified");
+        }
+        if (provinceCodeHidden) provinceCodeHidden.value = p.code;
+        if (provinceNameHidden) provinceNameHidden.value = p.name;
+        if (wardInput) {
+          wardInput.value = "";
+          wardInput.disabled = false;
+          wardInput.placeholder = t("addr_ward_placeholder", "Nhập tìm Phường / Xã...");
+          wardInput.classList.remove("is-location-verified", "has-location-error");
+        }
+        if (wardCodeHidden) wardCodeHidden.value = "";
+        if (wardNameHidden) wardNameHidden.value = "";
+        selectedWardObj = null;
+        if (provinceDropdown) provinceDropdown.classList.remove("is-open");
+      };
+
+      const pickWard = (w) => {
+        selectedWardObj = w;
+        if (wardInput) {
+          wardInput.value = w.name;
+          wardInput.classList.remove("has-location-error");
+          wardInput.classList.add("is-location-verified");
+        }
+        if (wardCodeHidden) wardCodeHidden.value = w.code;
+        if (wardNameHidden) wardNameHidden.value = w.name;
+        if (wardDropdown) wardDropdown.classList.remove("is-open");
+      };
+
       function parseAddressIntoCascade(rawAddress) {
         if (!rawAddress) return;
         const raw = rawAddress.trim();
-        const normRaw = normalizeVietnamese(raw);
-
         if (!provincesData || !Array.isArray(provincesData)) {
           if (streetInput) {
             streetInput.value = raw;
@@ -937,113 +1050,24 @@
           return;
         }
 
-        let matchedProv = null;
-        const sortedProvs = [...provincesData].sort(
-          (a, b) => b.name.length - a.name.length,
-        );
-        for (const p of sortedProvs) {
-          const normName = normalizeVietnamese(p.name);
-          const cleanName = normName.replace(/^(tinh|thanh pho|tp)\s+/, "");
-          if (normRaw.includes(cleanName) || normRaw.includes(normName)) {
-            matchedProv = p;
-            break;
-          }
+        const p = matchProv(null, raw);
+        let w = null;
+        if (p) {
+          pickProv(p);
+          w = matchWard(p, null, raw);
+          if (w) pickWard(w);
         }
 
-        let matchedWard = null;
-        if (matchedProv) {
-          selectedProvinceObj = matchedProv;
-          if (provinceInput) {
-            provinceInput.value = matchedProv.name;
-            provinceInput.classList.remove("has-location-error");
-            provinceInput.classList.add("is-location-verified");
-          }
-          if (provinceCodeHidden) provinceCodeHidden.value = matchedProv.code;
-          if (provinceNameHidden) provinceNameHidden.value = matchedProv.name;
-
-          if (wardInput) {
-            wardInput.disabled = false;
-            wardInput.placeholder = t(
-              "addr_ward_placeholder",
-              "Nhập tìm Phường / Xã...",
-            );
-          }
-
-          if (Array.isArray(matchedProv.wards)) {
-            const sortedWards = [...matchedProv.wards].sort(
-              (a, b) => b.name.length - a.name.length,
-            );
-            for (const w of sortedWards) {
-              const normWName = normalizeVietnamese(w.name);
-              const cleanWName = normWName.replace(
-                /^(phuong|xa|thi tran)\s+/,
-                "",
-              );
-              if (normRaw.includes(cleanWName) || normRaw.includes(normWName)) {
-                matchedWard = w;
-                break;
-              }
-            }
-          }
-
-          if (matchedWard) {
-            selectedWardObj = matchedWard;
-            if (wardInput) {
-              wardInput.value = matchedWard.name;
-              wardInput.classList.remove("has-location-error");
-              wardInput.classList.add("is-location-verified");
-            }
-            if (wardCodeHidden) wardCodeHidden.value = matchedWard.code;
-            if (wardNameHidden) wardNameHidden.value = matchedWard.name;
-          } else {
-            selectedWardObj = null;
-            if (wardInput) {
-              wardInput.value = "";
-              wardInput.classList.remove("is-location-verified");
-            }
-            if (wardCodeHidden) wardCodeHidden.value = "";
-            if (wardNameHidden) wardNameHidden.value = "";
-          }
-
-          const parts = raw
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean);
-          const nonMatchedParts = [];
-          for (const part of parts) {
-            const normPart = normalizeVietnamese(part);
-            const isProv = normPart.includes(
-              normalizeVietnamese(matchedProv.name).replace(
-                /^(tinh|thanh pho|tp)\s+/,
-                "",
-              ),
-            );
-            const isWard =
-              matchedWard &&
-              normPart.includes(
-                normalizeVietnamese(matchedWard.name).replace(
-                  /^(phuong|xa|thi tran)\s+/,
-                  "",
-                ),
-              );
-            if (!isProv && !isWard) {
-              nonMatchedParts.push(part);
-            }
-          }
-          if (streetInput) {
-            streetInput.value =
-              nonMatchedParts.length > 0
-                ? nonMatchedParts.join(", ")
-                : parts[0] || "";
+        if (streetInput) {
+          const st = stripNames(raw, p ? [...p._ns, ...(w ? w._ns : [])] : []);
+          if (st) {
+            streetInput.value = st;
             streetInput.classList.remove("has-location-error");
-          }
-        } else {
-          if (streetInput) {
-            streetInput.value = raw;
-            streetInput.classList.remove("has-location-error");
+            if (p && w) {
+              streetInput.classList.add("is-location-verified");
+            }
           }
         }
-
         syncFullDeliveryAddress();
       }
 
@@ -1055,6 +1079,14 @@
         })
         .then((data) => {
           if (Array.isArray(data)) {
+            data.forEach((p) => {
+              p._k = norm(p.name);
+              p._ns = [p.name, ...(p.old_names || [])];
+              p.wards.forEach((w) => {
+                w._ns = [w.name, ...(w.old_names || [])];
+                w._ks = w._ns.map(norm);
+              });
+            });
             provincesData = data;
             console.log(
               "[Address Cascade] Đã nạp thành công:",
@@ -1172,6 +1204,23 @@
             return false;
           }
 
+          if (
+            fullStr &&
+            fullStr === lastCalculatedAddress &&
+            manager.getState().selectedStore
+          ) {
+            setAddressVerified(fullStr);
+            if (btnFindStore) {
+              const textEl = btnFindStore.querySelector(".btn-find-text");
+              if (textEl)
+                textEl.textContent = t(
+                  "addr_btn_confirmed",
+                  "✅ Đã xác định địa chỉ",
+                );
+            }
+            return true;
+          }
+
           if (btnFindStore) {
             btnFindStore.disabled = true;
             const textEl = btnFindStore.querySelector(".btn-find-text");
@@ -1193,17 +1242,17 @@
               if (cached) {
                 coords = JSON.parse(cached);
                 console.log(
-                  "[Goong Map] Sử dụng tọa độ từ Cache (0 API request):",
+                  "[Google Maps] Sử dụng tọa độ từ Cache (0 API request):",
                   coords,
                 );
               }
             } catch (e) {}
 
             // Nếu chưa có trong cache thì mới gọi Geocode qua proxy
-            if (!coords && goong && goong.endpoint) {
+            if (!coords && googleMaps && googleMaps.endpoint) {
               try {
                 // Thử Geocode địa chỉ cụ thể đầy đủ
-                const geo = await goong.forwardGeocode(fullStr);
+                const geo = await googleMaps.forwardGeocode(fullStr);
                 coords = geo.coordinates;
               } catch (err1) {
                 console.warn(
@@ -1213,7 +1262,7 @@
                 // Fallback: Geocode theo Phường/Xã + Tỉnh/Thành
                 if (wardName && provName) {
                   const fallbackQuery = `${wardName}, ${provName}`;
-                  const geoFallback = await goong.forwardGeocode(fallbackQuery);
+                  const geoFallback = await googleMaps.forwardGeocode(fallbackQuery);
                   coords = geoFallback.coordinates;
                 }
               }
@@ -1240,7 +1289,7 @@
               }
               return true;
             } else {
-              // Không có Goong Key hoặc không tìm thấy tọa độ -> Chọn chi nhánh đầu tiên mặc định
+              // Không tìm thấy tọa độ -> Chọn chi nhánh đầu tiên mặc định
               const stores = manager.getState().storesWithDistance;
               if (stores && stores.length > 0) {
                 manager.selectStore(stores[0].id);
@@ -1358,14 +1407,16 @@
             // 1. Lấy tọa độ từ thiết bị qua Geolocation API
             const coords = await manager.getGPSLocation();
 
-            // 2. Tra cứu địa chỉ chi tiết qua Goong Reverse Geocoding qua proxy
+            // 2. Tra cứu địa chỉ chi tiết qua Google Reverse Geocoding qua proxy
             let resolvedAddr = "";
             let compound = null;
-            if (goong && goong.endpoint) {
+            let components = [];
+            if (googleMaps && googleMaps.endpoint) {
               try {
-                const rev = await goong.reverseGeocode(coords.lat, coords.lng);
+                const rev = await googleMaps.reverseGeocode(coords.lat, coords.lng);
                 resolvedAddr = rev.formattedAddress || "";
                 compound = rev.compound || null;
+                components = rev.addressComponents || [];
               } catch (revErr) {
                 console.warn("[GPS] Lỗi reverse geocode:", revErr.message);
               }
@@ -1373,109 +1424,48 @@
 
             // 3. Tự động nhận diện và gán Tỉnh / Phường vào dropdown cascade
             if (provincesData && Array.isArray(provincesData)) {
-              let matchedProv = null;
-              if (compound && compound.province) {
-                const normTarget = normalizeVietnamese(compound.province);
-                matchedProv = provincesData.find((p) => {
-                  const np = normalizeVietnamese(p.name);
-                  return np.includes(normTarget) || normTarget.includes(np);
-                });
-              }
-              if (!matchedProv && resolvedAddr) {
-                const normAddr = normalizeVietnamese(resolvedAddr);
-                matchedProv = provincesData.find((p) =>
-                  normAddr.includes(normalizeVietnamese(p.name)),
-                );
-              }
-              if (matchedProv) {
-                selectedProvinceObj = matchedProv;
-                if (provinceInput) {
-                  provinceInput.value = matchedProv.name;
-                  provinceInput.classList.remove("has-location-error");
-                  provinceInput.classList.add("is-location-verified");
-                }
-                if (provinceCodeHidden)
-                  provinceCodeHidden.value = matchedProv.code;
-                if (provinceNameHidden)
-                  provinceNameHidden.value = matchedProv.name;
+              const component = (types) =>
+                components
+                  .filter((item) => types.some((type) => item.types?.includes(type)))
+                  .map((item) => item.long_name)
+                  .filter(Boolean);
 
-                if (wardInput) {
-                  wardInput.disabled = false;
-                  wardInput.placeholder = t(
-                    "addr_ward_placeholder",
-                    "Nhập tìm Phường / Xã...",
-                  );
-                }
+              const provinceCandidates = component([
+                "administrative_area_level_1",
+                "administrative_area_level_2",
+                "locality",
+              ]);
 
-                let matchedWard = null;
-                if (Array.isArray(matchedProv.wards)) {
-                  if (compound && compound.commune) {
-                    const normCommune = normalizeVietnamese(compound.commune);
-                    matchedWard = matchedProv.wards.find((w) => {
-                      const nw = normalizeVietnamese(w.name);
-                      if (
-                        nw === normCommune ||
-                        nw.includes(normCommune) ||
-                        normCommune.includes(nw)
-                      ) {
-                        return true;
-                      }
-                      if (Array.isArray(w.old_names)) {
-                        return w.old_names.some((old) => {
-                          const nOld = normalizeVietnamese(old);
-                          return (
-                            nOld === normCommune ||
-                            nOld.includes(normCommune) ||
-                            normCommune.includes(nOld)
-                          );
-                        });
-                      }
-                      return false;
-                    });
-                  }
-                  if (!matchedWard && resolvedAddr) {
-                    const normAddr = normalizeVietnamese(resolvedAddr);
-                    const sortedWards = [...matchedProv.wards].sort(
-                      (a, b) => b.name.length - a.name.length,
-                    );
-                    matchedWard = sortedWards.find((w) => {
-                      if (normAddr.includes(normalizeVietnamese(w.name))) {
-                        return true;
-                      }
-                      if (Array.isArray(w.old_names)) {
-                        return w.old_names.some((old) =>
-                          normAddr.includes(normalizeVietnamese(old)),
-                        );
-                      }
-                      return false;
-                    });
+              const wardCandidates = component([
+                "administrative_area_level_3",
+                "sublocality_level_1",
+                "sublocality_level_2",
+                "sublocality",
+                "neighborhood",
+                "administrative_area_level_2",
+              ]);
+
+              const streetParts = component(["street_number", "route"]);
+              const street = streetParts.join(" ") || resolvedAddr.split(",")[0].trim();
+
+              const p = matchProv(provinceCandidates, resolvedAddr);
+              let w = null;
+              if (p) {
+                pickProv(p);
+                w = matchWard(p, wardCandidates, resolvedAddr);
+                if (w) pickWard(w);
+              }
+
+              if (streetInput) {
+                const st =
+                  street || stripNames(resolvedAddr, p ? [...p._ns, ...(w ? w._ns : [])] : []);
+                if (st) {
+                  streetInput.value = st;
+                  streetInput.classList.remove("has-location-error");
+                  if (p && w) {
+                    streetInput.classList.add("is-location-verified");
                   }
                 }
-                if (matchedWard) {
-                  selectedWardObj = matchedWard;
-                  if (wardInput) {
-                    wardInput.value = matchedWard.name;
-                    wardInput.classList.remove("has-location-error");
-                    wardInput.classList.add("is-location-verified");
-                  }
-                  if (wardCodeHidden) wardCodeHidden.value = matchedWard.code;
-                  if (wardNameHidden) wardNameHidden.value = matchedWard.name;
-                }
-              }
-            }
-
-            // Gán số nhà/đường
-            if (streetInput) {
-              let streetVal = "";
-              if (compound && compound.name) {
-                streetVal = compound.name;
-              } else if (resolvedAddr) {
-                const parts = resolvedAddr.split(",");
-                streetVal = parts[0] ? parts[0].trim() : resolvedAddr;
-              }
-              if (streetVal) {
-                streetInput.value = streetVal;
-                streetInput.classList.remove("has-location-error");
               }
             }
 
@@ -1723,43 +1713,21 @@
           ),
           getItemsFn: (searchVal) => {
             if (!provincesData) return [];
-            const q = normalizeVietnamese(searchVal);
+            const q = norm(searchVal);
             if (!q) return provincesData;
             return provincesData.filter((p) =>
-              normalizeVietnamese(p.name).includes(q),
+              (p._k && p._k.includes(q)) ||
+              norm(p.name).includes(q) ||
+              locationKey(p.name).includes(q)
             );
           },
           onSelectFn: (prov) => {
-            const isChanged =
-              !selectedProvinceObj || selectedProvinceObj.code !== prov.code;
-            selectedProvinceObj = prov;
-            provinceInput.value = prov.name;
-            provinceInput.classList.remove("has-location-error");
-            provinceInput.classList.add("is-location-verified");
-
-            if (provinceCodeHidden) provinceCodeHidden.value = prov.code;
-            if (provinceNameHidden) provinceNameHidden.value = prov.name;
-
-            // Đổi tỉnh thì tự xoá xã/phường đã chọn trước đó
-            if (isChanged && wardInput) {
-              selectedWardObj = null;
-              wardInput.value = "";
-              wardInput.classList.remove("is-location-verified");
-              wardInput.classList.remove("has-location-error");
-              if (wardCodeHidden) wardCodeHidden.value = "";
-              if (wardNameHidden) wardNameHidden.value = "";
-            }
-
-            // Mở khoá ô Xã/Phường và tự động focus
+            pickProv(prov);
             if (wardInput) {
-              wardInput.disabled = false;
-              wardInput.placeholder = t(
-                "addr_ward_placeholder",
-                "Nhập tìm Phường / Xã...",
-              );
-              wardInput.focus();
+              setTimeout(() => {
+                wardInput.focus();
+              }, 80);
             }
-
             syncFullDeliveryAddress();
           },
         });
@@ -1807,25 +1775,20 @@
               !Array.isArray(selectedProvinceObj.wards)
             )
               return [];
-            const q = normalizeVietnamese(searchVal);
+            const q = norm(searchVal);
             const wards = selectedProvinceObj.wards;
             if (!q) return wards;
-            return wards.filter((w) => normalizeVietnamese(w.name).includes(q));
+            return wards.filter((w) =>
+              (w._ks && w._ks.some((k) => k.includes(q))) ||
+              norm(w.name).includes(q) ||
+              locationKey(w.name).includes(q)
+            );
           },
           onSelectFn: (ward) => {
-            selectedWardObj = ward;
-            wardInput.value = ward.name;
-            wardInput.classList.remove("has-location-error");
-            wardInput.classList.add("is-location-verified");
-
-            if (wardCodeHidden) wardCodeHidden.value = ward.code;
-            if (wardNameHidden) wardNameHidden.value = ward.name;
-
-            // Focus tiếp sang ô Số nhà / Đường
+            pickWard(ward);
             if (streetInput) {
               streetInput.focus();
             }
-
             syncFullDeliveryAddress();
           },
         });
@@ -2109,6 +2072,6 @@
   }
 
   // Expose to window for testing / modular access
-  window.GoongMapService = GoongMapService;
+  window.GoogleMapService = GoogleMapService;
   window.LocationOrderManager = LocationOrderManager;
 })();

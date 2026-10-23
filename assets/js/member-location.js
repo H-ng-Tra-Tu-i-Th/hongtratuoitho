@@ -12,6 +12,11 @@
       .trim();
   const bare = (s) =>
     norm(s).replace(/^(thanh pho|tinh|phuong|xa|thi tran|dac khu)\s+/, "");
+  const locationKey = (s) =>
+    bare(s)
+      .replace(/\b(city|province|district|ward|commune)\b/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
   const has = (hay, needle) => !!needle && ` ${hay} `.includes(` ${needle} `); // khớp nguyên cụm: "phuong 1" ≠ "phuong 12"
   const byLen = (a) => [...a].sort((x, y) => y.name.length - x.name.length);
   const escHtml = (s) =>
@@ -246,20 +251,35 @@
     // ---------- khớp text địa chỉ với Tỉnh / Phường ----------
     const matchProv = (name, addr) => {
       const na = norm(addr);
+      const names = Array.isArray(name) ? name : [name];
       return (
-        provinces.find((p) => name && bare(p.name) === bare(name)) ||
-        byLen(provinces).find((p) => has(na, p._k)) ||
+        provinces.find((p) =>
+          names.some(
+            (candidate) =>
+              candidate && locationKey(p.name) === locationKey(candidate),
+          ),
+        ) ||
+        byLen(provinces).find(
+          (p) => has(na, p._k) || has(na, locationKey(p.name)),
+        ) ||
         null
       );
     };
 
     const matchWard = (p, name, addr) => {
       const na = norm(addr);
+      const names = Array.isArray(name) ? name : [name];
       return (
         p.wards.find(
-          (w) => name && w._ns.some((n) => bare(n) === bare(name)),
+          (w) =>
+            names.some(
+              (candidate) =>
+                candidate &&                 w._ns.some((n) => locationKey(n) === locationKey(candidate)),
+            ),
         ) ||
-        byLen(p.wards).find((w) => w._ks.some((k) => has(na, k))) ||
+        byLen(p.wards).find((w) =>
+          w._ks.some((k) => has(na, k) || has(na, locationKey(k))),
+        ) ||
         null
       );
     };
@@ -323,40 +343,46 @@
     // ---------- GPS thật ----------
     const reverseGeo = async (lat, lng) => {
       try {
-        // Ưu tiên Goong qua backend
+        // Google Maps Geocoding API qua backend
         const r = await fetch(
           `${locEndpoint}?action=reverse_geocode&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
         );
         if (r.ok) {
           const first = (await r.json()).results?.[0];
           if (first) {
-            const c = first.compound || {},
-              a = first.formatted_address || "";
+            const components = first.address_components || [];
+            const component = (types) =>
+              components
+                .filter((item) => types.some((type) => item.types?.includes(type)))
+                .map((item) => item.long_name)
+                .filter(Boolean);
+            const a = first.formatted_address || "";
+            const province = component([
+              "administrative_area_level_1",
+              "administrative_area_level_2",
+              "locality",
+            ]);
+            const ward = component([
+              "administrative_area_level_3",
+              "sublocality_level_1",
+              "sublocality_level_2",
+              "sublocality",
+              "neighborhood",
+              "administrative_area_level_2",
+            ]);
+            const streetParts = component(["street_number", "route"]);
             return {
               addr: a,
-              province: c.province,
-              ward: c.commune,
-              street: c.name || a.split(",")[0].trim(),
+              province,
+              ward,
+              street: streetParts.join(" ") || a.split(",")[0].trim(),
             };
           }
         }
       } catch (e) {
-        /* dùng nguồn dự phòng */
+        console.warn("[Address] Google reverse geocoding failed:", e);
       }
-
-      // Dự phòng: OpenStreetMap (nên dùng Goong khi chạy thật)
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=vi&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`,
-      );
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const d = await r.json(),
-        a = d.address || {};
-      return {
-        addr: d.display_name || "",
-        province: a.state || a.city || a.province,
-        ward: a.suburb || a.quarter || a.village || a.town,
-        street: [a.house_number, a.road].filter(Boolean).join(" "),
-      };
+      throw new Error("Không thể tra cứu địa chỉ bằng Google Maps.");
     };
 
     btnGps?.addEventListener("click", (e) => {

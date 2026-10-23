@@ -19,3 +19,6 @@ define('ZALO_APP_SECRET', '');
 define('ZALO_REDIRECT_URI', '');
 // Zalo Mini App login: Secret Key of the Mini App (empty = use ZALO_APP_SECRET).
 define('ZALO_MINIAPP_SECRET', '');
+
+// Google Maps Platform API key. Enable Geocoding API and Routes API.
+define('GOOGLE_MAPS_API_KEY', 'YOUR_GOOGLE_MAPS_API_KEY');

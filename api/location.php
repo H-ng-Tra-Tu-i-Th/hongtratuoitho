@@ -4,7 +4,7 @@ require __DIR__ . '/../lib/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: private, no-cache, no-store, must-revalidate');
 
-// Simple session-based rate limiting to prevent abuse/proxy attacks on Goong API
+// Keep the API key on the server and rate-limit requests before proxying them.
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -28,9 +28,7 @@ if ($now - $rateData['start'] > 60 || $rateData['start'] > $now) {
     $rateData['count']++;
 }
 $_SESSION[$rateKey] = $rateData;
-if (session_status() === PHP_SESSION_ACTIVE) {
-    session_write_close();
-}
+session_write_close();
 if ($rateData['count'] > 40) {
     http_response_code(429);
     echo json_encode([
@@ -40,64 +38,76 @@ if ($rateData['count'] > 40) {
     exit;
 }
 
-$apiKey = defined('GOONG_API_KEY') ? trim((string)GOONG_API_KEY) : '';
+$apiKey = defined('GOOGLE_MAPS_API_KEY') ? trim((string)GOOGLE_MAPS_API_KEY) : '';
 if ($apiKey === '' && function_exists('setting')) {
-    $apiKey = trim((string)setting('goong_api_key', ''));
+    $apiKey = trim((string)setting('google_maps_api_key', ''));
 }
-
 if ($apiKey === '') {
     http_response_code(503);
     echo json_encode([
         'status' => 'ERROR',
-        'message' => 'Chưa cấu hình GOONG_API_KEY trên máy chủ.',
+        'message' => 'Chưa cấu hình GOOGLE_MAPS_API_KEY trên máy chủ.',
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 $action = trim((string)($_GET['action'] ?? $_POST['action'] ?? ''));
 
-function call_goong_api(string $url): array
+function call_google_api(string $url, ?array $payload = null, array $headers = []): array
 {
     $ch = curl_init($url);
-    curl_setopt_array($ch, [
+    $requestHeaders = array_merge(['Accept: application/json'], $headers);
+    $options = [
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 8,
+        CURLOPT_TIMEOUT => 10,
         CURLOPT_CONNECTTIMEOUT => 4,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
-        CURLOPT_HTTPHEADER => ['Accept: application/json'],
-    ]);
+        CURLOPT_HTTPHEADER => $requestHeaders,
+    ];
+    if ($payload !== null) {
+        $options[CURLOPT_POST] = true;
+        $options[CURLOPT_POSTFIELDS] = json_encode($payload, JSON_THROW_ON_ERROR);
+        $options[CURLOPT_HTTPHEADER][] = 'Content-Type: application/json';
+    }
+    curl_setopt_array($ch, $options);
     $res = curl_exec($ch);
     $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $err = curl_error($ch);
     curl_close($ch);
 
     if ($res === false) {
-        return ['status' => 'ERROR', 'http_code' => 500, 'message' => 'Lỗi kết nối tới Goong: ' . $err];
+        return ['status' => 'ERROR', 'http_code' => 502, 'message' => 'Lỗi kết nối tới Google Maps API: ' . $err];
     }
     try {
         $json = json_decode($res, true, 512, JSON_THROW_ON_ERROR);
         return ['status' => 'OK', 'http_code' => $httpCode ?: 200, 'data' => $json];
     } catch (JsonException $e) {
-        return ['status' => 'ERROR', 'http_code' => 502, 'message' => 'Phản hồi Goong không hợp lệ.'];
+        return ['status' => 'ERROR', 'http_code' => 502, 'message' => 'Phản hồi Google Maps API không hợp lệ.'];
     }
 }
 
-/**
- * Validates a pipe-separated string of lat,lng points.
- * Returns true if valid, false otherwise.
- */
+function google_error(array $resp): void
+{
+    http_response_code($resp['http_code'] ?: 502);
+    echo json_encode([
+        'status' => 'ERROR',
+        'message' => $resp['message'] ?? 'Google Maps API request failed.',
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 function validate_coords_list(string $raw, int $maxPoints = 30, int $maxLen = 2000): bool
 {
-    if (strlen($raw) === 0 || strlen($raw) > $maxLen) {
+    if ($raw === '' || strlen($raw) > $maxLen) {
         return false;
     }
     $points = explode('|', $raw);
     if (count($points) === 0 || count($points) > $maxPoints) {
         return false;
     }
-    foreach ($points as $p) {
-        $parts = explode(',', trim($p));
+    foreach ($points as $point) {
+        $parts = explode(',', trim($point));
         if (count($parts) !== 2 || !is_numeric($parts[0]) || !is_numeric($parts[1])) {
             return false;
         }
@@ -108,6 +118,51 @@ function validate_coords_list(string $raw, int $maxPoints = 30, int $maxLen = 20
         }
     }
     return true;
+}
+
+function parse_coordinate(string $value): array
+{
+    [$lat, $lng] = array_map('floatval', explode(',', trim($value)));
+    return [
+        'waypoint' => [
+            'location' => [
+                'latLng' => ['latitude' => $lat, 'longitude' => $lng],
+            ],
+        ],
+    ];
+}
+
+function duration_seconds(string $duration): int
+{
+    return (int)round((float)rtrim($duration, 's'));
+}
+
+function extract_google_compound(array $components): array
+{
+    $compound = [
+        'province' => '',
+        'district' => '',
+        'commune' => '',
+        'name' => '',
+    ];
+    $streetNumber = '';
+    $route = '';
+    foreach ($components as $c) {
+        $types = $c['types'] ?? [];
+        if (in_array('administrative_area_level_1', $types, true)) {
+            $compound['province'] = $c['long_name'] ?? '';
+        } elseif (in_array('administrative_area_level_2', $types, true)) {
+            $compound['district'] = $c['long_name'] ?? '';
+        } elseif (in_array('sublocality_level_1', $types, true) || in_array('administrative_area_level_3', $types, true)) {
+            $compound['commune'] = $c['long_name'] ?? '';
+        } elseif (in_array('route', $types, true)) {
+            $route = $c['long_name'] ?? '';
+        } elseif (in_array('street_number', $types, true)) {
+            $streetNumber = $c['long_name'] ?? '';
+        }
+    }
+    $compound['name'] = trim("$streetNumber $route");
+    return $compound;
 }
 
 switch ($action) {
@@ -126,42 +181,99 @@ switch ($action) {
             echo json_encode(['status' => 'ERROR', 'message' => 'Tọa độ nằm ngoài phạm vi hợp lệ (-90..90, -180..180).'], JSON_UNESCAPED_UNICODE);
             exit;
         }
-        $url = 'https://rsapi.goong.io/Geocode?latlng=' . urlencode("{$lat},{$lng}") . '&api_key=' . urlencode($apiKey);
-        $resp = call_goong_api($url);
-        http_response_code($resp['http_code'] ?: 200);
-        echo json_encode($resp['data'] ?? ['status' => 'ERROR', 'message' => $resp['message']], JSON_UNESCAPED_UNICODE);
+        $url = 'https://maps.googleapis.com/maps/api/geocode/json?latlng='
+            . urlencode("{$lat},{$lng}") . '&language=vi&key=' . urlencode($apiKey);
+        $resp = call_google_api($url);
+        if ($resp['status'] !== 'OK') {
+            google_error($resp);
+        }
+
+        if (isset($resp['data']['results'][0])) {
+            $components = $resp['data']['results'][0]['address_components'] ?? [];
+            if (!empty($components) && empty($resp['data']['results'][0]['compound'])) {
+                $resp['data']['results'][0]['compound'] = extract_google_compound($components);
+            }
+        }
+
+        http_response_code($resp['http_code']);
+        echo json_encode($resp['data'], JSON_UNESCAPED_UNICODE);
         break;
 
     case 'geocode':
-        $address = trim((string)($_GET['address'] ?? $_POST['address'] ?? ''));
-        // Clean control characters
-        $address = preg_replace('/[\x00-\x1F\x7F]/u', '', $address);
+        $address = preg_replace('/[\x00-\x1F\x7F]/u', '', trim((string)($_GET['address'] ?? $_POST['address'] ?? '')));
         $len = mb_strlen($address);
         if ($len < 3 || $len > 300) {
             http_response_code(400);
             echo json_encode(['status' => 'ERROR', 'message' => 'Địa chỉ phải từ 3 đến 300 ký tự.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
-        $url = 'https://rsapi.goong.io/geocode?address=' . urlencode($address) . '&api_key=' . urlencode($apiKey);
-        $resp = call_goong_api($url);
-        http_response_code($resp['http_code'] ?: 200);
-        echo json_encode($resp['data'] ?? ['status' => 'ERROR', 'message' => $resp['message']], JSON_UNESCAPED_UNICODE);
+        $url = 'https://maps.googleapis.com/maps/api/geocode/json?address='
+            . urlencode($address) . '&language=vi&region=vn&key=' . urlencode($apiKey);
+        $resp = call_google_api($url);
+        if ($resp['status'] !== 'OK') {
+            google_error($resp);
+        }
+
+        if (isset($resp['data']['results'][0])) {
+            $components = $resp['data']['results'][0]['address_components'] ?? [];
+            if (!empty($components) && empty($resp['data']['results'][0]['compound'])) {
+                $resp['data']['results'][0]['compound'] = extract_google_compound($components);
+            }
+        }
+
+        http_response_code($resp['http_code']);
+        echo json_encode($resp['data'], JSON_UNESCAPED_UNICODE);
         break;
 
     case 'distance_matrix':
         $origins = trim((string)($_GET['origins'] ?? $_POST['origins'] ?? ''));
         $destinations = trim((string)($_GET['destinations'] ?? $_POST['destinations'] ?? ''));
-        $vehicle = 'bike';
-
-        if (!validate_coords_list($origins, 5, 200) || !validate_coords_list($destinations, 30, 2000)) {
+        if (!validate_coords_list($origins, 1, 50) || !validate_coords_list($destinations, 30, 2000)) {
             http_response_code(400);
             echo json_encode(['status' => 'ERROR', 'message' => 'Tham số origins hoặc destinations không đúng định dạng tọa độ.'], JSON_UNESCAPED_UNICODE);
             exit;
         }
-        $url = 'https://rsapi.goong.io/DistanceMatrix?origins=' . urlencode($origins) . '&destinations=' . urlencode($destinations) . '&vehicle=' . urlencode($vehicle) . '&api_key=' . urlencode($apiKey);
-        $resp = call_goong_api($url);
-        http_response_code($resp['http_code'] ?: 200);
-        echo json_encode($resp['data'] ?? ['status' => 'ERROR', 'message' => $resp['message']], JSON_UNESCAPED_UNICODE);
+
+        $destinationPoints = explode('|', $destinations);
+        $payload = [
+            'origins' => array_map('parse_coordinate', [$origins]),
+            'destinations' => array_map('parse_coordinate', $destinationPoints),
+            'travelMode' => 'TWO_WHEELER',
+            'languageCode' => 'vi-VN',
+            'units' => 'METRIC',
+        ];
+        $url = 'https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix?key=' . urlencode($apiKey);
+        $resp = call_google_api($url, $payload, [
+            'X-Goog-FieldMask: originIndex,destinationIndex,status,condition,distanceMeters,duration',
+        ]);
+        if ($resp['status'] !== 'OK') {
+            google_error($resp);
+        }
+
+        $elements = array_fill(0, count($destinationPoints), [
+            'status' => 'ERROR',
+            'distance' => null,
+            'duration' => null,
+        ]);
+        foreach (($resp['data'] ?? []) as $route) {
+            $index = (int)($route['destinationIndex'] ?? -1);
+            if ($index < 0 || $index >= count($elements)) {
+                continue;
+            }
+            $ok = (($route['condition'] ?? '') === 'ROUTE_EXISTS');
+            $elements[$index] = [
+                'status' => $ok ? 'OK' : ($route['condition'] ?? 'ERROR'),
+                'distance' => $ok ? [
+                    'text' => number_format((float)($route['distanceMeters'] ?? 0) / 1000, 1, ',', '.') . ' km',
+                    'value' => (int)($route['distanceMeters'] ?? 0),
+                ] : null,
+                'duration' => $ok ? [
+                    'text' => duration_seconds((string)($route['duration'] ?? '0s')) . ' giây',
+                    'value' => duration_seconds((string)($route['duration'] ?? '0s')),
+                ] : null,
+            ];
+        }
+        echo json_encode(['rows' => [['elements' => $elements]], 'status' => 'OK'], JSON_UNESCAPED_UNICODE);
         break;
 
     default:

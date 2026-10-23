@@ -1,3 +1,3 @@
 export * from './types';
-export * from './GoongMapService';
+export * from './GoogleMapService';
 export * from './LocationOrderManager';
