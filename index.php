@@ -27,11 +27,15 @@ front_header(); ?>
         src="<?= e(base_url('uploads/' . $banner['image'])) ?>" alt="<?= e(t('homepage_banner')) ?>"></a></section>
 <?php endif; ?>
 
-<section class="social-media-section" aria-labelledby="social-media-title">
+<!-- close-test-Hai | đóng thẻ liên kế dời xuống footer -->
+
+<!-- <section class="social-media-section" aria-labelledby="social-media-title">
   <div class="social-media-heading">
     <span class="eyebrow"><?= e(t('follow_us')) ?></span>
     <h2 id="social-media-title"><?= e(t('social_media')) ?></h2>
   </div>
+
+
   <div class="social-media-links">
     <a class="social-media-link" href="https://www.facebook.com/huiyitea.vn" target="_blank" rel="noopener noreferrer"
       aria-label="Facebook"><span class="social-media-icon social-facebook"
@@ -59,7 +63,7 @@ front_header(); ?>
           <path class="social-youtube-play" d="m10.1 9 5.1 3-5.1 3Z" />
         </svg></span><span>YouTube</span></a>
   </div>
-</section>
+</section> -->
 
 <?php if ($featuredProducts || $featuredToppings): ?>
   <section class="featured-section" id="featured">
@@ -111,13 +115,14 @@ front_header(); ?>
   </section>
 <?php endif; ?>
 
-<section class="hero">
+<!-- close-test-Hai | Đóng banner làm tối giản màn hình -->
+<!-- <section class="hero">
   <div class="hero-content"><span class="eyebrow"><?= e(t('mobile_order')) ?></span>
     <h1><?= e(t('hero_title')) ?></h1>
     <p><?= e(t('hero_desc')) ?></p>
   </div>
   <div class="hero-orb" aria-hidden="true"></div>
-</section>
+</section> -->
 
 <?php if (!$groupContext): ?>
   <section class="hyg-entry">

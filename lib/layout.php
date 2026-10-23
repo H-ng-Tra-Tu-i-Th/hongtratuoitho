@@ -11,11 +11,13 @@ function front_header(string $title = ''): void
     $assetVersion = '19.15.0';
     $gameBalance = minigame_enabled() ? game_wallet_balance() : 0;
     $groupContext = $GLOBALS['hyg_context'] ?? null;
-    $frontCartUrl = $groupContext ? hyg_room_url($groupContext['room']['public_id']) : base_url('cart.php');
+    // Group checkout sets only hyg_header_room, so the header cart shows the group cart without full group mode.
+    $cartRoom = $groupContext['room'] ?? ($GLOBALS['hyg_header_room'] ?? null);
+    $frontCartUrl = $cartRoom ? hyg_room_url($cartRoom['public_id']) : base_url('cart.php');
     $frontCartCount = cart_count();
-    if ($groupContext) {
+    if ($cartRoom) {
         $frontCartCount = 0;
-        foreach (hyg_cart($groupContext['room'], false) as $row) $frontCartCount += (int)$row['qty'];
+        foreach (hyg_cart($cartRoom, false) as $row) $frontCartCount += (int)$row['qty'];
     }
 
 ?>
@@ -32,6 +34,8 @@ function front_header(string $title = ''): void
         <link rel="stylesheet" href="<?= e(base_url('assets/css/app.css?v=' . $assetVersion)) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.3')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/member.css?v=19.8.1')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/footer.css?v=1.0.4')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/header.css?v=1.0.1')) ?>">
         <title><?= e($title ? $title . '｜' . $store : $store) ?></title><?php $ogDesc = ['vi' => '🎁 Mua 4 tặng 1 · 🎮 Mua 10 ly nhận 1 lượt Mini Game – cơ hội trúng giải đến 145K · 👥 Đặt đơn nhóm cùng bạn bè, giao tận nơi.', 'zh' => '🎁 買4送1 · 🎮 買10杯送1次小遊戲機會，最高抽中145K好禮 · 👥 揪團點單，外送到府。', 'en' => '🎁 Buy 4 get 1 free · 🎮 Buy 10 drinks for a Mini Game chance to win up to 145K · 👥 Group orders, delivered to your door.'][current_lang()] ?? ''; ?>
         <meta name="description" content="<?= e($ogDesc) ?>">
         <meta property="og:type" content="website">
@@ -62,11 +66,11 @@ function front_header(string $title = ''): void
                 <div class="topbar-actions"><?= language_switcher() ?><?php if (minigame_enabled() && $gameBalance > 0): ?><a class="game-link" href="<?= e(base_url('minigame/')) ?>" aria-label="<?= e(t('game_center')) ?>"><span aria-hidden="true">🎮</span><span class="game-link-label"><?= e(t('game_center')) ?></span><?php if ($gameBalance > 0): ?><b><?= $gameBalance ?></b><?php endif; ?></a><?php endif; ?><a class="member-link" href="<?= e(base_url('member/index.php')) ?>" aria-label="<?= e($memberLabel) ?>"><svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="8" r="4" />
                         <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
-                    </svg><span><?= e($memberLabel) ?></span></a><a class="cart-link" href="<?= e($frontCartUrl) ?>" aria-label="<?= e($groupContext ? gt('cart_short') : t('cart')) ?>"><svg class="cart-symbol" viewBox="0 0 24 24" aria-hidden="true">
+                    </svg><span><?= e($memberLabel) ?></span></a><a class="cart-link" href="<?= e($frontCartUrl) ?>" aria-label="<?= e($cartRoom ? gt('cart_short') : t('cart')) ?>"><svg class="cart-symbol" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M3 4h2l1.8 9.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L20 8H7" />
                         <circle cx="9" cy="19" r="1.5" />
                         <circle cx="17" cy="19" r="1.5" />
-                    </svg><span class="cart-label"><?= e($groupContext ? gt('cart_short') : t('cart')) ?></span><span class="cart-count"><?= $frontCartCount ?></span></a></div>
+                    </svg><span class="cart-label"><?= e($cartRoom ? gt('cart_short') : t('cart')) ?></span><span class="cart-count"><?= $frontCartCount ?></span></a></div>
             </div>
         </header>
         <main class="container"><?php
@@ -99,7 +103,124 @@ function front_header(string $title = ''): void
                     <circle cx="9" cy="19" r="1.5" />
                     <circle cx="17" cy="19" r="1.5" />
                 </svg><span class="floating-cart-count"><?= $count ?></span></a><?php endif; ?>
-        <footer class="footer"><?= e(t('online_order')) ?></footer>
+
+        <!-- Footer website order -->
+        <footer class="site-footer">
+            <div class="site-footer-main">
+                <div class="site-footer-brand">
+                    <a class="site-footer-logo" href="<?= e(base_url('index.php')) ?>">
+                        <img src="<?= e(base_url('assets/icons/order-icon-192.png?v=19')) ?>" alt="">
+                        <span>
+                            <strong>
+                                <?= e(store_name()) ?>
+                            </strong>
+                        </span>
+                    </a>
+
+                    <div class="site-footer-franchise">
+                        <p><strong>CÔNG TY TNHH VẠN NHẤT THIÊN THÀNH</strong></p>
+                        <p>MST: 0319146701</p>
+                        <p>Điện thoại:</p>
+                        <ul>
+                            <li><b>Tư vấn nhượng quyền: <a href="tel:0909782338">0909782338</a> </b> </li>
+                            <li><b>Truyền thông: <a href="tel:0906712638">0906712638</a> </b></li>
+                            <li><b>Đặt nước &amp; CSKH: <a href="tel:0901655231">0901655231</a> </b></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="site-footer-col">
+                    <h3>
+                        <span class="site-footer-badge">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" />
+                            </svg>
+                        </span>Liên hệ
+                    </h3>
+                    <ul class="site-footer-contact">
+                        <li>
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+                            </svg>
+                            <span>
+                                1/1B đường Tân Thới Nhất 7,<br>phường Đông Hưng Thuận, TP. Hồ Chí Minh
+                            </span>
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24">
+                                <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" />
+                            </svg>
+                            <span>
+                                Hotline: <a href="tel:0901655231">0901 655 231</a><br>(8:00 - 22:00)
+                            </span>
+                        </li>
+                        <li>
+                            <svg viewBox="0 0 24 24" class="is-stroke">
+                                <circle cx="12" cy="12" r="9" />
+                                <path d="M12 7v5l3 2" />
+                            </svg>
+                            <span>
+                                Giờ mở cửa:<br>8:00 - 22:00 (Hàng ngày)
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="site-footer-social">
+                    <h3>
+                        Theo dõi chúng tôi
+                    </h3>
+                    <div class="social-media-links">
+                        <a class="social-media-link" href="https://www.facebook.com/huiyitea.vn" target="_blank" rel="noopener noreferrer"
+                            aria-label="Facebook"><span class="social-media-icon social-facebook"
+                                aria-hidden="true">f</span><span>Facebook</span></a>
+                        <a class="social-media-link" href="https://www.instagram.com/huiyitea/" target="_blank" rel="noopener noreferrer"
+                            aria-label="Instagram"><span class="social-media-icon social-instagram" aria-hidden="true"><svg
+                                    viewBox="0 0 24 24" focusable="false">
+                                    <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+                                    <circle cx="12" cy="12" r="4" />
+                                    <circle cx="17.5" cy="6.7" r="1" class="fill-dot" />
+                                </svg></span><span>Instagram</span></a>
+                        <a class="social-media-link" href="https://www.threads.com/@huiyitea" target="_blank" rel="noopener noreferrer"
+                            aria-label="Threads"><span class="social-media-icon social-threads"
+                                aria-hidden="true">@</span><span>Threads</span></a>
+                        <a class="social-media-link" href="https://www.tiktok.com/@huiyitea" target="_blank" rel="noopener noreferrer"
+                            aria-label="TikTok"><span class="social-media-icon social-tiktok" aria-hidden="true"><svg viewBox="0 0 24 24"
+                                    focusable="false">
+                                    <path
+                                        d="M14.2 4.2v9.1a4.45 4.45 0 1 1-3.7-4.38v3.02a1.65 1.65 0 1 0 .9 1.47V4.2h2.8Zm0 0c.55 2.1 1.85 3.42 4.1 3.8v2.77a7.3 7.3 0 0 1-4.1-1.42" />
+                                </svg></span><span>TikTok</span></a>
+                        <a class="social-media-link" href="https://www.youtube.com/@huiyitea" target="_blank" rel="noopener noreferrer"
+                            aria-label="YouTube"><span class="social-media-icon social-youtube" aria-hidden="true"><svg viewBox="0 0 24 24"
+                                    focusable="false">
+                                    <rect x="2.7" y="5.4" width="18.6" height="13.2" rx="4" />
+                                    <path class="social-youtube-play" d="m10.1 9 5.1 3-5.1 3Z" />
+                                </svg></span><span>YouTube</span></a>
+                    </div>
+                </div>
+
+                <div class="site-footer-col">
+                    <h3><span class="site-footer-badge"><svg viewBox="0 0 24 24">
+                                <path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5zm-1.2 14-3.6-3.6 1.4-1.4 2.2 2.2 4.8-4.8 1.4 1.4z" />
+                            </svg></span>Chính sách</h3>
+                    <ul class="site-footer-links">
+                        <li><a href="#">Giao hàng</a></li>
+                        <li><a href="#">Đổi trả / Hủy đơn</a></li>
+                        <li><a href="#">Bảo mật thông tin</a></li>
+                        <li><a href="#">Điều khoản sử dụng</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="site-footer-bottom">
+                <svg class="site-footer-wave" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden="true">
+                    <path d="M0 22C180 6 360 6 540 18s360 22 540 8 270-20 360-10V40H0z" />
+                </svg>
+                <p>© <?= date('Y') ?> <?= e(store_name()) ?></p>
+            </div>
+        </footer>
+
+
         <script src="<?= e(base_url('assets/js/app.js?v=19.15.0')) ?>"></script><?php if (!empty($GLOBALS['hyg_qr_page'])): ?><script src="<?= e(base_url('assets/vendor/huiyi-qrcode.js?v=19.8.0')) ?>"></script>
             <script src="<?= e(base_url('assets/js/group-qr.js?v=19.8.0')) ?>"></script><?php endif; ?><script src="<?= e(base_url('assets/js/group-order.js?v=19.8.5')) ?>"></script>
         <script src="<?= e(base_url('assets/js/promotion.js?v=19.9.2')) ?>"></script>
