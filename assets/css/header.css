@@ -1,0 +1,72 @@
+/* Site header (front pages) - white base, red accents (matches footer.css) */
+.front-body .topbar {
+    --sh-red: #8b1d24;
+    --sh-red-soft: #fde8ea;
+    --sh-text: #1f2937;
+    --sh-muted: #6b7280;
+    --sh-line: #e5e7eb;
+    background: #fff;
+    color: var(--sh-text);
+    border-bottom: 1px solid var(--sh-line);
+    box-shadow: 0 1px 6px rgba(17, 24, 39, .04);
+    backdrop-filter: none;
+}
+
+.front-body .topbar .brand {
+    color: var(--sh-text);
+}
+
+/* Language switcher */
+.front-body .topbar .language-switcher {
+    border-color: var(--sh-line);
+    background: #fff;
+    box-shadow: none;
+}
+
+.front-body .topbar .language-icon {
+    color: var(--sh-muted);
+}
+
+.front-body .topbar .lang-pill {
+    color: var(--sh-muted);
+    transition: color .2s, background .2s;
+}
+
+.front-body .topbar .lang-pill:hover {
+    color: var(--sh-red);
+}
+
+.front-body .topbar .lang-pill.active {
+    background: var(--sh-red-soft);
+    color: var(--sh-red);
+    box-shadow: none;
+}
+
+/* Member / game / cart buttons */
+.front-body .topbar .member-link,
+.front-body .topbar .game-link,
+.front-body .topbar .cart-link {
+    border-color: var(--sh-line);
+    background: #fff;
+    color: var(--sh-text);
+    box-shadow: none;
+    transition: color .2s, border-color .2s, transform .15s;
+}
+
+.front-body .topbar .member-link:hover,
+.front-body .topbar .game-link:hover,
+.front-body .topbar .cart-link:hover {
+    border-color: var(--sh-red);
+    color: var(--sh-red);
+}
+
+.front-body .topbar .cart-link span,
+.front-body .topbar .game-link b {
+    background: var(--sh-red-soft);
+    color: var(--sh-red);
+}
+
+.front-body .topbar .cart-link .cart-count {
+    background: var(--sh-red);
+    color: #fff;
+}

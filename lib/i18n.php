@@ -1245,6 +1245,60 @@ function translations(): array
     ]
   ];
   foreach ($extra13 as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
+  $footer = [
+    'vi' => [
+      'footer_tax_code' => 'MST:',
+      'footer_phone' => 'Điện thoại:',
+      'footer_franchise' => 'Tư vấn nhượng quyền:',
+      'footer_media' => 'Truyền thông:',
+      'footer_support' => 'Đặt nước & CSKH:',
+      'footer_contact' => 'Liên hệ',
+      'footer_address' => '1/1B đường Tân Thới Nhất 7,<br>phường Đông Hưng Thuận, TP. Hồ Chí Minh',
+      'footer_opening_hours' => 'Giờ mở cửa:',
+      'footer_daily' => '(Hàng ngày)',
+      'footer_follow' => 'Theo dõi chúng tôi',
+      'footer_policy' => 'Chính sách',
+      'footer_delivery' => 'Giao hàng',
+      'footer_refund' => 'Đổi trả / Hủy đơn',
+      'footer_privacy' => 'Bảo mật thông tin',
+      'footer_terms' => 'Điều khoản sử dụng'
+    ],
+    'en' => [
+      'footer_tax_code' => 'Tax code:',
+      'footer_phone' => 'Phone:',
+      'footer_franchise' => 'Franchise inquiries:',
+      'footer_media' => 'Media:',
+      'footer_support' => 'Orders & customer care:',
+      'footer_contact' => 'Contact',
+      'footer_address' => '1/1B Tan Thoi Nhat 7 Street,<br>Dong Hung Thuan Ward, Ho Chi Minh City',
+      'footer_opening_hours' => 'Opening hours:',
+      'footer_daily' => '(Daily)',
+      'footer_follow' => 'Follow us',
+      'footer_policy' => 'Policies',
+      'footer_delivery' => 'Delivery',
+      'footer_refund' => 'Returns / Cancellations',
+      'footer_privacy' => 'Privacy policy',
+      'footer_terms' => 'Terms of use'
+    ],
+    'zh' => [
+      'footer_tax_code' => '稅號：',
+      'footer_phone' => '電話：',
+      'footer_franchise' => '加盟諮詢：',
+      'footer_media' => '媒體合作：',
+      'footer_support' => '訂飲料與客服：',
+      'footer_contact' => '聯絡我們',
+      'footer_address' => '胡志明市東興順坊<br>新泰一7路 1/1B 號',
+      'footer_opening_hours' => '營業時間：',
+      'footer_daily' => '（每日）',
+      'footer_follow' => '追蹤我們',
+      'footer_policy' => '政策',
+      'footer_delivery' => '配送',
+      'footer_refund' => '退換 / 取消訂單',
+      'footer_privacy' => '隱私保護',
+      'footer_terms' => '使用條款'
+    ]
+  ];
+  foreach ($footer as $lang => $items) $d[$lang] = array_merge($d[$lang], $items);
   return $d;
 }
 function t(string $key, array $vars=[]): string {
