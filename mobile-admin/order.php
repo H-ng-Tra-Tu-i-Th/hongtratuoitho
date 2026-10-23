@@ -139,7 +139,7 @@ ma_header('#' . $o['order_no']);
     <div class="ma-order-hero-meta">
       <div class="ma-meta-item">
         <span class="ma-meta-icon">⏰</span>
-        <span><?= e($o['created_at']) ?></span>
+        <span><?= e(format_datetime($o['created_at'])) ?></span>
       </div>
       <div class="ma-meta-item">
         <span class="ma-meta-icon">💳</span>
@@ -361,7 +361,7 @@ ma_header('#' . $o['order_no']);
       <div><?= e(adm_t('email_status_label')) ?> <strong><?= e(order_notification_status_label((string)($o['notification_email_status'] ?? 'pending'))) ?></strong></div>
       <div><?= e(adm_t('email_attempts_label')) ?> <?= number_format((int)($o['notification_email_attempts'] ?? 0)) ?></div>
       <?php if (!empty($o['notification_email_sent_at'])): ?>
-        <div><?= e(adm_t('email_sent_at_label')) ?> <?= e($o['notification_email_sent_at']) ?></div>
+        <div><?= e(adm_t('email_sent_at_label')) ?> <?= e(format_datetime($o['notification_email_sent_at'])) ?></div>
       <?php endif; ?>
     </div>
     <form method="post" style="margin-top:10px;">

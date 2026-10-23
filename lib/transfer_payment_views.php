@@ -777,8 +777,8 @@ function htp_render_account(array $a): string
           <?= e($a['bank_name'] ?? '') ?> · <?= e($a['account_number'] ?? '') ?> · <?= e($a['account_name'] ?? '') ?></p>
     <?php endif;
               endif; ?>
-    <p><?= e(htp('reported_at')) ?>：<?= e($r['reported_at'] ?? '—') ?></p>
-    <p><?= e(htp('confirmed_at')) ?>：<?= e($r['confirmed_at'] ?? '—') ?> ·
+    <p><?= e(htp('reported_at')) ?>：<?= e(format_datetime($r['reported_at'] ?? '')) ?></p>
+    <p><?= e(htp('confirmed_at')) ?>：<?= e(format_datetime($r['confirmed_at'] ?? '')) ?> ·
       <?= e(htp('confirmed_by')) ?>：<?= e($r['confirmed_by_admin_id'] ?? '—') ?></p>
     <div class="payment-staff-actions">
       <?php foreach (['payment_receive', 'payment_correct', 'payment_reject', 'payment_refund'] as $action): if ($action === 'payment_reject' && ($r['report_state'] ?? '') !== 'requested' && $r['status'] !== 'requested') continue;
@@ -816,7 +816,7 @@ function htp_render_account(array $a): string
     </div>
     <details class="payment-history">
       <summary><?= e(pwf('history')) ?> (<?= count($events) ?>)</summary><?php foreach ($events as $event): ?>
-        <article><strong><?= e(pwf($event['event_type'])) ?></strong><span><?= e($event['created_at']) ?> ·
+        <article><strong><?= e(pwf($event['event_type'])) ?></strong><span><?= e(format_datetime($event['created_at'])) ?> ·
             <?= e(pwf('staff')) ?> <?= e($event['admin_id'] ?? '—') ?></span>
           <p><?= e(pwf('received_amount')) ?> <?= e(currency()) ?> <?= money($event['amount_delta'] ?? 0) ?> ·
             <?= e(pwf('refunded_amount')) ?> <?= e(currency()) ?> <?= money($event['refund_delta'] ?? 0) ?></p>

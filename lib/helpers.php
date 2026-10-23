@@ -27,6 +27,36 @@ function currency(): string
 {
     return setting('currency', '₫');
 }
+function format_datetime(mixed $value, string $format = 'Y-m-d H:i:s'): string
+{
+    if ($value === null || $value === '') {
+        return '—';
+    }
+    $targetTz = new DateTimeZone(defined('APP_TIMEZONE') ? APP_TIMEZONE : (date_default_timezone_get() ?: 'Asia/Ho_Chi_Minh'));
+    if (is_numeric($value)) {
+        try {
+            return (new DateTimeImmutable('@' . (int)$value))
+                ->setTimezone($targetTz)
+                ->format($format);
+        } catch (Throwable) {
+            return (string)$value;
+        }
+    }
+    $str = trim((string)$value);
+    if ($str === '' || str_starts_with($str, '0000-00-00')) {
+        return '—';
+    }
+    try {
+        if (preg_match('/[Zz]|[+-]\d{2}:?\d{2}$/', $str)) {
+            $dt = new DateTimeImmutable($str);
+        } else {
+            $dt = new DateTimeImmutable($str, new DateTimeZone('UTC'));
+        }
+        return $dt->setTimezone($targetTz)->format($format);
+    } catch (Throwable) {
+        return $str;
+    }
+}
 function theme_scheme(): string
 {
     $scheme = setting('theme_scheme', 'default');

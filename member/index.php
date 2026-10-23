@@ -229,7 +229,7 @@ front_header(mt('member_title'));
               <dl class="hym-facts">
                 <div>
                   <dt><?= e(mt('member_order_date')) ?></dt>
-                  <dd><?= e($formatDate($order['created_at'], false, false)) ?></dd>
+                  <dd><?= e(format_datetime($order['created_at'], 'd/m/Y H:i')) ?></dd>
                 </div>
                 <div class="hym-record-amount">
                   <dt><?= e(mt('member_order_amount')) ?></dt>

@@ -122,7 +122,7 @@ function hyg_render_payment_history(array $events): string
     <summary><?= e(gt('payment_history')) ?></summary>
     <p class="hyg-muted"><?= e(gt('payment_history_hint')) ?></p>
     <?php foreach ($events as $event): ?><article><strong><?= e(gt('event_' . $event['event_type'])) ?> · <?= e($event['member_name']) ?></strong>
-        <p><?= e($event['created_at']) ?> UTC · <?= e(currency()) ?><?= money($event['amount']) ?></p><small><?= e($event['reference']) ?></small><?php if ($event['reason'] !== ''): ?><p><?= e($event['reason']) ?></p><?php endif; ?>
+        <p><?= e(format_datetime($event['created_at'])) ?> · <?= e(currency()) ?><?= money($event['amount']) ?></p><small><?= e($event['reference']) ?></small><?php if ($event['reason'] !== ''): ?><p><?= e($event['reason']) ?></p><?php endif; ?>
       </article><?php endforeach; ?>
   </details>
 <?php return ob_get_clean();

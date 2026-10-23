@@ -52,6 +52,7 @@ function build_order_notification_email(array $order,array $items): array {
     if($hostCollection)$groupPaymentHint='Thành viên trả cho trưởng nhóm, trưởng nhóm xác nhận thu tiền. Trưởng nhóm trả toàn bộ tiền đơn cho cửa hàng sau khi gửi đơn; thu tiền hộ không xác nhận cửa hàng đã nhận tiền. / 團員付給團主，由團主確認代收；送單後團主再支付全團款給店家，代收確認不代表店家已入帳。';
     $memberPaymentStatus=fn($member)=>$member['status']==='paid'?($hostCollection?(!empty($member['is_host'])||$member['method']==='host_advance'?'Đã chuẩn bị tiền của trưởng nhóm / 團主出資已備妥':'Trưởng nhóm đã xác nhận thu tiền / 團主已確認代收'):'Đã thanh toán / 已付款'):((($groupPayment['mode']??'')==='together'&&(float)($groupPayment['host_due']??0)<=0)||((float)$member['due']<=0&&(float)$member['covered_amount']<=0)?'Không cần thanh toán / 無需付款':($groupApproval&&$member['status']==='requested'?'Chờ trưởng nhóm xác nhận / 待團主確認':'Chưa thanh toán / 未付款'));
     $invoice=!empty($order['invoice_required']);
+    $created=!empty($order['created_at'])?format_datetime($order['created_at']):'';
 
     // Plain-text fallback retained for clients that cannot render HTML.
     $lines=[];
@@ -59,7 +60,7 @@ function build_order_notification_email(array $order,array $items): array {
     $lines[]='ĐƠN HÀNG MỚI / 新訂單';
     $lines[]='========================================';
     $lines[]='Mã đơn / 訂單編號：'.$orderNo;
-    if(!empty($order['created_at'])) $lines[]='Thời gian / 時間：'.(string)$order['created_at'];
+    if($created!=='') $lines[]='Thời gian / 時間：'.$created;
     $lines[]='';
     $lines[]='[ THÔNG TIN KHÁCH HÀNG / 客戶資料 ]';
     $lines[]='Khách hàng / 客戶：'.$customer;

@@ -131,7 +131,7 @@ admin_header(t('order_no') . ' ' . $o['order_no']);
         </span>
       </h1>
       <div class="order-hero-meta">
-        <span>⏰ <strong><?= e(adm_t('order_time')) ?></strong> <?= e($o['created_at']) ?></span>
+        <span>⏰ <strong><?= e(adm_t('order_time')) ?></strong> <?= e(format_datetime($o['created_at'])) ?></span>
         <?php if ($o['payment_method'] === 'transfer'): ?>
           <span>💳 <strong><?= e(adm_t('order_payment')) ?></strong> <strong class="badge-payment-transfer"><?= e(adm_t('badge_transfer_success')) ?></strong></span>
         <?php elseif ($o['payment_method'] === 'cod' || $o['payment_method'] === 'cash'): ?>
@@ -384,7 +384,7 @@ admin_header(t('order_no') . ' ' . $o['order_no']);
 
           <?php if (!empty($o['notification_email_sent_at'])): ?>
             <div class="customer-info-label"><?= e(adm_t('email_sent_at_label')) ?></div>
-            <div class="customer-info-val"><?= e($o['notification_email_sent_at']) ?></div>
+            <div class="customer-info-val"><?= e(format_datetime($o['notification_email_sent_at'])) ?></div>
           <?php endif; ?>
         </div>
 
@@ -517,7 +517,7 @@ admin_header(t('order_no') . ' ' . $o['order_no']);
     <dt><?= e(t('email_attempts')) ?></dt>
     <dd><?= number_format((int)($o['notification_email_attempts'] ?? 0)) ?></dd>
     <dt><?= e(t('email_sent_at')) ?></dt>
-    <dd><?= e(($o['notification_email_sent_at'] ?? '') ?: '—') ?></dd>
+    <dd><?= e(!empty($o['notification_email_sent_at']) ? format_datetime($o['notification_email_sent_at']) : '—') ?></dd>
     <dt><?= e(t('email_diagnostic')) ?></dt>
     <dd><code><?= e(($o['notification_email_detail'] ?? '') ?: '—') ?></code></dd>
   </dl>
