@@ -3,7 +3,7 @@ name: Deploy to Vietnix Paopao Test
 on:
   push:
     branches:
-      - fix/merger-code-dev-sepay
+      - fix/merger-code-dev-v1
   workflow_dispatch:
 
 concurrency:
