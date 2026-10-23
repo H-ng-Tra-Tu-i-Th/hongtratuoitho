@@ -15,8 +15,8 @@ if (!defined('PAYMENT_HOLD_SECONDS')) {
     define('PAYMENT_HOLD_SECONDS', 900);
 }
 
-if (!defined('GOONG_API_KEY')) {
-    define('GOONG_API_KEY', '');
+if (!defined('GOOGLE_MAPS_API_KEY')) {
+    define('GOOGLE_MAPS_API_KEY', '');
 }
 
 if (session_status() !== PHP_SESSION_ACTIVE) {

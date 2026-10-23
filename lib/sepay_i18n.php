@@ -451,7 +451,7 @@ function sepay_render_js_i18n(): string
 }
 
 /**
- * Kiểm tra chính sách phí ship theo số km tính từ Goong Maps (≤ 3km: freeship, > 3km: tính theo Grab).
+ * Kiểm tra chính sách phí ship theo số km tính từ Google Maps (≤ 3km: freeship, > 3km: tính theo Grab).
  */
 function sepay_shipping_policy(float $distanceKm): array
 {

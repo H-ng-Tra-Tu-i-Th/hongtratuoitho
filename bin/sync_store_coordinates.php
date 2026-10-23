@@ -2,16 +2,17 @@
 require __DIR__ . '/../lib/bootstrap.php';
 require_once __DIR__ . '/../lib/dispatch.php';
 
-$apiKey = defined('GOONG_API_KEY') ? GOONG_API_KEY : '';
-if (empty($apiKey)) {
-    echo "ERROR: GOONG_API_KEY is not defined in config.\n";
+$googleApiKey = defined('GOOGLE_MAPS_API_KEY') ? trim((string)GOOGLE_MAPS_API_KEY) : '';
+
+if (empty($googleApiKey)) {
+    echo "ERROR: GOOGLE_MAPS_API_KEY is not defined in config.\n";
     exit(1);
 }
 
 $pdo = db();
 $stores = $pdo->query('SELECT id, name, address, lat, lng FROM dispatch_stores WHERE enabled=1 ORDER BY id')->fetchAll();
 
-echo "Starting Goong geocoding for " . count($stores) . " stores...\n";
+echo "Starting Google Maps Platform geocoding for " . count($stores) . " stores...\n";
 
 foreach ($stores as $s) {
     $id = (int)$s['id'];
@@ -21,8 +22,8 @@ foreach ($stores as $s) {
     // Clean address for geocoding
     $cleanAddr = preg_replace('/\s+/', ' ', trim($addr));
     
-    // Call Goong geocoding via curl
-    $url = 'https://rsapi.goong.io/geocode?address=' . urlencode($cleanAddr) . '&api_key=' . urlencode($apiKey);
+    // Call Google Maps Platform geocoding API via curl
+    $url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . urlencode($cleanAddr) . '&key=' . urlencode($googleApiKey) . '&language=vi&region=vn';
     
     $ch = curl_init($url);
     curl_setopt_array($ch, [

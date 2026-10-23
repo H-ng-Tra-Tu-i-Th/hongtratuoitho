@@ -516,7 +516,7 @@ front_header(t('order_info'));
             <input type="text" placeholder="<?= e(sepay_t('gps_search_store_placeholder')) ?>" data-store-search>
           </div>
           <div class="store-modal-list" data-store-list>
-            <!-- Danh sách chi nhánh cập nhật động theo khoảng cách từ Goong Maps -->
+            <!-- Danh sách chi nhánh cập nhật động theo khoảng cách từ Google Maps -->
           </div>
         </div>
       </div>
@@ -585,7 +585,7 @@ front_header(t('order_info'));
 
 <?= client_render_js_i18n() ?>
 <?= sepay_render_js_i18n() ?>
-<script src="<?= e(base_url('assets/js/goong-location.js?v=' . filemtime(__DIR__ . '/assets/js/goong-location.js'))) ?>" defer></script>
+<script src="<?= e(base_url('assets/js/google-location.js?v=' . (file_exists(__DIR__ . '/assets/js/google-location.js') ? filemtime(__DIR__ . '/assets/js/google-location.js') : time()))) ?>" defer></script>
 
 <style>
   /* Toast Alert 3s nổi thông báo lỗi và tự động cuộn lên xem (Tối ưu cho cả Mobile & Desktop) */

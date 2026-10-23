@@ -1,7 +1,8 @@
-import { GoongMapService } from './GoongMapService';
+import { IMapService } from './IMapService';
 import {
   Coordinates,
   GeolocationError,
+  GoogleTravelMode,
   LocationOrderState,
   Store,
   StoreWithDistance,
@@ -33,18 +34,22 @@ export type ResolveLocationParams =
   | ResolveParamsAddress;
 
 /**
- * Controller/Manager orchestrating user location determination (GPS vs Goong Maps),
+ * Controller/Manager orchestrating user location determination (GPS vs Google Maps),
  * distance matrix computation across stores, nearest store recommendation,
  * and store manual override.
  */
 export class LocationOrderManager {
-  private readonly goongService: GoongMapService;
+  private readonly mapService: IMapService;
   private state: LocationOrderState;
   private listeners: Set<StateListener> = new Set();
-  private vehicle: VehicleType = 'bike';
+  private vehicle: VehicleType | GoogleTravelMode = 'driving';
 
-  constructor(goongService: GoongMapService, initialStores: Store[] = []) {
-    this.goongService = goongService;
+  constructor(
+    mapService: IMapService,
+    initialStores: Store[] = []
+  ) {
+    this.mapService = mapService;
+
     this.state = {
       userLocation: null,
       userAddress: '',
@@ -88,7 +93,7 @@ export class LocationOrderManager {
     }
   }
 
-  public setVehicle(vehicle: VehicleType): void {
+  public setVehicle(vehicle: VehicleType | GoogleTravelMode): void {
     this.vehicle = vehicle;
   }
 
@@ -121,7 +126,7 @@ export class LocationOrderManager {
         source = 'gps';
         address = `Vị trí GPS (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`;
         try {
-          const rev = await this.goongService.reverseGeocode(coords);
+          const rev = await this.mapService.reverseGeocode(coords);
           if (rev?.formattedAddress) {
             address = rev.formattedAddress;
           }
@@ -129,13 +134,16 @@ export class LocationOrderManager {
           console.warn('[LocationOrderManager] Reverse geocode fallback:', revError?.message);
         }
       } else if (params.method === 'place_id') {
-        const detail = await this.goongService.placeDetail(params.placeId);
-        coords = detail.coordinates;
+        const detail =
+          typeof (this.mapService as any).placeDetail === 'function'
+            ? await (this.mapService as any).placeDetail(params.placeId)
+            : await this.mapService.forwardGeocode(params.description || params.placeId);
+        coords = detail.coordinates || { lat: detail.lat, lng: detail.lng };
         address = params.description || detail.formattedAddress;
         source = 'autocomplete';
       } else if (params.method === 'manual_address') {
-        const geocode = await this.goongService.forwardGeocode(params.address);
-        coords = geocode.coordinates;
+        const geocode = await this.mapService.forwardGeocode(params.address);
+        coords = geocode.coordinates || { lat: geocode.lat, lng: geocode.lng };
         address = geocode.formattedAddress || params.address;
         source = 'manual_geocode';
       } else {
@@ -163,7 +171,7 @@ export class LocationOrderManager {
   /**
    * Giai đoạn 2: Tính khoảng cách & Chọn chi nhánh tối ưu
    * Lấy origins = userCoords, destinations = chuỗi tọa độ các chi nhánh.
-   * Gọi Goong Distance Matrix API, sắp xếp tăng dần distance.value (meters).
+   * Gọi Google Distance Matrix API, sắp xếp tăng dần distance.value (meters).
    * Mặc định gán chi nhánh có số km nhỏ nhất làm selectedStore.
    */
   public async calculateNearestStore(
@@ -213,7 +221,7 @@ export class LocationOrderManager {
           lng: s.lng as number,
         }));
 
-        const elements = await this.goongService.distanceMatrix(
+        const elements = await this.mapService.distanceMatrix(
           userCoords,
           destinations,
           this.vehicle
@@ -262,7 +270,8 @@ export class LocationOrderManager {
       return { nearest, sortedStores };
     } catch (error: any) {
       const errorMessage =
-        error?.message || 'Không thể tính toán khoảng cách chi nhánh từ Goong Maps.';
+        error?.message ||
+        `Không thể tính toán khoảng cách chi nhánh từ bản đồ (${this.mapService.providerName}).`;
       this.updateState({
         isMatrixCalculating: false,
         error: errorMessage,

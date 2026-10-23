@@ -1,10 +1,3 @@
-/**
- * HUIYI Tea - Goong Maps Location & Nearest Store Selector
- * Implements:
- * 1. GoongMapService (AutoComplete, Place Detail, Forward Geocode, Distance Matrix)
- * 2. LocationOrderManager (GPS/Manual Coordinates resolution, Nearest Store calculation, Manual selection)
- * 3. UI Controller (Banner, Modal, Debounced Autocomplete, GPS trigger)
- */
 
 (function () {
   "use strict";
@@ -21,7 +14,7 @@
     return text;
   }
 
-  class GoongMapService {
+  class GoogleMapsService {
     constructor(config = {}) {
       this.endpoint = (config.endpoint || "/api/location.php").replace(
         /\/+$/,
@@ -57,12 +50,14 @@
       }
     }
 
-    // 1. Forward Geocoding
     async forwardGeocode(address, signal) {
       const q = (address || "").trim();
       if (!q) throw new Error("Địa chỉ không được để trống.");
       const url = `${this.endpoint}?action=geocode&address=${encodeURIComponent(q)}`;
       const data = await this.fetchWithTimeout(url, signal);
+      if (data.status && data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+        throw new Error(data.error_message || data.message || `Lỗi Google Maps: ${data.status}`);
+      }
       const first = data.results?.[0];
       if (!first || !first.geometry?.location) {
         throw new Error(
@@ -75,36 +70,65 @@
       };
     }
 
-    // 2. Reverse Geocoding: chuyển tọa độ lat, lng thành địa chỉ chi tiết
     async reverseGeocode(lat, lng, signal) {
       const url = `${this.endpoint}?action=reverse_geocode&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`;
       const data = await this.fetchWithTimeout(url, signal);
+      if (data.status && data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+        throw new Error(data.error_message || data.message || `Lỗi Google Maps: ${data.status}`);
+      }
       const first = data.results?.[0];
       if (!first || !first.formatted_address) {
         throw new Error("Không tìm thấy địa chỉ cho tọa độ này.");
       }
+
+      let compound = first.compound || null;
+      if (!compound && Array.isArray(first.address_components)) {
+        compound = { province: "", district: "", commune: "", name: "" };
+        let streetNum = "", route = "";
+        first.address_components.forEach((c) => {
+          const types = c.types || [];
+          if (types.includes("administrative_area_level_1")) {
+            compound.province = c.long_name || "";
+          } else if (types.includes("administrative_area_level_2")) {
+            compound.district = c.long_name || "";
+          } else if (
+            types.includes("sublocality_level_1") ||
+            types.includes("administrative_area_level_3")
+          ) {
+            compound.commune = c.long_name || "";
+          } else if (types.includes("route")) {
+            route = c.long_name || "";
+          } else if (types.includes("street_number")) {
+            streetNum = c.long_name || "";
+          }
+        });
+        compound.name = [streetNum, route].filter(Boolean).join(" ");
+      }
+
       return {
         coordinates: first.geometry?.location || { lat, lng },
         formattedAddress: first.formatted_address,
-        compound: first.compound || null,
+        compound: compound,
         addressComponents: first.address_components || [],
       };
     }
 
-    // 3. Distance Matrix
-    async distanceMatrix(origin, destinations, vehicle = "bike", signal) {
+    async distanceMatrix(origin, destinations, vehicle = "driving", signal) {
       if (!destinations || destinations.length === 0) return [];
       const originStr = `${origin.lat},${origin.lng}`;
       const destsStr = destinations.map((d) => `${d.lat},${d.lng}`).join("|");
       const url = `${this.endpoint}?action=distance_matrix&origins=${encodeURIComponent(originStr)}&destinations=${encodeURIComponent(destsStr)}&vehicle=${encodeURIComponent(vehicle)}`;
       const data = await this.fetchWithTimeout(url, signal);
+      if (data.status && data.status !== "OK") {
+        throw new Error(data.error_message || data.message || `Lỗi Google Distance Matrix: ${data.status}`);
+      }
       return data.rows?.[0]?.elements || [];
     }
   }
 
   class LocationOrderManager {
-    constructor(goongService, initialStores = []) {
-      this.goongService = goongService;
+    constructor(mapService, initialStores = []) {
+      this.mapService = mapService;
       this.state = {
         userLocation: null,
         userAddress: "",
@@ -142,7 +166,6 @@
       this.updateState({ storesWithDistance: stores.map((s) => ({ ...s })) });
     }
 
-    // Giai đoạn 1: Thu thập vị trí người dùng
     async resolveUserCoordinates(params) {
       this.updateState({ isLoading: true, error: null });
       try {
@@ -152,9 +175,9 @@
         if (params.method === "gps") {
           coords = await this.getGPSLocation();
           address = `Tọa độ GPS (${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)})`;
-          if (this.goongService && this.goongService.apiKey) {
+          if (this.mapService && this.mapService.apiKey) {
             try {
-              const rev = await this.goongService.reverseGeocode(
+              const rev = await this.mapService.reverseGeocode(
                 coords.lat,
                 coords.lng,
               );
@@ -169,11 +192,11 @@
             }
           }
         } else if (params.method === "place_id") {
-          const detail = await this.goongService.placeDetail(params.placeId);
+          const detail = await this.mapService.placeDetail(params.placeId);
           coords = detail.coordinates;
           address = params.description || detail.formattedAddress;
         } else if (params.method === "manual_address") {
-          const geo = await this.goongService.forwardGeocode(params.address);
+          const geo = await this.mapService.forwardGeocode(params.address);
           coords = geo.coordinates;
           address = geo.formattedAddress || params.address;
         }
@@ -190,7 +213,6 @@
       }
     }
 
-    // Giai đoạn 2: Tính khoảng cách & Chọn chi nhánh tối ưu
     async calculateNearestStore(userCoords, storesList) {
       let stores = storesList || this.state.storesWithDistance;
       if ((!stores || stores.length === 0) && this.storesPromise) {
@@ -229,10 +251,10 @@
             lat: s.lat,
             lng: s.lng,
           }));
-          const elements = await this.goongService.distanceMatrix(
+          const elements = await this.mapService.distanceMatrix(
             userCoords,
             destinations,
-            "bike",
+            "driving",
           );
 
           validStores.forEach((store, i) => {
@@ -283,7 +305,6 @@
       }
     }
 
-    // Giai đoạn 3: UX/UI & Quyền thay đổi chi nhánh
     selectStore(storeId) {
       const found = this.state.storesWithDistance.find(
         (s) => Number(s.id) === Number(storeId),
@@ -325,15 +346,14 @@
     }
   }
 
-  // --- UI BINDING & CONTROLLER ---
   function initLocationSelector() {
     const wrap = document.querySelector("[data-location-container]");
     if (!wrap) return;
 
     const locationEndpoint =
       wrap.getAttribute("data-location-endpoint") || "/api/location.php";
-    const goong = new GoongMapService({ endpoint: locationEndpoint });
-    const manager = new LocationOrderManager(goong);
+    const mapService = new GoogleMapsService({ endpoint: locationEndpoint });
+    const manager = new LocationOrderManager(mapService);
 
     const bannerEl = wrap.querySelector("[data-location-banner]");
     const bannerStoreTitle = wrap.querySelector("[data-banner-store-name]");
@@ -400,6 +420,27 @@
       }
     }
 
+    function selectFallbackStore() {
+      const store = manager
+        .getState()
+        .storesWithDistance.find((item) => item.is_active !== false);
+      if (!store) return null;
+
+      const fallback = {
+        ...store,
+        matrixStatus: "FALLBACK",
+        distance: undefined,
+        duration: undefined,
+      };
+      manager.updateState({
+        selectedStore: fallback,
+        nearestStore: null,
+        isLoading: false,
+        error: null,
+      });
+      return fallback;
+    }
+
     const modalBackdrop = document.querySelector("[data-store-modal]");
     const modalClose = modalBackdrop
       ? modalBackdrop.querySelector("[data-modal-close]")
@@ -411,7 +452,6 @@
       ? modalBackdrop.querySelector("[data-store-search]")
       : null;
 
-    // Load stores from API
     const storesPromise = fetch(
       wrap.getAttribute("data-stores-endpoint") || "/api/stores.php",
     )
@@ -429,14 +469,11 @@
       });
     manager.storesPromise = storesPromise;
 
-    // Subscribe to state updates to render banner & modal
     manager.subscribe((state) => {
-      // 1. Luôn cập nhật hiddenStoreInput cho backend gửi lên khi submit order
       if (state.selectedStore && hiddenStoreInput) {
         hiddenStoreInput.value = state.selectedStore.id;
       }
 
-      // 2. Luôn cập nhật dòng phí ship ở Bảng tổng tiền (Order Review)
       if (state.isLoading) {
         if (reviewShippingWrap) reviewShippingWrap.style.display = "none";
       } else if (state.selectedStore && state.selectedStore.distance) {
@@ -455,7 +492,6 @@
         if (reviewShippingWrap) reviewShippingWrap.style.display = "none";
       }
 
-      // 3. Nếu không có phần tử banner hiển thị trên trang thì dừng việc cập nhật banner
       if (!bannerEl) return;
       const bannerIcon = bannerEl.querySelector(".location-banner-icon");
 
@@ -493,9 +529,8 @@
           btnChangeStore.textContent = t("gps_change_store", "Đổi chi nhánh");
         }
 
-        // Kích hoạt hiệu ứng reload lại component
         bannerEl.classList.remove("is-updated");
-        void bannerEl.offsetWidth; // Force reflow để chạy lại animation
+        void bannerEl.offsetWidth;
         bannerEl.classList.add("is-updated");
 
         bannerStoreTitle.textContent =
@@ -518,16 +553,13 @@
               )
             : "";
 
-          // Tính số km từ Goong Maps API (distance.value là mét -> chia 1000 để ra km)
           const distanceKm = (state.selectedStore.distance.value || 0) / 1000;
           const isFreeship = distanceKm <= 3.0;
 
-          // In test console log để dễ theo dõi
           console.log(
-            `[Goong Map] Khoảng cách: ${distanceKm.toFixed(2)} km -> ${isFreeship ? "Miễn phí giao hàng (Freeship)" : "Tính phí theo Grab"}`,
+            `[Google Maps] Khoảng cách: ${distanceKm.toFixed(2)} km -> ${isFreeship ? "Miễn phí giao hàng (Freeship)" : "Tính phí theo Grab"}`,
           );
 
-          // Cập nhật nhãn phí ship trên Banner chi nhánh
           if (bannerShippingText) {
             bannerShippingText.style.display = "inline-flex";
             bannerShippingText.className =
@@ -538,7 +570,6 @@
               : `🛵 ${t("shipping_fee_grab", "Tính phí theo giá Grab (> 3km)")}`;
           }
 
-          // Cập nhật dòng phí giao hàng trong Bảng tổng tiền đơn hàng (Order Review)
           if (reviewShippingWrap && reviewShippingText) {
             reviewShippingWrap.style.display = "flex";
             reviewShippingText.className = isFreeship
@@ -557,7 +588,6 @@
           if (reviewShippingWrap) reviewShippingWrap.style.display = "none";
         }
 
-        // Hiển thị lý do vì sao chọn chi nhánh này
         const isNearest =
           state.nearestStore &&
           Number(state.nearestStore.id) === Number(state.selectedStore.id);
@@ -571,6 +601,14 @@
               { distance: state.selectedStore.distance.text },
             );
             bannerReasonText.innerHTML = `📍 <strong>${reasonTitle}</strong> ${reasonDesc}`;
+          } else if (state.selectedStore.matrixStatus === "FALLBACK") {
+            bannerReasonText.innerHTML = `⚠️ <strong>${t(
+              "gps_fallback_title",
+              "Chi nhánh mặc định:",
+            )}</strong> ${t(
+              "gps_fallback_desc",
+              "Không thể tính khoảng cách lúc này. Bạn vẫn có thể đặt hàng.",
+            )}`;
           } else if (!isNearest) {
             const manualTitle = t(
               "gps_manual_choice",
@@ -611,218 +649,6 @@
       renderStoreModalList(state.storesWithDistance, state.selectedStore);
     });
 
-    // DISABLED: dùng JSON cục bộ (nút GPS gọi Geolocation + Goong Reverse Geocode)
-    /*
-    if (btnGps) {
-      btnGps.addEventListener('click', async (e) => {
-        e.preventDefault();
-        const textSpan = btnGps.querySelector('.btn-gps-text');
-        btnGps.classList.add('is-detecting');
-        if (textSpan) {
-          textSpan.textContent = t('gps_locating', 'Đang định vị...');
-        }
-
-        // Lập tức reload lại component sang trạng thái loading
-        manager.updateState({ isLoading: true, selectedStore: null });
-
-        try {
-          const coords = await manager.resolveUserCoordinates({ method: 'gps' });
-          const resolvedAddr = manager.getState().userAddress || '';
-          if (addressInput) {
-            addressInput.value = resolvedAddr;
-          }
-          if (resolvedAddr) {
-            setAddressVerified(resolvedAddr);
-          }
-          if (apiKey) {
-            await manager.calculateNearestStore(coords);
-          }
-        } catch (err) {
-          manager.updateState({ isLoading: false });
-          alert(err.message || 'Không thể lấy vị trí GPS.');
-        } finally {
-          btnGps.classList.remove('is-detecting');
-          if (textSpan) {
-            textSpan.textContent = t('gps_use_current', 'Dùng vị trí hiện tại');
-          }
-        }
-      });
-    }
-
-    // AutoComplete Debounced Search gọi Goong Maps API
-    if (addressInput && autocompleteDropdown && apiKey) {
-      let activeController = null;
-
-      const debouncedSearch = LocationOrderManager.debounce(async (val) => {
-        if (activeController) activeController.abort();
-        activeController = new AbortController();
-
-        try {
-          const predictions = await goong.placeAutoComplete(val, activeController.signal);
-          renderPredictions(predictions);
-        } catch (err) {
-          if (err.name !== 'AbortError') console.warn(err);
-        }
-      }, 400);
-
-      addressInput.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        if (val !== verifiedAddressText) {
-          setAddressUnverified(t('gps_address_changed_warning', 'Bạn vừa thay đổi địa chỉ. Bắt buộc phải bấm chọn một gợi ý trong danh sách bên dưới hoặc bấm nút "Dùng vị trí hiện tại".'));
-          manager.updateState({
-            isLoading: true,
-            selectedStore: null,
-            userAddress: val
-          });
-        }
-        if (val.length < 3) {
-          autocompleteDropdown.classList.remove('is-open');
-          autocompleteDropdown.innerHTML = '';
-          return;
-        }
-        debouncedSearch(val);
-      });
-
-      addressInput.addEventListener('blur', () => {
-        setTimeout(() => {
-          if (!isAddressVerified && addressInput.value.trim().length > 0) {
-            addressInput.classList.add('has-location-error');
-            setAddressUnverified(t('gps_select_hint', 'Vui lòng bấm chọn một địa chỉ cụ thể từ danh sách gợi ý hoặc bấm nút "Dùng vị trí hiện tại" để xác định chi nhánh.'));
-          }
-        }, 220);
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!autocompleteDropdown.contains(e.target) && e.target !== addressInput) {
-          autocompleteDropdown.classList.remove('is-open');
-        }
-      });
-
-      function renderPredictions(predictions) {
-        if (!predictions || predictions.length === 0) {
-          autocompleteDropdown.classList.remove('is-open');
-          autocompleteDropdown.innerHTML = '';
-          return;
-        }
-
-        autocompleteDropdown.innerHTML = predictions
-          .map(
-            (p) => `
-            <div class="autocomplete-item" data-place-id="${p.place_id}" data-desc="${p.description}">
-              <span class="autocomplete-item-icon">📍</span>
-              <span>${p.description}</span>
-            </div>
-          `
-          )
-          .join('');
-
-        autocompleteDropdown.classList.add('is-open');
-
-        autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach((item) => {
-          item.addEventListener('click', async () => {
-            const placeId = item.getAttribute('data-place-id');
-            const desc = item.getAttribute('data-desc');
-            addressInput.value = desc;
-            setAddressVerified(desc);
-            autocompleteDropdown.classList.remove('is-open');
-
-            manager.updateState({ isLoading: true, selectedStore: null });
-
-            try {
-              const coords = await manager.resolveUserCoordinates({
-                method: 'place_id',
-                placeId,
-                description: desc,
-              });
-              await manager.calculateNearestStore(coords);
-            } catch (err) {
-              manager.updateState({ isLoading: false });
-              console.error(err);
-            }
-          });
-        });
-      }
-    }
-
-    async function handleAddressLookup(text) {
-      if (!apiKey || !text || text.length < 4) return false;
-      try {
-        const coords = await manager.resolveUserCoordinates({
-          method: 'manual_address',
-          address: text,
-        });
-        await manager.calculateNearestStore(coords);
-        return true;
-      } catch (e) {
-        console.warn('[Location] Geocoding lookup warning:', e.message);
-        return false;
-      }
-    }
-
-    if (checkoutForm && apiKey) {
-      checkoutForm.addEventListener('submit', (e) => {
-        if (!isAddressVerified) {
-          e.preventDefault();
-          e.stopPropagation();
-
-          if (addressInput) {
-            addressInput.classList.add('has-location-error');
-            addressInput.focus();
-
-            const currentVal = addressInput.value.trim();
-            if (currentVal.length >= 3 && autocompleteDropdown) {
-              goong.placeAutoComplete(currentVal).then((preds) => {
-                if (preds && preds.length > 0) {
-                  autocompleteDropdown.innerHTML = preds
-                    .map(
-                      (p) => `
-                      <div class="autocomplete-item" data-place-id="${p.place_id}" data-desc="${p.description}">
-                        <span class="autocomplete-item-icon">📍</span>
-                        <span>${p.description}</span>
-                      </div>
-                    `
-                    )
-                    .join('');
-                  autocompleteDropdown.classList.add('is-open');
-
-                  autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach((item) => {
-                    item.addEventListener('click', async () => {
-                      const placeId = item.getAttribute('data-place-id');
-                      const desc = item.getAttribute('data-desc');
-                      addressInput.value = desc;
-                      setAddressVerified(desc);
-                      autocompleteDropdown.classList.remove('is-open');
-
-                      try {
-                        const coords = await manager.resolveUserCoordinates({
-                          method: 'place_id',
-                          placeId,
-                          description: desc,
-                        });
-                        await manager.calculateNearestStore(coords);
-                      } catch (err) {
-                        console.error(err);
-                      }
-                    });
-                  });
-                }
-              }).catch(() => {});
-            }
-          }
-
-          setAddressUnverified(t('gps_submit_required_warning', 'Bắt buộc phải bấm chọn một địa chỉ cụ thể từ danh sách gợi ý bên dưới hoặc bấm nút "Dùng vị trí hiện tại" để hệ thống tính chi nhánh phục vụ gần nhất!'));
-          if (addressWarning) {
-            addressWarning.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-          return false;
-        }
-      }, true);
-    }
-    */
-
-    // ========================================================
-    // TÌM KIẾM ĐỊA CHỈ 2 CẤP CỤC BỘ TỪ FILE JSON (Shopee Style)
-    // ========================================================
     function normalizeVietnamese(str) {
       if (!str) return "";
       return str
@@ -1047,7 +873,6 @@
         syncFullDeliveryAddress();
       }
 
-      // 1. Tải JSON một lần và cache ở client
       fetch(jsonUrl)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1062,7 +887,6 @@
               "tỉnh thành.",
             );
 
-            // Nếu người dùng đang focus ô Tỉnh/Thành thì mở ngay dropdown
             if (document.activeElement === provinceInput && provinceDropdown) {
               const q = normalizeVietnamese(provinceInput.value.trim());
               const items = q
@@ -1079,7 +903,6 @@
               provinceDropdown.classList.add("is-open");
             }
 
-            // Khôi phục giá trị đã chọn nếu có dữ liệu cũ từ draft/session
             const savedProvCode = provinceCodeHidden
               ? provinceCodeHidden.value
               : "";
@@ -1132,7 +955,6 @@
 
       let activeBranchSearchPromise = null;
 
-      // Tìm chi nhánh gần nhất có áp dụng Client Cache & Fallback thông minh
       async function findNearestBranchForAddress(customAddress) {
         if (activeBranchSearchPromise) {
           return await activeBranchSearchPromise;
@@ -1185,7 +1007,6 @@
           manager.updateState({ isLoading: true, selectedStore: null });
 
           try {
-            // KỸ THUẬT 1: KIỂM TRA CACHE TRONG SESSIONSTORAGE (0 API call nếu đã tìm địa chỉ này)
             const cacheKey = "hds_geo_" + encodeURIComponent(fullStr);
             let coords = null;
             try {
@@ -1193,32 +1014,28 @@
               if (cached) {
                 coords = JSON.parse(cached);
                 console.log(
-                  "[Goong Map] Sử dụng tọa độ từ Cache (0 API request):",
+                  "[Google Maps] Sử dụng tọa độ từ Cache (0 API request):",
                   coords,
                 );
               }
             } catch (e) {}
 
-            // Nếu chưa có trong cache thì mới gọi Geocode qua proxy
-            if (!coords && goong && goong.endpoint) {
+            if (!coords && mapService && mapService.endpoint) {
               try {
-                // Thử Geocode địa chỉ cụ thể đầy đủ
-                const geo = await goong.forwardGeocode(fullStr);
+                const geo = await mapService.forwardGeocode(fullStr);
                 coords = geo.coordinates;
               } catch (err1) {
                 console.warn(
                   "[Geocode] Không tìm thấy số nhà cụ thể, thử tìm theo Phường/Xã:",
                   err1.message,
                 );
-                // Fallback: Geocode theo Phường/Xã + Tỉnh/Thành
                 if (wardName && provName) {
                   const fallbackQuery = `${wardName}, ${provName}`;
-                  const geoFallback = await goong.forwardGeocode(fallbackQuery);
+                  const geoFallback = await mapService.forwardGeocode(fallbackQuery);
                   coords = geoFallback.coordinates;
                 }
               }
 
-              // Lưu tọa độ vào cache để lần sau không tốn request
               if (coords) {
                 try {
                   sessionStorage.setItem(cacheKey, JSON.stringify(coords));
@@ -1227,7 +1044,15 @@
             }
 
             if (coords) {
-              await manager.calculateNearestStore(coords);
+              const result = await manager.calculateNearestStore(coords);
+              if (!result.nearest && !selectFallbackStore()) {
+                throw new Error(
+                  t(
+                    "addr_err_no_store_route",
+                    "Không thể xác định chi nhánh phục vụ cho địa chỉ này.",
+                  ),
+                );
+              }
               lastCalculatedAddress = fullStr;
               setAddressVerified(fullStr);
               if (btnFindStore) {
@@ -1239,18 +1064,15 @@
                   );
               }
               return true;
+            } else if (selectFallbackStore()) {
+              lastCalculatedAddress = fullStr;
+              setAddressVerified(fullStr);
+              return true;
             } else {
-              // Không có Goong Key hoặc không tìm thấy tọa độ -> Chọn chi nhánh đầu tiên mặc định
-              const stores = manager.getState().storesWithDistance;
-              if (stores && stores.length > 0) {
-                manager.selectStore(stores[0].id);
-                setAddressVerified(fullStr);
-                return true;
-              }
               throw new Error(
                 t(
-                  "addr_err_saved_unreachable",
-                  "Không thể xác định chi nhánh phục vụ cho địa chỉ này.",
+                  "addr_err_geocode",
+                  "Không thể xác định tọa độ cho địa chỉ này.",
                 ),
               );
             }
@@ -1267,15 +1089,18 @@
               setAddressMode("new", { autoConfirm: false });
               parseAddressIntoCascade(savedAddress);
             } else {
-              const stores = manager.getState().storesWithDistance;
-              if (
-                stores &&
-                stores.length > 0 &&
-                !manager.getState().selectedStore
-              ) {
-                manager.selectStore(stores[0].id);
+              if (selectFallbackStore()) {
+                lastCalculatedAddress = fullStr;
+                setAddressVerified(fullStr);
+                return true;
               }
-              setAddressVerified(fullStr);
+              setAddressUnverified(
+                err.message ||
+                  t(
+                    "addr_err_no_store_route",
+                    "Không thể xác định chi nhánh phục vụ cho địa chỉ này.",
+                  ),
+              );
             }
           } finally {
             if (btnFindStore) {
@@ -1336,9 +1161,6 @@
         });
       }
 
-      // ========================================================
-      // TÍNH NĂNG GPS: LẤY VỊ TRÍ HIỆN TẠI & TỰ ĐỘNG KHỚP TỈNH / PHƯỜNG
-      // ========================================================
       const btnGps =
         cascadeWrap.querySelector("[data-btn-gps]") ||
         document.querySelector("[data-btn-gps]");
@@ -1351,19 +1173,16 @@
             textSpan.textContent = t("gps_locating", "Đang định vị...");
           }
 
-          // Kích hoạt trạng thái loading trên Store Banner
           manager.updateState({ isLoading: true, selectedStore: null });
 
           try {
-            // 1. Lấy tọa độ từ thiết bị qua Geolocation API
             const coords = await manager.getGPSLocation();
 
-            // 2. Tra cứu địa chỉ chi tiết qua Goong Reverse Geocoding qua proxy
             let resolvedAddr = "";
             let compound = null;
-            if (goong && goong.endpoint) {
+            if (mapService && mapService.endpoint) {
               try {
-                const rev = await goong.reverseGeocode(coords.lat, coords.lng);
+                const rev = await mapService.reverseGeocode(coords.lat, coords.lng);
                 resolvedAddr = rev.formattedAddress || "";
                 compound = rev.compound || null;
               } catch (revErr) {
@@ -1371,7 +1190,6 @@
               }
             }
 
-            // 3. Tự động nhận diện và gán Tỉnh / Phường vào dropdown cascade
             if (provincesData && Array.isArray(provincesData)) {
               let matchedProv = null;
               if (compound && compound.province) {
@@ -1464,7 +1282,6 @@
               }
             }
 
-            // Gán số nhà/đường
             if (streetInput) {
               let streetVal = "";
               if (compound && compound.name) {
@@ -1479,10 +1296,16 @@
               }
             }
 
-            // 4. Tính chi nhánh gần nhất và phí giao hàng dựa trên tọa độ GPS thực tế
-            await manager.calculateNearestStore(coords);
+            const result = await manager.calculateNearestStore(coords);
+            if (!result.nearest && !selectFallbackStore()) {
+              throw new Error(
+                t(
+                  "addr_err_no_store_route",
+                  "Không thể xác định chi nhánh phục vụ cho vị trí này.",
+                ),
+              );
+            }
 
-            // 5. Đồng bộ địa chỉ và đánh dấu đã xác thực
             syncFullDeliveryAddress();
             const fullStr = fullAddressField
               ? fullAddressField.value.trim()
@@ -1528,7 +1351,6 @@
         });
       }
 
-      // Đồng bộ vào trường address đầy đủ để server lưu vào bảng đơn hàng
       function syncFullDeliveryAddress() {
         const provName = provinceNameHidden
           ? provinceNameHidden.value.trim()
@@ -1564,8 +1386,13 @@
         }
 
         if (provName && wardName && street) {
-          if (manager.getState().selectedStore) {
+          if (
+            manager.getState().selectedStore &&
+            fullStr === lastCalculatedAddress
+          ) {
             setAddressVerified(fullStr);
+          } else {
+            setAddressUnverified();
           }
         } else {
           setAddressUnverified();
@@ -1581,7 +1408,6 @@
         });
       }
 
-      // Helper thiết lập tìm kiếm gợi ý có keyboard navigation (mũi tên, Enter, Esc)
       function setupAutocompleteSearch({
         inputEl,
         dropdownEl,
@@ -1648,7 +1474,6 @@
           }
         }
 
-        // Debounce 120ms khi gõ
         const debouncedFilter = LocationOrderManager.debounce((val) => {
           const items = getItemsFn(val);
           renderDropdown(items);
@@ -1671,7 +1496,6 @@
           }
         });
 
-        // Điều hướng bằng phím mũi tên, Enter, Escape
         inputEl.addEventListener("keydown", (e) => {
           if (!dropdownEl.classList.contains("is-open")) return;
 
@@ -1695,14 +1519,12 @@
           }
         });
 
-        // Blur: chỉ chấp nhận giá trị CHỌN từ danh sách
         inputEl.addEventListener("blur", () => {
           setTimeout(() => {
             closeDropdown();
           }, 200);
         });
 
-        // Click ra ngoài đóng dropdown
         document.addEventListener("click", (e) => {
           if (!dropdownEl.contains(e.target) && e.target !== inputEl) {
             closeDropdown();
@@ -1712,7 +1534,6 @@
         return { closeDropdown };
       }
 
-      // --- CẤU HÌNH BƯỚC 1: TỈNH / THÀNH PHỐ ---
       if (provinceInput && provinceDropdown) {
         setupAutocompleteSearch({
           inputEl: provinceInput,
@@ -1740,7 +1561,6 @@
             if (provinceCodeHidden) provinceCodeHidden.value = prov.code;
             if (provinceNameHidden) provinceNameHidden.value = prov.name;
 
-            // Đổi tỉnh thì tự xoá xã/phường đã chọn trước đó
             if (isChanged && wardInput) {
               selectedWardObj = null;
               wardInput.value = "";
@@ -1750,7 +1570,6 @@
               if (wardNameHidden) wardNameHidden.value = "";
             }
 
-            // Mở khoá ô Xã/Phường và tự động focus
             if (wardInput) {
               wardInput.disabled = false;
               wardInput.placeholder = t(
@@ -1764,7 +1583,6 @@
           },
         });
 
-        // Blur validation cho Tỉnh / Thành phố
         provinceInput.addEventListener("blur", () => {
           setTimeout(() => {
             const confirmedName = provinceNameHidden
@@ -1792,7 +1610,6 @@
         });
       }
 
-      // --- CẤU HÌNH BƯỚC 2: PHƯỜNG / XÃ ---
       if (wardInput && wardDropdown) {
         setupAutocompleteSearch({
           inputEl: wardInput,
@@ -1821,7 +1638,6 @@
             if (wardCodeHidden) wardCodeHidden.value = ward.code;
             if (wardNameHidden) wardNameHidden.value = ward.name;
 
-            // Focus tiếp sang ô Số nhà / Đường
             if (streetInput) {
               streetInput.focus();
             }
@@ -1830,7 +1646,6 @@
           },
         });
 
-        // Blur validation cho Phường / XÃ
         wardInput.addEventListener("blur", () => {
           setTimeout(() => {
             const confirmedName = wardNameHidden
@@ -1869,7 +1684,6 @@
         }
       }
 
-      // --- BẢO VỆ KHI SUBMIT FORM: KHÔNG CHO SUBMIT NẾU CHƯA ĐỦ ĐỊA CHỈ HỢP LỆ ---
       if (checkoutForm) {
         checkoutForm.addEventListener(
           "submit",
@@ -1989,7 +1803,6 @@
 
             syncFullDeliveryAddress();
 
-            // Nếu chưa xác định chi nhánh phục vụ:
             if (
               !manager.getState().selectedStore ||
               activeBranchSearchPromise
@@ -2023,7 +1836,6 @@
       }
     }
 
-    // Modal Opening & Closing
     if (btnChangeStore && modalBackdrop) {
       btnChangeStore.addEventListener("click", (e) => {
         e.preventDefault();
@@ -2042,7 +1854,6 @@
       });
     }
 
-    // Modal store search filter
     if (storeSearchInput && storeListContainer) {
       storeSearchInput.addEventListener("input", (e) => {
         const term = e.target.value.toLowerCase().trim();
@@ -2054,7 +1865,6 @@
       });
     }
 
-    // Render Store Items inside Modal
     function renderStoreModalList(stores, selectedStore) {
       if (!storeListContainer) return;
       if (!stores || stores.length === 0) {
@@ -2101,14 +1911,13 @@
     }
   }
 
-  // Auto-init on DOMContentLoaded
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initLocationSelector);
   } else {
     initLocationSelector();
   }
 
-  // Expose to window for testing / modular access
-  window.GoongMapService = GoongMapService;
+  window.GoogleMapsService = GoogleMapsService;
+  window.MapService = GoogleMapsService;
   window.LocationOrderManager = LocationOrderManager;
 })();

@@ -323,7 +323,7 @@
     // ---------- GPS thật ----------
     const reverseGeo = async (lat, lng) => {
       try {
-        // Ưu tiên Goong qua backend
+        // Ưu tiên Google Maps qua backend
         const r = await fetch(
           `${locEndpoint}?action=reverse_geocode&lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
         );
@@ -344,7 +344,7 @@
         /* dùng nguồn dự phòng */
       }
 
-      // Dự phòng: OpenStreetMap (nên dùng Goong khi chạy thật)
+      // Dự phòng: OpenStreetMap (nên dùng Google Maps khi chạy thật)
       const r = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=vi&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`,
       );

@@ -1,3 +1,4 @@
 export * from './types';
-export * from './GoongMapService';
+export * from './IMapService';
+export * from './GoogleMapsAdapter';
 export * from './LocationOrderManager';
