@@ -194,7 +194,7 @@ function build_order_notification_email(array $order,array $items): array {
     $note=trim((string)($order['order_note']??''));
     $site=defined('APP_BASE_URL')?APP_BASE_URL:'';
     $store=store_name();
-    $created=trim((string)($order['created_at']??''));
+    $created=!empty($order['created_at'])?format_datetime($order['created_at']):'';
 
     $summaryFields='';
     if($coupon!=='') $summaryFields.=$field('Coupon / 優惠券',$coupon);
