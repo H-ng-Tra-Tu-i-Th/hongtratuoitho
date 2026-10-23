@@ -74,7 +74,7 @@ front_header(hgr_text('title'));
   <?php require __DIR__ . '/share_facebook.php'; ?>
   <details class="kyuc-prize-details" data-game-prize-details <?= $state['prizes'] ? '' : 'hidden' ?>>
     <summary><?= e($prizeHeading) ?></summary>
-    <ul data-game-prizes><?php foreach ($state['prizes'] as $prize): ?><li><strong><?= e(hgr_label($prize)) ?></strong><span><?= e(hgr_label($prize, 'terms') . ' ' . sprintf($prizeDays, (int)$prize['valid_days'])) ?></span></li><?php endforeach; ?></ul>
+    <ul data-game-prizes><?php foreach ($state['prizes'] as $prize): if (hgr_reward_is_zero($prize)) continue; ?><li><strong><?= e(hgr_label($prize)) ?></strong><span><?= e(hgr_label($prize, 'terms') . ' ' . sprintf($prizeDays, (int)$prize['valid_days'])) ?></span></li><?php endforeach; ?></ul>
   </details>
 </div>
 <?php front_footer(); ?>

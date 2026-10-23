@@ -15,6 +15,9 @@ try {
   if ($id !== '') {
     $r = hyg_room($id);
     hyg_member($r);
+    // The host with an unsent Mini Game checkout for this room always goes back to that checkout page.
+    $pendingGame = hcgs_locked();
+    if ($pendingGame && hash_equals(hcgs_group_of($pendingGame), (string)$r['public_id'])) redirect(hcgs_checkout_url($pendingGame));
   } elseif ($invite !== '') {
     if (!preg_match('/^[a-f0-9]{64}$/D', $invite)) hyg_fail('not_found');
     $invited = hyg_one("SELECT * FROM group_rooms WHERE invite_token=?", [$invite]);

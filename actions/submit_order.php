@@ -53,7 +53,7 @@ if($retry=hcq_outcome($checkoutToken,$checkoutContext)){
 }
 if($checkoutRequest&&!hash_equals($checkoutRequest['signature'],$requestSignature))hcq_fail($checkoutContext,$groupId,htp('changed'));
 // Resolve (or expire) the checkout Mini Game session before the order transaction opens.
-$gameSessionId=hcgs_current_for($groupId)?hcgs_session_id():'';
+$gameSessionId=hcgs_prize_row($groupId)?hcgs_session_id():'';
 $no=order_no();hcq_saved($checkoutToken,$no,'unknown');
 // Persist the reservation before SQL. A process crash must leave an unknown result, never an open retry.
 if(session_status()!==PHP_SESSION_ACTIVE||!session_write_close())hcq_fail($checkoutContext,$groupId,htp_ux('unknown'));

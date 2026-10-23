@@ -47,6 +47,10 @@
 .hym-order-status{flex-shrink:0;max-width:45%;padding:6px 8px;border-radius:8px;background:#eef2f6;color:#344054;font-size:14px;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
 .hym-record-amount{padding-top:13px;border-top:1px solid var(--line)}
 .hym-facts .hym-record-amount dd{font-size:22px;font-variant-numeric:tabular-nums;line-height:1.4;text-align:right}
+.hym-order-type{font-size:15px;font-weight:600;color:var(--muted);white-space:nowrap}
+.hym-order-detail{margin:12px 0}
+.hym-order-detail>summary{cursor:pointer;font-weight:700;color:var(--primary,#111827)}
+.hym-order-detail .order-detail{margin:8px 0 0}
 .hym-items-title{font-size:16px;margin:18px 0 10px}
 .hym-purchased-items{list-style:none;padding:0;margin:0}
 .hym-purchased-items li{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line)}

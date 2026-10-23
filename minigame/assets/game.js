@@ -153,12 +153,14 @@
       gifts.forEach(prize => label(prize, line('kyuc-odds-gift')));
       odds.hidden = !money.length && !gifts.length;
     }
+    // 0đ prizes win nothing, so the prize list hides them.
+    const listed = prizes.filter(prize => !(prize.kind === 'discount' && !(Number(prize.amount) > 0)));
     const details = root.querySelector('[data-game-prize-details]');
-    if (details) details.hidden = prizes.length === 0;
+    if (details) details.hidden = listed.length === 0;
     const list = root.querySelector('[data-game-prizes]');
     if (list) {
       list.replaceChildren();
-      prizes.forEach(prize => {
+      listed.forEach(prize => {
         const li = document.createElement('li'), title = document.createElement('strong'), terms = document.createElement('span');
         title.textContent = name(prize);
         terms.textContent = (prize.terms?.[language] || prize.terms?.vi || '') + ' ' + ({ zh: `有效 ${prize.valid_days} 天`, vi: `Có hiệu lực ${prize.valid_days} ngày`, en: `Valid for ${prize.valid_days} days` }[language]);
@@ -237,8 +239,12 @@
     const name = root.querySelector('[data-game-reward-name]');
     const terms = root.querySelector('[data-game-reward-terms]');
     const expiry = root.querySelector('[data-game-reward-expiry]');
-    if (name) name.textContent = reward.name?.[language] || reward.name?.vi || '';
-    if (terms) terms.textContent = inCheckout ? appliedNow : reward.terms?.[language] || reward.terms?.vi || '';
+    // A 0đ prize wins nothing: show a better-luck message instead of "Giảm 0đ".
+    const zero = reward.kind === 'discount' && !(Number(reward.amount) > 0);
+    if (name) name.textContent = zero
+      ? { vi: 'Chúc bạn may mắn lần sau! Hãy chia sẻ để nhận thêm lượt chơi', zh: '祝你下次好運！分享即可獲得再玩一次的機會', en: 'Better luck next time! Share to get another play' }[language]
+      : reward.name?.[language] || reward.name?.vi || '';
+    if (terms) { terms.textContent = zero ? '' : inCheckout ? appliedNow : reward.terms?.[language] || reward.terms?.vi || ''; terms.hidden = zero; }
     if (expiry) {
       const date = new Date(reward.expires_at || '');
       expiry.hidden = inCheckout || Number.isNaN(date.getTime());
@@ -292,6 +298,7 @@
     const checkout = document.querySelector('[data-checkout-form]');
     const session = response.checkout_session;
     if (checkout && session) checkout.dataset.gameRemaining = String(Math.max(0, (Number(session.granted) || 0) - (Number(session.played) || 0)));
+    if (session && typeof window.hcgsSetClock === 'function') window.hcgsSetClock(session.remaining);
     if (response.event === 'awarded') root.dataset.awarded = '1';
     const oldMatched = board?.matched || [];
     board = response.board || null;

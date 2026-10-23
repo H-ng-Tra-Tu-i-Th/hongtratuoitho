@@ -30,19 +30,32 @@ try {
     <h1><?= e(t('cart')) ?></h1>
   </div>
 </div>
+<?php if (!htp_customer_has_unpaid()): ?>
 <section class="hyg-entry">
   <div><strong><?= e(gt('share_cart')) ?></strong>
     <p><?= e(gt('copy_hint')) ?></p>
   </div><a class="btn primary" href="<?= e(hym_login_gate_url('group')) ?>"><?= e(gt('create')) ?></a>
 </section>
+<?php endif; ?>
 <?php if ($myRooms): ?>
   <section class="hyg-card">
     <h2><?= e(gt('my_groups')) ?></h2>
     <div class="hyg-room-list">
+      <script>
+        console.log(<?= json_encode($myRooms, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>);
+      </script>
       <?php foreach ($myRooms as $room):
         $s = $room['status'];
         if (in_array($s, ['open', 'locked'], true) && strtotime($room['expires_at'] . ' UTC') <= time()) $s = 'expired'; ?>
-        <a href="<?= e(hyg_room_url($room['public_id'])) ?>"><strong><?= e($room['title']) ?></strong><span class="hyg-status"><?= e(gt($s)) ?></span></a>
+
+        <!-- Chỉ hiện thị những đơn hàng đang chọn món và chờ gửi đơn -->
+        <?php if (in_array($s, ['open', 'locked'], true)): ?>
+          <a href="<?= e(hyg_room_url($room['public_id'])) ?>">
+            <strong><?= e($room['title']) ?>
+            </strong>
+            <span class="hyg-status"><?= e(gt($s)) ?></span>
+          </a>
+        <?php endif; ?>
       <?php endforeach; ?>
     </div>
   </section>

@@ -8,7 +8,7 @@ function front_header(string $title = ''): void
     $frontMember = function_exists('hym_current_member') ? hym_current_member() : null;
     $memberName = trim((string)($frontMember['display_name'] ?? ''));
     $memberLabel = $memberName !== '' ? mt('member_entry_named', ['name' => $memberName]) : mt('member_entry');
-    $assetVersion = '19.15.0';
+    $assetVersion = '19.15.2';
     $gameBalance = minigame_enabled() ? game_wallet_balance() : 0;
     $groupContext = $GLOBALS['hyg_context'] ?? null;
     // Group checkout sets only hyg_header_room, so the header cart shows the group cart without full group mode.
@@ -259,7 +259,7 @@ function front_header(string $title = ''): void
         <link rel="icon" type="image/png" href="<?= e(base_url('assets/icons/favicon.png?v=19')) ?>">
         <link rel="apple-touch-icon" href="<?= e(base_url('assets/icons/apple-touch-icon.png?v=19')) ?>">
         <link rel="manifest" href="<?= e(base_url('admin/manifest.webmanifest?v=19.1')) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/app.css?v=19.15.0')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/app.css?v=19.15.2')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.3')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/dispatch.css?v=19.8.0')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/admin-shell.css?v=19.14.3')) ?>">
@@ -285,7 +285,7 @@ function front_header(string $title = ''): void
                             function admin_footer(): void
                             { ?>
         </main>
-        <script src="<?= e(base_url('assets/js/app.js?v=19.15.0')) ?>"></script>
+        <script src="<?= e(base_url('assets/js/app.js?v=19.15.1')) ?>"></script>
         <script src="<?= e(base_url('assets/js/admin-shell.js?v=19.14.5')) ?>"></script>
         <script src="<?= e(base_url('assets/js/admin-tables.js?v=19.14.5')) ?>" defer></script><?php hqp_ui_config('admin'); ?>
     </body>
