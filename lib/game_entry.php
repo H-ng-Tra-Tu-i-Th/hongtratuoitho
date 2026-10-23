@@ -67,10 +67,12 @@ function hge_order_state(?array $order): array {
 function hge_render(array $state,string $pollUrl=''): string {
     if($state['state']==='none')return '';
     ob_start(); ?>
+<?php /* TẠM TẮT khối "Cập nhật lượt chơi"
     <section class="promotion-summary" data-game-entry data-game-state="<?=e($state['state'])?>" data-game-url="<?=e($state['url'])?>" data-game-poll="<?=e($state['poll']?$pollUrl:'')?>" data-game-offline="<?=e(hge_text('offline'))?>">
       <p data-game-entry-message role="status" aria-live="polite"><?=e($state['message'])?></p>
       <a class="btn primary" data-game-entry-link href="<?=e($state['url'])?>" <?=$state['state']==='ready'?'':'hidden'?>><?=e(hge_text('play'))?></a>
       <?php if($state['poll']&&$pollUrl!==''):?><button class="btn" type="button" data-game-entry-refresh><?=e(hge_text('refresh'))?></button><?php endif;?>
     </section>
+*/ ?>
     <?php return ob_get_clean();
 }

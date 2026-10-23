@@ -70,8 +70,24 @@ unset($_SESSION['hyg_message']);
         class="hyg-text-btn" data-group-refresh><?= e(gt('refresh')) ?></button></div>
     <?= hyg_render_room($r) ?>
     <script id="hyg-config" type="application/json">
-        <?= json_encode(['snapshot' => base_url('group/state.php?id=' . $r['public_id']), 'copy' => gt('copied'), 'manual' => gt('manual_copy'), 'offline' => gt('offline'), 'changed' => gt('changed_notice'), 'sync' => gt('sync'), 'serverTime' => time(), 'qrError' => gt('qr_error'), 'roomExpired' => gt('room_expired')], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>
-      </script>
+      <?= json_encode(['snapshot' => base_url('group/state.php?id=' . $r['public_id']), 'copy' => gt('copied'), 'manual' => gt('manual_copy'), 'offline' => gt('offline'), 'changed' => gt('changed_notice'), 'sync' => gt('sync'), 'serverTime' => time(), 'qrError' => gt('qr_error'), 'roomExpired' => gt('room_expired')], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>
+    </script>
+    <script>
+      // Browser Back from the group checkout lands here; send the customer to the home page instead.
+      (function() {
+        const home = <?= json_encode(base_url(''), JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+        // Only a checkout left in the last minute counts, so an old mark cannot redirect later visits.
+        const leftCheckout = () => {
+          let at = 0;
+          try { at = Number(sessionStorage.getItem('hygLeftCheckout')) || 0; sessionStorage.removeItem('hygLeftCheckout'); } catch (_) {}
+          return at > 0 && Date.now() - at < 60000;
+        };
+        const nav = performance.getEntriesByType('navigation')[0];
+        if (leftCheckout() && nav && nav.type === 'back_forward') location.replace(home);
+        // Restored from the back/forward cache: the code above does not run again.
+        window.addEventListener('pageshow', event => { if (event.persisted && leftCheckout()) location.replace(home); });
+      })();
+    </script>
   <?php elseif ($invited): ?>
     <section class="hyg-welcome hyg-card"><span class="hyg-eyebrow"><?= e(gt('join_title')) ?></span>
       <h1><?= e($invited['title']) ?></h1>
@@ -109,6 +125,7 @@ unset($_SESSION['hyg_message']);
           class="btn primary block"><?= e(gt('create')) ?></button><small><?= e(gt('expiry_note')) ?></small>
       </form>
     </section>
+<?php /* TẠM ẨN "Nhóm của tôi" (đã đưa sang trang giỏ hàng cart.php)
     <section class="hyg-card">
       <h2><?= e(gt('my_groups')) ?></h2><?php if (!$rooms): ?>
         <p class="hyg-muted"><?= e(gt('no_groups')) ?></p><?php endif; ?>
@@ -120,6 +137,7 @@ unset($_SESSION['hyg_message']);
             href="<?= e(hyg_room_url($room['public_id'])) ?>"><strong><?= e($room['title']) ?></strong><span
               class="hyg-status"><?= e(gt($s)) ?></span></a><?php endforeach; ?></div>
     </section>
+*/ ?>
   <?php endif; ?>
   <div class="hyg-privacy">
     <p><?= e(gt('rules')) ?></p>

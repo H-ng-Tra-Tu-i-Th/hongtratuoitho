@@ -532,30 +532,20 @@ function hds_history(int $id): array
         return $row;
     }, $st->fetchAll());
 }
-function hds_assign_order(int $id, ?int $storeId, int $adminId, int $expectedRevision): array
-{
-    hds_staff($adminId);
-    if (db()->inTransaction()) hds_fail('dispatch_inside_transaction');
-    if ($expectedRevision < 0 || ($storeId !== null && $storeId < 1)) hds_fail('dispatch_invalid_store');
-    $pdo = db();
-    $pdo->beginTransaction();
-    try {
-        $order = hds_one('SELECT * FROM orders WHERE id=? FOR UPDATE', [$id]);
-        if (!$order) hds_fail('dispatch_order_not_found');
-        if (!in_array($order['status'], ['new', 'accepted'], true)) hds_fail('dispatch_order_final');
-        if ((int)($order['dispatch_revision'] ?? 0) !== $expectedRevision) hds_fail('dispatch_changed');
-        $store = $storeId === null ? null : hds_one('SELECT * FROM dispatch_stores WHERE id=? FOR UPDATE', [$storeId]);
-        if ($storeId !== null && (!$store || !(bool)$store['enabled'])) hds_fail('dispatch_store_unavailable');
-        $revision = $expectedRevision + 1;
-        hds_exec('UPDATE orders SET dispatch_store_id=?,dispatch_store_name=?,dispatch_store_address=?,dispatch_store_map_url=?,dispatch_assigned_at=UTC_TIMESTAMP(),dispatch_assigned_by_admin_id=?,dispatch_revision=? WHERE id=?', [$storeId, $store['name'] ?? null, $store['address'] ?? null, $store['map_url'] ?? null, $adminId, $revision, $id]);
-        hds_exec('INSERT INTO dispatch_history(order_id,revision,store_id,name,address,map_url,admin_id,created_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP())', [$id, $revision, $storeId, $store['name'] ?? null, $store['address'] ?? null, $store['map_url'] ?? null, $adminId]);
-        $result = hds_dispatch_dto(hds_one('SELECT * FROM orders WHERE id=?', [$id]));
-        $pdo->commit();
+function hds_assign_order(int $id,?int $storeId,int $adminId,int $expectedRevision): array {
+    hds_staff($adminId);if(db()->inTransaction())hds_fail('dispatch_inside_transaction');if($expectedRevision<0||($storeId!==null&&$storeId<1))hds_fail('dispatch_invalid_store');
+    $pdo=db();$pdo->beginTransaction();try{
+        $order=hds_one('SELECT * FROM orders WHERE id=? FOR UPDATE',[$id]);if(!$order)hds_fail('dispatch_order_not_found');
+        if(!in_array($order['status'],['new','accepted'],true))hds_fail('dispatch_order_final');if((int)($order['dispatch_revision']??0)!==$expectedRevision)hds_fail('dispatch_changed');
+        $store=$storeId===null?null:hds_one('SELECT * FROM dispatch_stores WHERE id=? FOR UPDATE',[$storeId]);if($storeId!==null&&(!$store||!(bool)$store['enabled']))hds_fail('dispatch_store_unavailable');
+        $revision=$expectedRevision+1;
+        hds_exec('UPDATE orders SET dispatch_store_id=?,dispatch_store_name=?,dispatch_store_address=?,dispatch_store_map_url=?,dispatch_assigned_at=UTC_TIMESTAMP(),dispatch_assigned_by_admin_id=?,dispatch_revision=? WHERE id=?',[$storeId,$store['name']??null,$store['address']??null,$store['map_url']??null,$adminId,$revision,$id]);
+        hds_exec('INSERT INTO dispatch_history(order_id,revision,store_id,name,address,map_url,admin_id,created_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP())',[$id,$revision,$storeId,$store['name']??null,$store['address']??null,$store['map_url']??null,$adminId]);
+        $result=hds_dispatch_dto(hds_one('SELECT * FROM orders WHERE id=?',[$id]));$pdo->commit();
+        // Báo hệ mới (Laravel) để bắn socket: cửa hàng cũ nhận "removed", cửa hàng mới nhận "dispatched"
+        if(function_exists('hq_bridge_notify'))hq_bridge_notify('order.dispatched',$id,['old_store_id'=>$order['dispatch_store_id']!==null?(int)$order['dispatch_store_id']:null]);
         return $result;
-    } catch (Throwable $error) {
-        if ($pdo->inTransaction()) $pdo->rollBack();
-        throw $error;
-    }
+    }catch(Throwable $error){if($pdo->inTransaction())$pdo->rollBack();throw $error;}
 }
 function hds_refresh_order(int $id, int $adminId, int $expectedRevision): array
 {

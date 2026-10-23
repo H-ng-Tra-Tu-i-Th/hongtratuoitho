@@ -122,10 +122,13 @@ if (!$checkoutUnknown) {
 // Money prizes won in this session are summed and taken off the bill straight away.
 $gameCash = hcgs_cash_discount($cart, $coupon, $gameSession);
 $checkoutTotal = max(0, $checkoutTotal - $gameCash['discount']);
+// Group money prizes are not applied (see hcgs_cash_discount); show the codes the host keeps.
+$gameCashKept = $groupCheckout && $gameSession ? array_column(hcgs_cash_coupons($gameSession), 'code') : [];
 // Free drink/topping prizes are added as 0đ gift lines with the quantity set in the prize settings.
 $gameGifts = hcgs_gift_rewards($gameSession);
 $gameFlash = $_SESSION['hcgs_flash'] ?? '';
 unset($_SESSION['hcgs_flash']);
+if ($groupCheckout) $GLOBALS['hyg_header_room'] = $groupCheckout['room'];
 front_header(t('order_info'));
 ?>
 <?php if ($groupCheckout): ?>
@@ -548,6 +551,7 @@ front_header(t('order_info'));
           <b><?= e(currency()) ?>0</b>
         </div>
       <?php endforeach; ?>
+      <?php if ($gameCashKept): ?><p class="alert info"><?= e(hcgs_text('group_cash_kept', ['codes' => implode(', ', $gameCashKept)])) ?></p><?php endif; ?>
       <div class="review-totals">
         <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong>
         </div><?php if ($coupon['discount'] > 0): ?>
@@ -1006,4 +1010,28 @@ front_header(t('order_info'));
     })();
   </script>
 <?php endif; ?>
+
+<?php if ($groupCheckout): ?>
+  <script>
+    // Browser Back must not return to a group checkout; send the customer to the home page instead.
+    (function() {
+      const home = <?= json_encode(base_url(''), JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+      // Arrived here with Back/Forward (fresh load or restored from the back/forward cache).
+      const nav = performance.getEntriesByType('navigation')[0];
+      window.addEventListener('pageshow', event => {
+        if (event.persisted || (nav && nav.type === 'back_forward')) location.replace(home);
+      });
+      // Lets the group room know it was reached by leaving this page (see group/index.php).
+      window.addEventListener('pagehide', () => {
+        try { sessionStorage.setItem('hygLeftCheckout', String(Date.now())); } catch (_) {}
+      });
+      // When the order is sent, point this history entry at the home page (replaceState adds no entry).
+      window.addEventListener('submit', event => {
+        if (event.defaultPrevented || !event.target.matches('[data-checkout-form]')) return;
+        history.replaceState(null, '', home);
+      });
+    })();
+  </script>
+<?php endif; ?>
+
 <?php front_footer(); ?>

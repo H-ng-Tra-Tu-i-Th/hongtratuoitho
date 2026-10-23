@@ -222,11 +222,13 @@ function promotion_summary(array $choice): string
   if (!in_array($mode, ['none', 'buy4get1', 'draw', 'reward'], true)) $mode = 'none';
   $showRewardCode = $mode === 'reward' && !empty($choice['code']) && coupon_record((string)$choice['code']);
   ob_start(); ?>
+<?php /* TẠM TẮT khối "Ưu đãi cho đơn này"
   <section class="promotion-summary" aria-label="<?= e(pt('title')) ?>">
     <h3><?= e(pt('title')) ?></h3><strong><?= e(pt($mode)) ?></strong>
     <?php if ($showRewardCode): ?><code><?= e($choice['code']) ?></code><?php endif; ?>
     <?php if (isset($choice['valid']) && !$choice['valid']): ?><p class="promotion-help"><?= e(pt('selection_unavailable')) ?></p><?php endif; ?>
     <?php if ($mode === 'draw'): ?><p class="promotion-help"><?= e(pt((int)($choice['expected_chances'] ?? 0) > 0 ? 'draw_ready' : 'draw_progress', ['chances' => (int)($choice['expected_chances'] ?? 0), 'qty' => (int)($choice['eligible_qty'] ?? 0)])) ?></p><?php else: ?><p class="promotion-help"><?= e(pt('no_draw')) ?></p><?php endif; ?>
   </section>
+*/ ?>
 <?php return ob_get_clean();
 }

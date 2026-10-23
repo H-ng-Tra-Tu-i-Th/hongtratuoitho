@@ -63,5 +63,8 @@ require_once __DIR__ . '/admin_i18n.php';
 require_once __DIR__ . '/sepay.php';
 
 require_once __DIR__.'/checkout_game_session.php';
+
+// Cầu nối sang hệ mới (Laravel) -- xoá khi bỏ hệ cũ
+require_once __DIR__.'/new_api_bridge.php';
 hcgs_schema();
 hcgs_sweep();
