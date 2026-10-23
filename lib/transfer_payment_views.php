@@ -740,11 +740,22 @@ function htp_render_account(array $a): string
 
             function htp_render_staff(array $order): string
             {
-              $r = htp_receipt((int) $order['id']);
+              $r = htp_receipt((int)$order['id']);
+              $groupPaid = htp_group_paid($order);
               if (!$r) {
                 $r = htp_financial_summary($order, null);
                 $r += ['recipient_json' => null, 'reported_at' => null, 'confirmed_at' => null, 'confirmed_by_admin_id' => null];
                 $r['version'] = 1;
+              }
+              // Group money is shown with the receipt; only the receipt part can be refunded from here.
+              $ledgerNet = (float)$r['net_received'];
+              if ($groupPaid) {
+                $base = array_merge($r, [
+                  'amount' => $r['amount'] ?? $order['total_amount'],
+                  'received_amount' => htp_decimal(htp_cents((string)($r['received_amount'] ?? 0)) + htp_cents((string)$groupPaid['received'])),
+                  'refunded_amount' => htp_decimal(htp_cents((string)($r['refunded_amount'] ?? 0)) + htp_cents((string)$groupPaid['refunded'])),
+                ]);
+                $r = array_merge($r, htp_financial_summary($order, $base));
               }
               $accounts = htp_staff_accounts($order);
               $events = htp_events((int) $order['id']);
@@ -770,11 +781,8 @@ function htp_render_account(array $a): string
     <p><?= e(htp('confirmed_at')) ?>：<?= e($r['confirmed_at'] ?? '—') ?> ·
       <?= e(htp('confirmed_by')) ?>：<?= e($r['confirmed_by_admin_id'] ?? '—') ?></p>
     <div class="payment-staff-actions">
-      <?php foreach (['payment_receive', 'payment_correct', 'payment_reject', 'payment_refund'] as $action):
-                if ($action === 'payment_reject' && ($r['report_state'] ?? '') !== 'requested' && $r['status'] !== 'requested')
-                  continue;
-                if ($action === 'payment_refund' && (float) ($r['net_received'] ?? 0) <= 0)
-                  continue; ?>
+      <?php foreach (['payment_receive', 'payment_correct', 'payment_reject', 'payment_refund'] as $action): if ($action === 'payment_reject' && ($r['report_state'] ?? '') !== 'requested' && $r['status'] !== 'requested') continue;
+                if ($action === 'payment_refund' && $ledgerNet <= 0) continue; ?>
         <details>
           <summary><?= e(pwf($action)) ?></summary>
           <form method="post" class="payment-staff-form" onsubmit="return confirm(this.dataset.confirm)"

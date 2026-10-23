@@ -4,6 +4,11 @@ require __DIR__ . '/../lib/layout.php';
 require_once __DIR__ . '/../lib/group_payment_views.php';
 require_once __DIR__ . '/../lib/dispatch_views.php';
 require_once __DIR__ . '/../lib/order_workflow.php';
+require __DIR__ . '/../lib/bootstrap.php';
+require __DIR__ . '/../lib/layout.php';
+require_once __DIR__ . '/../lib/group_payment_views.php';
+require_once __DIR__ . '/../lib/dispatch_views.php';
+require_once __DIR__ . '/../lib/order_workflow.php';
 require_admin();
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -504,5 +509,81 @@ admin_header(t('order_no') . ' ' . $o['order_no']);
   </div>
 
 </div>
+<?= htow_render_history($o) ?>
 
+<section class="panel">
+  <h2><?= e(t('order_email_delivery')) ?></h2>
+  <dl class="meta">
+    <dt><?= e(t('email_recipient')) ?></dt>
+    <dd><?php $mailRecipients = order_notification_recipients();
+        if ($mailRecipients): ?><?php foreach ($mailRecipients as $mailRecipient): ?><div class="email-recipient-display"><?= e($mailRecipient) ?></div><?php endforeach; ?><?php else: ?>—<?php endif; ?></dd>
+    <dt><?= e(t('email_status')) ?></dt>
+    <dd><span class="status <?= e(($o['notification_email_status'] ?? 'pending') === 'sent' ? 'done' : (($o['notification_email_status'] ?? 'pending') === 'failed' ? 'cancelled' : (($o['notification_email_status'] ?? 'pending') === 'partial' ? 'accepted' : 'new'))) ?>"><?= e(order_notification_status_label((string)($o['notification_email_status'] ?? 'pending'))) ?></span></dd>
+    <dt><?= e(t('email_attempts')) ?></dt>
+    <dd><?= number_format((int)($o['notification_email_attempts'] ?? 0)) ?></dd>
+    <dt><?= e(t('email_sent_at')) ?></dt>
+    <dd><?= e(($o['notification_email_sent_at'] ?? '') ?: '—') ?></dd>
+    <dt><?= e(t('email_diagnostic')) ?></dt>
+    <dd><code><?= e(($o['notification_email_detail'] ?? '') ?: '—') ?></code></dd>
+  </dl>
+  <form method="post" class="form-grid"><?= csrf_field() ?><button class="btn" type="submit" name="action" value="resend_email"><?= e(t('resend_order_email')) ?></button></form>
+</section>
+
+<?php if (!empty($o['invoice_required'])): ?>
+  <section class="panel">
+    <h2><?= e(t('invoice_info')) ?></h2>
+    <dl class="meta invoice-meta">
+      <dt><?= e(t('company_name')) ?></dt>
+      <dd><?= e($o['invoice_company_name'] ?? '') ?></dd>
+      <dt><?= e(t('tax_id')) ?></dt>
+      <dd><?= e($o['invoice_tax_id'] ?? '') ?></dd>
+      <dt><?= e(t('company_address')) ?></dt>
+      <dd><?= nl2br(e($o['invoice_company_address'] ?? '')) ?></dd>
+      <dt><?= e(t('company_representative')) ?></dt>
+      <dd><?= e(($o['invoice_company_representative'] ?? '') ?: '—') ?></dd>
+      <dt><?= e(t('company_phone')) ?></dt>
+      <dd><?= e($o['invoice_company_phone'] ?? '') ?></dd>
+      <dt><?= e(t('invoice_email')) ?></dt>
+      <dd><?php if (!empty($o['invoice_email'])): ?><a href="mailto:<?= e($o['invoice_email']) ?>"><?= e($o['invoice_email']) ?></a><?php else: ?>—<?php endif; ?></dd>
+    </dl>
+  </section>
+<?php endif; ?>
+
+<section class="panel">
+  <h2><?= e(t('order_details')) ?></h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th><?= e(t('drink')) ?></th>
+          <th><?= e(t('cup_size')) ?></th>
+          <th><?= e(t('ice')) ?></th>
+          <th><?= e(t('sugar')) ?></th>
+          <th><?= e(t('toppings')) ?></th>
+          <th><?= e(t('quantity')) ?></th>
+          <th><?= e(t('unit_price')) ?></th>
+          <th><?= e(t('subtotal')) ?></th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($items as $i): ?><tr>
+            <td><?= e($i['product_name']) ?><?php if (!empty($i['group_member_name'])): ?><small class="hyg-order-tag"><?= e(gt('ordered_by')) ?>：<?= e($i['group_member_name']) ?></small><?php endif; ?></td>
+            <td><?= e($i['cup_size'] ?? '—') ?></td>
+            <td><?= e($i['ice_choice'] ?: '—') ?></td>
+            <td><?= e($i['sugar_choice'] ?: '—') ?></td>
+            <td><?= e($i['toppings_text'] ?: '—') ?></td>
+            <td><?= $i['qty'] ?></td>
+            <td><?= e(currency()) ?><?= money($i['unit_price']) ?></td>
+            <td><?= e(currency()) ?><?= money($i['line_total']) ?></td>
+          </tr><?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <div class="order-total-breakdown">
+    <?php if (!empty($o['coupon_code'])): ?><div><span><?= e(t('coupon')) ?> · <?= e($o['coupon_code']) ?></span><strong><?= e(t('applied')) ?></strong></div><?php endif; ?>
+    <?php if (isset($o['subtotal_amount']) && (float)$o['subtotal_amount'] > 0): ?><div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($o['subtotal_amount']) ?></strong></div><?php endif; ?>
+    <?php if (!empty($o['discount_amount'])): ?><div class="discount-line"><span><?= e(t('coupon_discount')) ?></span><strong>-<?= e(currency()) ?><?= money($o['discount_amount']) ?></strong></div><?php endif; ?>
+    <div class="grand-total"><?= e(t('grand_total')) ?> <strong><?= e(currency()) ?><?= money($o['total_amount']) ?></strong></div>
+  </div>
+</section>
 <?php admin_footer(); ?>

@@ -412,6 +412,8 @@ if (function_exists('fastcgi_finish_request'))
 // Locate the committed order after releasing the session; maps failure never fails checkout.
 try {
     hds_recommend_order($oid);
+    // Báo hệ mới (Laravel): tự giao cửa hàng gần nhất + bắn socket cho partner-web. Chạy sau khi đã có tọa độ.
+    hq_bridge_notify('order.created',$oid);
 } catch (Throwable $e) {
     error_log('[dispatch] Recommendation unavailable for order ' . $oid);
 }

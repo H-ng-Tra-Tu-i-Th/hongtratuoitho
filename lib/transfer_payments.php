@@ -211,6 +211,11 @@ function htp_receipt(int $orderId): ?array
     $o = hyg_one('SELECT status,total_amount FROM orders WHERE id=?', [$orderId]);
     return htp_financial_summary($o ?? [], $r);
 }
+/** Money collected in a group room before checkout (display only; staff actions keep using the receipt row). */
+function htp_group_paid(array $order): ?array {
+    if(empty($order['group_room_id']))return null;
+    return hyg_one('SELECT COALESCE(SUM(payment_received_amount),0) AS received,COALESCE(SUM(payment_refunded_amount),0) AS refunded FROM group_members WHERE room_id=?',[$order['group_room_id']]);
+}
 /** Server-owned guest order numbers only; never accept an ownership token from the client. */
 function htp_remember_customer_order(string $number): void
 {
