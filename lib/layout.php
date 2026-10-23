@@ -13,7 +13,19 @@ function front_header(string $title = ''): void
     $groupContext = $GLOBALS['hyg_context'] ?? null;
     // Group checkout sets only hyg_header_room, so the header cart shows the group cart without full group mode.
     $cartRoom = $groupContext['room'] ?? ($GLOBALS['hyg_header_room'] ?? null);
+    // A host with an unsent group checkout keeps seeing that group's cart on every page.
+    if (!$cartRoom) {
+        try {
+            $pendingGame = hcgs_locked();
+            if ($pendingGame && hcgs_group_of($pendingGame) !== '') $cartRoom = hyg_room(hcgs_group_of($pendingGame));
+        } catch (Throwable $e) {
+            $cartRoom = null;
+        }
+    }
+    $GLOBALS['front_cart_room'] = $cartRoom;
     $frontCartUrl = $cartRoom ? hyg_room_url($cartRoom['public_id']) : base_url('cart.php');
+    // The logo keeps an open group's menu (and its cart); a locked group goes back to the ordinary menu.
+    $brandUrl = $cartRoom && ($cartRoom['status'] ?? '') === 'open' ? base_url('index.php?group=' . rawurlencode($cartRoom['public_id'])) : base_url('index.php');
     $frontCartCount = cart_count();
     if ($cartRoom) {
         $frontCartCount = 0;
@@ -62,7 +74,7 @@ function front_header(string $title = ''): void
 
     <body class="front-body <?= e(theme_body_class()) ?>">
         <header class="topbar">
-            <div class="topbar-inner"><a class="brand" href="<?= e(base_url('index.php')) ?>"><span class="brand-mark brand-mark-image" aria-hidden="true"><img src="<?= e(base_url('assets/icons/order-icon-192.png?v=19')) ?>" alt=""></span><span class="brand-text"><?= e($store) ?></span></a>
+            <div class="topbar-inner"><a class="brand" href="<?= e($brandUrl) ?>"><span class="brand-mark brand-mark-image" aria-hidden="true"><img src="<?= e(base_url('assets/icons/order-icon-192.png?v=19')) ?>" alt=""></span><span class="brand-text"><?= e($store) ?></span></a>
                 <div class="topbar-actions"><?= language_switcher() ?><?php if (minigame_enabled() && $gameBalance > 0): ?><a class="game-link" href="<?= e(base_url('minigame/')) ?>" aria-label="<?= e(t('game_center')) ?>"><span aria-hidden="true">🎮</span><span class="game-link-label"><?= e(t('game_center')) ?></span><?php if ($gameBalance > 0): ?><b><?= $gameBalance ?></b><?php endif; ?></a><?php endif; ?><a class="member-link" href="<?= e(base_url('member/index.php')) ?>" aria-label="<?= e($memberLabel) ?>"><svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="8" r="4" />
                         <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
@@ -87,10 +99,12 @@ function front_header(string $title = ''): void
                                 unset($_SESSION['cart_flash']);
                                 $count = cart_count();
                                 $groupContext = $GLOBALS['hyg_context'] ?? null;
-                                $floatingUrl = $groupContext ? hyg_room_url($groupContext['room']['public_id']) : base_url('cart.php');
-                                if ($groupContext) {
+                                // Same cart as the header: the group being browsed, or the host's unsent group checkout.
+                                $floatingRoom = $groupContext['room'] ?? ($GLOBALS['front_cart_room'] ?? null);
+                                $floatingUrl = $floatingRoom ? hyg_room_url($floatingRoom['public_id']) : base_url('cart.php');
+                                if ($floatingRoom) {
                                     $count = 0;
-                                    foreach (hyg_cart($groupContext['room'], false) as $row) $count += (int)$row['qty'];
+                                    foreach (hyg_cart($floatingRoom, false) as $row) $count += (int)$row['qty'];
                                 }
 
                                 $page = basename($_SERVER['SCRIPT_NAME'] ?? '');
