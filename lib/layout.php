@@ -119,12 +119,12 @@ function front_header(string $title = ''): void
 
                     <div class="site-footer-franchise">
                         <p><strong>CÔNG TY TNHH VẠN NHẤT THIÊN THÀNH</strong></p>
-                        <p>MST: 0319146701</p>
-                        <p>Điện thoại:</p>
+                        <p><?= e(t('footer_tax_code')) ?> 0319146701</p>
+                        <p><?= e(t('footer_phone')) ?></p>
                         <ul>
-                            <li><b>Tư vấn nhượng quyền: <a href="tel:0909782338">0909782338</a> </b> </li>
-                            <li><b>Truyền thông: <a href="tel:0906712638">0906712638</a> </b></li>
-                            <li><b>Đặt nước &amp; CSKH: <a href="tel:0901655231">0901655231</a> </b></li>
+                            <li><b><?= e(t('footer_franchise')) ?> <a href="tel:0909782338">0909782338</a> </b> </li>
+                            <li><b><?= e(t('footer_media')) ?> <a href="tel:0906712638">0906712638</a> </b></li>
+                            <li><b><?= e(t('footer_support')) ?> <a href="tel:0901655231">0901655231</a> </b></li>
                         </ul>
                     </div>
                 </div>
@@ -135,7 +135,7 @@ function front_header(string $title = ''): void
                             <svg viewBox="0 0 24 24">
                                 <path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z" />
                             </svg>
-                        </span>Liên hệ
+                        </span><?= e(t('footer_contact')) ?>
                     </h3>
                     <ul class="site-footer-contact">
                         <li>
@@ -143,7 +143,7 @@ function front_header(string $title = ''): void
                                 <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
                             </svg>
                             <span>
-                                1/1B đường Tân Thới Nhất 7,<br>phường Đông Hưng Thuận, TP. Hồ Chí Minh
+                                <?= t('footer_address') ?>
                             </span>
                         </li>
                         <li>
@@ -160,7 +160,7 @@ function front_header(string $title = ''): void
                                 <path d="M12 7v5l3 2" />
                             </svg>
                             <span>
-                                Giờ mở cửa:<br>8:00 - 22:00 (Hàng ngày)
+                                <?= e(t('footer_opening_hours')) ?><br>8:00 - 22:00 <?= e(t('footer_daily')) ?>
                             </span>
                         </li>
                     </ul>
@@ -168,7 +168,7 @@ function front_header(string $title = ''): void
 
                 <div class="site-footer-social">
                     <h3>
-                        Theo dõi chúng tôi
+                        <?= e(t('footer_follow')) ?>
                     </h3>
                     <div class="social-media-links">
                         <a class="social-media-link" href="https://www.facebook.com/huiyitea.vn" target="_blank" rel="noopener noreferrer"
@@ -202,12 +202,12 @@ function front_header(string $title = ''): void
                 <div class="site-footer-col">
                     <h3><span class="site-footer-badge"><svg viewBox="0 0 24 24">
                                 <path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5zm-1.2 14-3.6-3.6 1.4-1.4 2.2 2.2 4.8-4.8 1.4 1.4z" />
-                            </svg></span>Chính sách</h3>
+                            </svg></span><?= e(t('footer_policy')) ?></h3>
                     <ul class="site-footer-links">
-                        <li><a href="#">Giao hàng</a></li>
-                        <li><a href="#">Đổi trả / Hủy đơn</a></li>
-                        <li><a href="#">Bảo mật thông tin</a></li>
-                        <li><a href="#">Điều khoản sử dụng</a></li>
+                        <li><a href="#"><?= e(t('footer_delivery')) ?></a></li>
+                        <li><a href="#"><?= e(t('footer_refund')) ?></a></li>
+                        <li><a href="#"><?= e(t('footer_privacy')) ?></a></li>
+                        <li><a href="#"><?= e(t('footer_terms')) ?></a></li>
                     </ul>
                 </div>
             </div>
