@@ -261,7 +261,8 @@ try {
         $choice = promotion_room_choice($groupCheckout['room'], $cart);
         $groupPayment = hyg_payment_summary($groupCheckout['room'], $cart, $coupon);
         $expectedPay = htp_group_order_method($groupPayment);
-        if ($pay !== $expectedPay)
+        // close-test-Hai | Đơn nhóm hỗ trợ thanh toán chuyển khoản hoặc tiền mặt trực tiếp
+        if (!in_array($pay, ['transfer', 'cash'], true))
             hyg_fail('checkout_change');
     } else {
         $choice = promotion_cart_choice($cart);
@@ -398,9 +399,10 @@ if ($shouldNotifyNow) {
         error_log('[checkout] Notification enqueue unavailable for committed order ' . $oid);
     }
 }
-$redirectUrl = ($groupId !== '')
-    ? hyg_room_url($groupId)
-    : (($pay === 'transfer' && $total > 0) ? base_url('payment.php?order=' . rawurlencode($no)) : base_url('success.php'));
+// close-test-Hai | Đơn nhóm chuyển khoản cũng chuyển hướng sang payment.php như đơn thường
+$redirectUrl = ($pay === 'transfer' && $total > 0)
+    ? base_url('payment.php?order=' . rawurlencode($no))
+    : base_url('success.php?order=' . rawurlencode($no));
 header('Location: ' . $redirectUrl, true, 303);
 if (session_status() === PHP_SESSION_ACTIVE)
     session_write_close();

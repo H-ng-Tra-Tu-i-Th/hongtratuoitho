@@ -44,6 +44,20 @@ try {
             // "Lock" submits the offer form: save the offer, then lock at the revision it produced.
             hyg_mutate($id, 'lock', ['revision' => (int)$r['revision']] + $_POST);
             $r = hyg_room($id);
+            // close-test-Hai | Chốt món xong chuyển thẳng sang trang checkout để đặt hàng
+            $quote = hyg_locked_quote($r);
+            $hasInvalid = false;
+            foreach ($quote['cart'] as $item) {
+                if (!empty($item['_invalid'])) {
+                    $hasInvalid = true;
+                    break;
+                }
+            }
+            if (!empty($quote['cart']) && !$hasInvalid) {
+                $_SESSION['hcgs_allow_open'] = $r['public_id'];
+                header('Location: ' . base_url('checkout.php?group=' . rawurlencode($r['public_id'])), true, 303);
+                exit;
+            }
         }
         if ($action === 'payment_confirm') {
             $quote = hyg_locked_quote($r);

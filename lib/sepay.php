@@ -198,9 +198,10 @@ function sepay_qr_url(string $accountNumber, string $bankName, float|int $amount
 /**
  * Standard description syntax for individual order.
  */
-function sepay_order_description(string $orderNo): string
+function sepay_order_description(string $orderNo, bool $isGroup = false): string
 {
-    return 'HYG ' . strtoupper(trim($orderNo));
+    $prefix = $isGroup ? 'HYGG ' : 'HYG ';
+    return $prefix . strtoupper(trim($orderNo));
 }
 
 /**
@@ -213,7 +214,7 @@ function sepay_member_description(int $memberId): string
 
 /**
  * Parse transfer description / memo received from SePay Webhook.
- * CRITICAL: Checks HYGM (Split Bill Member) BEFORE HYG (Order),
+ * CRITICAL: Checks HYGM (Split Bill Member) BEFORE HYG/HYGG (Order),
  * and handles optional spacing and diacritics removal.
  */
 function sepay_parse_description(string $content, ?string $code = null): ?array
@@ -236,14 +237,14 @@ function sepay_parse_description(string $content, ?string $code = null): ?array
         }
     }
 
-    // Priority 2: Individual Order / Group Host Full Payment (HYG <ORDER_NO>)
-    // Matches: HYG 20261016204124-700F69, HYG 20261016204124700F69, HYG 20261016204124 700F69, HYG-20261016204124-700F69
-    if (preg_match('/HYG[-_\s]*([A-Z0-9]{14}[-_ ]?[A-Z0-9]{4,8})/i', $combined, $matches)) {
+    // Priority 2: Individual Order (HYG <ORDER_NO>) / Group Full Payment (HYGG <ORDER_NO>)
+    // Matches: HYG 20261016204124-700F69, HYGG 20261016204124-700F69
+    if (preg_match('/HYGG?[-_\s]*([A-Z0-9]{14}[-_ ]?[A-Z0-9]{4,8})/i', $combined, $matches)) {
         $orderNo = trim($matches[1]);
         if ($orderNo !== '') {
             return ['type' => 'order', 'order_no' => $orderNo];
         }
-    } elseif (preg_match('/HYG[-_\s]*([A-Z0-9_-]+)/i', $combined, $matches)) {
+    } elseif (preg_match('/HYGG?[-_\s]*([A-Z0-9_-]+)/i', $combined, $matches)) {
         $orderNo = trim($matches[1]);
         if ($orderNo !== '') {
             return ['type' => 'order', 'order_no' => $orderNo];

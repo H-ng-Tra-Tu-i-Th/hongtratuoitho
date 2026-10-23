@@ -68,7 +68,7 @@ if ($dateTo !== '') {
 $baseUnionSql = "
 SELECT 
     e.id AS raw_id,
-    'personal' COLLATE utf8mb4_unicode_ci AS tx_type,
+    (CASE WHEN o.group_room_id IS NOT NULL AND o.group_room_id > 0 THEN 'group' ELSE 'personal' END) COLLATE utf8mb4_unicode_ci AS tx_type,
     'transfer' COLLATE utf8mb4_unicode_ci AS payment_method,
     (CASE WHEN e.event_key LIKE 'sepay:%' THEN 'sepay' ELSE 'transfer' END) COLLATE utf8mb4_unicode_ci AS source_channel,
     (CASE WHEN o.status = 'cancelled' OR e.event_type IN ('cancelled', 'refund') THEN 'cancelled' ELSE 'received' END) COLLATE utf8mb4_unicode_ci AS unified_status,
@@ -102,7 +102,7 @@ UNION ALL
 
 SELECT 
     o.id AS raw_id,
-    'personal' COLLATE utf8mb4_unicode_ci AS tx_type,
+    (CASE WHEN o.group_room_id IS NOT NULL AND o.group_room_id > 0 THEN 'group' ELSE 'personal' END) COLLATE utf8mb4_unicode_ci AS tx_type,
     'cash' COLLATE utf8mb4_unicode_ci AS payment_method,
     'cash' COLLATE utf8mb4_unicode_ci AS source_channel,
     (CASE WHEN o.status = 'cancelled' THEN 'cancelled' ELSE 'received' END) COLLATE utf8mb4_unicode_ci AS unified_status,

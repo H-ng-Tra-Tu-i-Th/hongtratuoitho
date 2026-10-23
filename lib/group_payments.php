@@ -154,14 +154,14 @@ function hyg_overlay_payment_reports(array $summary,array $members,array $room=[
     $summary['refund_due']=hyg_money(array_sum(array_column($summary['members'],'refund_due')));
     $summary['received_amount']=hyg_money(array_sum(array_column($summary['members'],'received_amount')));
     $summary['refunded_amount']=hyg_money(array_sum(array_column($summary['members'],'refunded_amount')));
-    $summary['all_confirmed']=$protocol>=2&&$summary['confirmed_payers']===$summary['required_payers']&&$summary['refund_due']<=0;
-    $summary['can_checkout']=$locked&&!empty($summary['has_items'])&&$summary['all_confirmed'];
+    // close-test-Hai | Bỏ bước thu tiền nội bộ thành viên: cho phép chốt món và checkout trực tiếp
+    $summary['all_confirmed']=true;
+    $summary['can_checkout']=$locked&&!empty($summary['has_items']);
     return $summary;
 }
 /** Only genuine payer liabilities gate checkout; zero balances and covered members never add requirements. */
 function hyg_payments_confirmed(array $summary): bool {
-    if((int)($summary['protocol_version']??0)<2)return false;
-    foreach($summary['members'] as $person)if(($person['refund_due']??0)>0||((float)$person['due']>0&&($person['status']!=='paid'||empty($person['confirmed']))))return false;
+    // close-test-Hai | Bỏ bước thu tiền nội bộ thành viên
     return true;
 }
 /** Preserve audit reports when removal changes an actual payer's amount. */

@@ -222,6 +222,12 @@ front_header($pageTitle);
           </svg>
         </span>
       </div>
+
+      <?php if (!empty($order['group_room_id'])): ?>
+        <div style="margin: 12px auto 0 auto; display: inline-flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.12); color: #4338ca; border: 1px solid rgba(99, 102, 241, 0.28); border-radius: 999px; padding: 6px 16px; font-size: 0.9rem; font-weight: 600;">
+          <span>👥 <?= e(gt('title')) ?>: <strong><?= e($order['group_title'] ?: gt('order_group')) ?></strong></span>
+        </div>
+      <?php endif; ?>
     </header>
     <?php endif; ?>
 

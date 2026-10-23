@@ -418,7 +418,7 @@ front_header(t('order_info'));
 
         <fieldset>
           <legend><?= e(t('payment_method')) ?></legend>
-          <?php if ($groupPayment): ?>
+          <?php if (false && $groupPayment): ?>
             <input type="hidden" name="payment_method" value="<?= e($groupPayCode) ?>">
             <p>
               <?= e($hostCollect ? htp('merchant_host') : gt($groupPayment['mode'] === 'split' ? 'pay_split' : 'pay_together')) ?> <?php if ($hostCollect || $groupPayment['mode'] === 'together'): ?>

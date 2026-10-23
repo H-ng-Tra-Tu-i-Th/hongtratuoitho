@@ -197,12 +197,11 @@ function htp_initialize_order(int $orderId): void
     $o = hyg_one('SELECT * FROM orders WHERE id=?', [$orderId]);
     if (!$o)
         htp_fail('not_found');
-    $summary = hyg_order_payment_summary($o);
-    // Already-collected legacy/direct-store groups must never be asked to pay the total again.
-    if (!empty($o['group_room_id']) && ($summary['collection_mode'] ?? 'store') !== 'host')
-        return;
+    // close-test-Hai | Đơn nhóm chuyển khoản trực tiếp qua payment.php
+    // if (!empty($o['group_room_id']) && ($summary['collection_mode'] ?? 'store') !== 'host')
+    //     return;
     $isZero = (float) $o['total_amount'] <= 0;
-    db()->prepare("INSERT INTO transfer_order_receipts(order_id,status,amount,confirmed_at,created_at) VALUES(?,?,?,IF(?=1, UTC_TIMESTAMP(), NULL),UTC_TIMESTAMP())")->execute([$orderId, $isZero ? 'not_required' : 'pending', $o['total_amount'], $isZero ? 1 : 0]);
+    db()->prepare("INSERT INTO transfer_order_receipts(order_id,status,amount,confirmed_at,created_at) VALUES(?,?,?,IF(?=1, UTC_TIMESTAMP(), NULL),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE amount=VALUES(amount)")->execute([$orderId, $isZero ? 'not_required' : 'pending', $o['total_amount'], $isZero ? 1 : 0]);
 }
 function htp_receipt(int $orderId): ?array
 {

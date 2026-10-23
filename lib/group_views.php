@@ -301,7 +301,7 @@ function hyg_render_room(array $r): string
                     <p class="hyg-muted"><?= e(gt('payment_locked_hint')) ?></p><?php endif; ?>
                   <?php if (!$hasPayment): ?>
                     <p class="hyg-muted"><?= e(gt('payment_none')) ?></p><?php endif; ?>
-                  <?php if (($own || $host) && ($canRequest || $canConfirm)): ?>
+                  <?php if (false && ($own || $host) && ($canRequest || $canConfirm)): // close-test-Hai | Bỏ thu tiền nội bộ nhóm ?>
                     <p class="alert info hyg-payment-increment">
                       <strong><?= e(gt('payment_increment_label')) ?>：<?= e(currency()) ?><?= money($newPayment) ?></strong><?php if ($retainedFunds > 0): ?><br><?= e(gt($newPayment > 0 ? 'payment_increment_only' : 'payment_increment_zero', ['net' => currency() . money($retainedFunds), 'amount' => currency() . money($newPayment)])) ?><?php endif; ?>
                     </p><?php endif; ?>
@@ -408,7 +408,7 @@ function hyg_render_room(array $r): string
                     <?php endif; ?>
                   <?php endif; ?>
 
-                  <?php if ($canRequest): ?>
+                  <?php if (false && $canRequest): // close-test-Hai | Bỏ thu tiền nội bộ nhóm ?>
                     <div class="hyg-payment-approval">
                       <form method="post" action="<?= e(base_url('group/action.php')) ?>"
                         data-confirm="<?= e(gt('payment_report_increment_prompt', ['amount' => currency() . money($newPayment)])) ?>">
@@ -419,7 +419,7 @@ function hyg_render_room(array $r): string
                       </form>
                       <p class="hyg-muted"><?= e(gt('payment_self_report')) ?></p>
                     </div><?php endif; ?>
-                  <?php if ($canConfirm): ?>
+                  <?php if (false && $canConfirm): // close-test-Hai | Bỏ thu tiền nội bộ nhóm ?>
 
                     <!-- Form submit Xác nhận đã thanh toán ... -->
                     <div class="hyg-payment-approval">
@@ -501,7 +501,7 @@ function hyg_render_room(array $r): string
         <div class="hyg-totals-line"><span><?= e(gt('checkout_mode')) ?></span><b><?= e(gt($split ? 'checkout_split' : 'checkout_together')) ?></b></div>
         <?php if (!$payment['legacy']): ?><div class="hyg-totals-line"><span><?= e(gt('host_advances')) ?></span><b><?= e(currency()) ?><?= money($payment['host_advance']) ?></b></div>
           <div class="hyg-totals-line hyg-host-due"><span><?= e($hostCollect ? htp('contribution') : gt('host_due')) ?></span><b><?= e(currency()) ?><?= money($payment['host_due']) ?></b></div><?php endif; ?>
-        <?php if ($approval && $payment['frozen']): ?><div class="hyg-payment-progress" role="status"><strong><?= e(gt('payment_confirmation_progress', ['confirmed' => (int)($payment['confirmed_payers'] ?? 0), 'required' => (int)($payment['required_payers'] ?? 0)])) ?></strong>
+        <?php if (false && $approval && $payment['frozen']): // close-test-Hai | Bỏ thanh toán nội bộ ?><div class="hyg-payment-progress" role="status"><strong><?= e(gt('payment_confirmation_progress', ['confirmed' => (int)($payment['confirmed_payers'] ?? 0), 'required' => (int)($payment['required_payers'] ?? 0)])) ?></strong>
             <p class="hyg-muted"><?= e(gt(!$cart ? 'empty_room' : ($allConfirmed ? 'payments_all_confirmed' : 'payments_unconfirmed'))) ?></p>
           </div><?php endif; ?>
         <?= promotion_summary($promotion) ?>
@@ -524,9 +524,9 @@ function hyg_render_room(array $r): string
           <button class="btn primary block" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm="<?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>><?= e(gt('lock')) ?></button>
         <?php endif; ?>
 
-        <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?><?php if (!empty($payment['can_checkout']) && $cart && !$hasInvalid): ?>
+        <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?><?php if ($cart && !$hasInvalid): ?>
         <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'checkout') ?>
-          <button class="btn primary block" type="submit"><?= e(gt($split ? 'submit_group' : 'checkout')) ?></button>
+          <button class="btn primary block" type="submit"><?= e(gt('checkout')) ?></button>
         </form>
       <?php endif; ?>
     <?php endif; ?>

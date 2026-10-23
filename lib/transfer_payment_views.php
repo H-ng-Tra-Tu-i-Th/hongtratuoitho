@@ -333,7 +333,8 @@ function htp_render_account(array $a): string
               $bankName = $selectedAcc['bank_name'] ?? '';
               $accNum = $selectedAcc['account_number'] ?? '';
               $accName = $selectedAcc['account_name'] ?? '';
-              $des = sepay_order_description($order['order_no']);
+              $isGroupOrder = !empty($order['group_room_id']);
+              $des = sepay_order_description($order['order_no'], $isGroupOrder);
               $vietQrUrl = ($accNum && $bankName) ? sepay_qr_url($accNum, $bankName, (float) $r['amount'], $des, 'compact') : '';
 
               // Tính thời gian giữ đơn thực tế dựa trên payment_expires_at (epoch timestamp) hoặc fallback created_at UTC
