@@ -466,6 +466,14 @@ function hyg_context(): ?array {
     hyg_schema();$r=hyg_room(hyg_code($_GET['group']));$m=hyg_member($r);hyg_open($r);hyg_headers();
     return $GLOBALS['hyg_context']=['room'=>$r,'member'=>$m];
 }
+/** True while this device is in a group still taking orders, or the host has an unsent group checkout (header shows "Giỏ nhóm"). */
+function hyg_in_active_group(): bool {
+    if(!empty($GLOBALS['front_cart_room']))return true;
+    try{
+        $device=hyg_device();if($device==='')return false;
+        return (bool)hyg_one("SELECT 1 FROM group_rooms r JOIN group_members m ON m.room_id=r.id WHERE m.device_hash=? AND r.status='open' AND r.expires_at>UTC_TIMESTAMP() LIMIT 1",[$device]);
+    }catch(Throwable $e){return false;}
+}
 function hyg_url(string $path): string {
     $ctx=$GLOBALS['hyg_context']??null;
     if(!$ctx)return base_url($path);

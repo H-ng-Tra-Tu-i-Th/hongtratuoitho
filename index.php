@@ -124,7 +124,7 @@ front_header(); ?>
   <div class="hero-orb" aria-hidden="true"></div>
 </section> -->
 
-<?php if (!$groupContext && !htp_customer_has_unpaid()): ?>
+<?php if (!$groupContext && !hyg_in_active_group()): ?>
   <section class="hyg-entry">
     <div><strong><?= e(gt('entry_title')) ?></strong>
       <p><?= e(gt('entry_desc')) ?></p>
