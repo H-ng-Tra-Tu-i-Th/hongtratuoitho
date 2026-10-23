@@ -30,7 +30,7 @@ try {
     <h1><?= e(t('cart')) ?></h1>
   </div>
 </div>
-<?php if (!htp_customer_has_unpaid()): ?>
+<?php if (!hyg_in_active_group()): ?>
 <section class="hyg-entry">
   <div><strong><?= e(gt('share_cart')) ?></strong>
     <p><?= e(gt('copy_hint')) ?></p>
@@ -41,9 +41,6 @@ try {
   <section class="hyg-card">
     <h2><?= e(gt('my_groups')) ?></h2>
     <div class="hyg-room-list">
-      <script>
-        console.log(<?= json_encode($myRooms, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>);
-      </script>
       <?php foreach ($myRooms as $room):
         $s = $room['status'];
         if (in_array($s, ['open', 'locked'], true) && strtotime($room['expires_at'] . ' UTC') <= time()) $s = 'expired'; ?>

@@ -255,19 +255,6 @@ function htp_customer_allowed(array $order): bool
             return true;
     return false;
 }
-/** True while this customer has an order waiting for payment (or an open Mini Game checkout); group sharing is hidden then. */
-function htp_customer_has_unpaid(): bool {
-    try{
-        if(function_exists('hcgs_locked')&&hcgs_locked())return true;
-        $where=[];$args=[];
-        if(($mid=(int)($_SESSION['member_id']??0))>0){$where[]='o.member_id=?';$args[]=$mid;}
-        $numbers=$_SESSION['customer_payment_orders']??[];if(!is_array($numbers))$numbers=[];$numbers[]=$_SESSION['last_order_no']??null;
-        $numbers=array_values(array_unique(array_filter($numbers,fn($v)=>is_string($v)&&$v!=='')));
-        if($numbers){$where[]='o.order_no IN ('.implode(',',array_fill(0,count($numbers),'?')).')';$args=array_merge($args,$numbers);}
-        if(!$where)return false;
-        return (bool)hyg_one("SELECT 1 FROM orders o JOIN transfer_order_receipts r ON r.order_id=o.id WHERE (".implode(' OR ',$where).") AND o.status<>'cancelled' AND r.status IN ('pending','requested','partial') LIMIT 1",$args);
-    }catch(Throwable $e){return false;}
-}
 function htp_customer_order(mixed $number): array {
     $no=htp_text($number,80);if($no==='')htp_fail('not_found');$o=hyg_one('SELECT * FROM orders WHERE order_no=?',[$no]);
     if(!$o||!htp_customer_allowed($o))htp_fail('forbidden');return $o;
