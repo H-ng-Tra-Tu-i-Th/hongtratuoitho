@@ -111,6 +111,7 @@ $gameCashKept = $groupCheckout && $gameSession ? array_column(hcgs_cash_coupons(
 $gameGifts = hcgs_gift_rewards($gameSession);
 $gameFlash = $_SESSION['hcgs_flash'] ?? '';
 unset($_SESSION['hcgs_flash']);
+if ($groupCheckout) $GLOBALS['hyg_header_room'] = $groupCheckout['room'];
 front_header(t('order_info'));
 ?>
 <?php /* TẠM TẮT khối "Tên nhóm / Về giỏ nhóm"
