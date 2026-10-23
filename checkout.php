@@ -113,10 +113,12 @@ $gameFlash = $_SESSION['hcgs_flash'] ?? '';
 unset($_SESSION['hcgs_flash']);
 front_header(t('order_info'));
 ?>
+<?php /* TẠM TẮT khối "Tên nhóm / Về giỏ nhóm"
 <?php if ($groupCheckout): ?><section class="hyg-checkout-note"><strong><?= e(gt('order_group')) ?>：<?= e($groupCheckout['room']['title']) ?></strong>
     <p><?= e($hostCollect ? htp('collection_before_order') : gt($groupPayment['mode'] === 'split' ? 'split_owner_checkout' : 'owner_checkout')) ?></p>
     <p><?= e(gt('locked_snapshot')) ?></p><a class="btn" href="<?= e(hyg_room_url($groupCheckout['room']['public_id'])) ?>"><?= e(gt('back_room')) ?></a>
   </section><?php endif; ?>
+*/ ?>
 <div class="checkout-wrap">
   <section>
     <span class="eyebrow"><?= e(t('checkout')) ?></span>
@@ -168,8 +170,8 @@ front_header(t('order_info'));
       <label><?= e(t('phone')) ?><input name="phone" value="<?= e($values['phone']) ?>" required maxlength="50" inputmode="tel" autocomplete="tel" <?= hcq_field_attrs($fieldErrors, 'phone') ?>><?= hcq_field_error($fieldErrors, 'phone') ?></label>
       <label><?= e(t('delivery_address')) ?><textarea name="address" required maxlength="255" rows="3" autocomplete="street-address" <?= hcq_field_attrs($fieldErrors, 'address') ?>><?= e($values['address']) ?></textarea><?= hcq_field_error($fieldErrors, 'address') ?></label>
 
-      <!-- close-test-Hai Thêm css ẩn thông tin thanh toán (Thanh toán chung · Chuyển khoản) -->
-      <fieldset style="display: none;">
+      <!-- close-test-Hai Ẩn thông tin thanh toán của đơn nhóm (Thanh toán chung · Chuyển khoản); đơn lẻ vẫn chọn Chuyển khoản / Tiền mặt -->
+      <fieldset<?= $groupPayment ? ' style="display: none;"' : '' ?>>
         <legend><?= e(t('payment_method')) ?></legend>
         <?php if ($groupPayment): ?>
           <input type="hidden" name="payment_method" value="<?= e($groupPayCode) ?>">
@@ -185,25 +187,25 @@ front_header(t('order_info'));
         <!-- close-test-Hai | Chuyển thanh toán thẻ trụ sở chính sang chi nhanh tự nhận chuyển khoản -->
 
         <!-- <section class="transfer-payment-panel" data-transfer-info>
-        <div class="transfer-payment-head">
-          <strong><?= e(t('transfer_payment_info')) ?></strong>
-          <small<?= !$bankAccounts ? ' role="status"' : '' ?>><?= e(!$groupCheckout ? htp('order_first') : ($hostCollect ? htp('collection_before_order') : t($bankAccounts ? 'transfer_payment_help' : 'transfer_payment_later'))) ?></small>
-        </div>
-        <div class="transfer-account-list">
-          <?php foreach ($bankAccounts as $bank): ?>
-          <article class="transfer-account-card">
-            <?php if (!empty($bank['qr_image'])): ?>
-              <div class="transfer-qr"><img src="<?= e(base_url('uploads/' . $bank['qr_image'])) ?>" alt="<?= e(t('transfer_qr_alt')) ?>"></div>
-            <?php endif; ?>
-            <div class="transfer-account-details">
-              <strong><?= e($bank['bank_name']) ?></strong>
-              <div><span><?= e(t('account_number')) ?></span><b><?= e($bank['account_number']) ?></b></div>
-              <div><span><?= e(t('account_name')) ?></span><b><?= e($bank['account_name']) ?></b></div>
-            </div>
-          </article>
-          <?php endforeach; ?>
-        </div>
-      </section> -->
+          <div class="transfer-payment-head">
+            <strong><?= e(t('transfer_payment_info')) ?></strong>
+            <small<?= !$bankAccounts ? ' role="status"' : '' ?>><?= e(!$groupCheckout ? htp('order_first') : ($hostCollect ? htp('collection_before_order') : t($bankAccounts ? 'transfer_payment_help' : 'transfer_payment_later'))) ?></small>
+          </div>
+          <div class="transfer-account-list">
+            <?php foreach ($bankAccounts as $bank): ?>
+              <article class="transfer-account-card">
+                <?php if (!empty($bank['qr_image'])): ?>
+                  <div class="transfer-qr"><img src="<?= e(base_url('uploads/' . $bank['qr_image'])) ?>" alt="<?= e(t('transfer_qr_alt')) ?>"></div>
+                <?php endif; ?>
+                <div class="transfer-account-details">
+                  <strong><?= e($bank['bank_name']) ?></strong>
+                  <div><span><?= e(t('account_number')) ?></span><b><?= e($bank['account_number']) ?></b></div>
+                  <div><span><?= e(t('account_name')) ?></span><b><?= e($bank['account_name']) ?></b></div>
+                </div>
+              </article>
+            <?php endforeach; ?>
+          </div>
+        </section> -->
       <?php endif; ?>
 
       <fieldset>
@@ -334,6 +336,27 @@ front_header(t('order_info'));
   </script>
 <?php endif; ?>
 
-
+<?php if ($groupCheckout): ?>
+  <script>
+    // Browser Back must not return to a group checkout; send the customer to the home page instead.
+    (function() {
+      const home = <?= json_encode(base_url(''), JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) ?>;
+      // Arrived here with Back/Forward (fresh load or restored from the back/forward cache).
+      const nav = performance.getEntriesByType('navigation')[0];
+      window.addEventListener('pageshow', event => {
+        if (event.persisted || (nav && nav.type === 'back_forward')) location.replace(home);
+      });
+      // Lets the group room know it was reached by leaving this page (see group/index.php).
+      window.addEventListener('pagehide', () => {
+        try { sessionStorage.setItem('hygLeftCheckout', String(Date.now())); } catch (_) {}
+      });
+      // When the order is sent, point this history entry at the home page (replaceState adds no entry).
+      window.addEventListener('submit', event => {
+        if (event.defaultPrevented || !event.target.matches('[data-checkout-form]')) return;
+        history.replaceState(null, '', home);
+      });
+    })();
+  </script>
+<?php endif; ?>
 
 <?php front_footer(); ?>
