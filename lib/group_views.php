@@ -242,6 +242,14 @@ function hyg_render_room(array $r): string
                     </form>
                     <p class="hyg-muted"><?= e(gt('payment_self_report')) ?></p>
                   </div><?php endif; ?>
+                <?php
+                // TODO: Code cần tối ưu hoặc loại bỏ.
+                // Khối "Xác nhận thanh toán" gần như không còn hiển thị ở luồng hiện tại:
+                // - "Chốt món" đã tự xác nhận phần của chủ nhóm (group/action.php, nhánh lock_after).
+                // - Chế độ chia tiền (split) / trưởng nhóm thu hộ đang bị tắt, nên thành viên luôn có due = 0.
+                // Chỉ còn dùng cho nhóm cũ (split / thu hộ) hoặc khi tự xác nhận lúc chốt món bị lỗi.
+                // Nếu loại bỏ: giữ lại action 'payment_confirm' ở server vì nhánh lock_after đang gọi nó.
+                ?>
                 <?php if ($canConfirm): ?>
 
                   <!-- Form submit Xác nhận đã thanh toán ... -->
@@ -321,39 +329,42 @@ function hyg_render_room(array $r): string
 
           <?= promotion_selector($promotion, ['group_public' => $r['public_id'], 'revision' => $r['revision'], 'host_discount_available' => $payment['host_obligation'] > 0]) ?>
 
-          <!-- Like checkout in the cart, locking submits the chosen offer together. -->
-          <button class="btn primary block" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm="<?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>><?= e(gt('lock')) ?></button>
+          <!-- Button chốt món -->
+          <button class="btn primary block" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>>
+            <?= e(gt('lock')) ?>
+          </button>
         <?php endif; ?>
 
-        <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?><?php if (!empty($payment['can_checkout']) && $cart && !$hasInvalid): ?>
-        <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'checkout') ?>
-          <button class="btn primary block" type="submit"><?= e(gt($split ? 'submit_group' : 'checkout')) ?></button>
-        </form>
+        <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?>
+        <?php if (!empty($payment['can_checkout']) && $cart && !$hasInvalid): ?>
+          <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'checkout') ?>
+            <button class="btn primary block" type="submit"><?= e(gt($split ? 'submit_group' : 'checkout')) ?></button>
+          </form>
+        <?php endif; ?>
       <?php endif; ?>
-    <?php endif; ?>
-    <?php if (!$hasReports): ?>
+      <?php if (!$hasReports): ?>
 
-      <!-- btn mở lại chọn món  -->
-      <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'reopen') ?>
-        <button class="btn block" type="submit"><?= e(gt('reopen')) ?></button>
-      </form><?php else: ?><p class="hyg-muted"><?= e(gt('payment_locked')) ?></p><?php endif; ?><?php endif; ?>
+        <!-- btn mở lại chọn món  -->
+        <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'reopen') ?>
+          <button class="btn block" type="submit"><?= e(gt('reopen')) ?></button>
+        </form><?php else: ?><p class="hyg-muted"><?= e(gt('payment_locked')) ?></p><?php endif; ?><?php endif; ?>
 
-      <?php if ($r['status'] === 'locked' && $host): ?>
+        <?php if ($r['status'] === 'locked' && $host): ?>
 
-        <!-- closs-test-Hai | btn Gia Hạn thanh toán -->
+          <!-- closs-test-Hai | btn Gia Hạn thanh toán -->
 
-        <!-- <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form"><?= hyg_payment_action_fields($r, 'payment_extend') ?>
+          <!-- <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form"><?= hyg_payment_action_fields($r, 'payment_extend') ?>
             <label><?= e(gt('payment_reason')) ?>
               <input name="reason" required minlength="3" maxlength="240">
             </label>
             <button class="btn block" type="submit"><?= e(gt('payment_extend')) ?></button>
           </form> -->
-      <?php endif; ?>
+        <?php endif; ?>
 
-      <?php if (in_array($r['status'], ['open', 'locked'], true) && $host): ?>
-        <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form" data-confirm="<?= e(gt('cancel_confirm')) ?>"><?= hyg_payment_action_fields($r, 'cancel') ?><?php if ($r['status'] === 'locked'): ?>
-          <p class="hyg-muted"><?= e(gt('payment_cancel_hint')) ?></p><?php endif; ?><label><?= e(gt('payment_reason')) ?><input name="reason" required minlength="3" maxlength="240"></label><button class="btn danger block" type="submit"><?= e(gt('cancel')) ?></button>
-        </form><?php endif; ?>
+        <?php if (in_array($r['status'], ['open', 'locked'], true) && $host): ?>
+          <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form" data-confirm="<?= e(gt('cancel_confirm')) ?>"><?= hyg_payment_action_fields($r, 'cancel') ?><?php if ($r['status'] === 'locked'): ?>
+            <p class="hyg-muted"><?= e(gt('payment_cancel_hint')) ?></p><?php endif; ?><label><?= e(gt('payment_reason')) ?><input name="reason" required minlength="3" maxlength="240"></label><button class="btn danger block" type="submit"><?= e(gt('cancel')) ?></button>
+          </form><?php endif; ?>
       </aside>
     </div>
     <?= hyg_render_payment_history(hyg_payment_events($r, $host ? null : (int)$m['id'])) ?>
