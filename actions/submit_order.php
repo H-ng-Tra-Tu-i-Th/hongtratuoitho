@@ -52,6 +52,8 @@ if($retry=hcq_outcome($checkoutToken,$checkoutContext)){
     try{$saved=htp_customer_order($retry['order_no']);hcq_saved($checkoutToken,$saved['order_no']);header('Location: '.base_url('payment.php?order='.rawurlencode($saved['order_no'])),true,303);exit;}catch(Throwable $e){hcq_fail($checkoutContext,$groupId,htp_ux('unknown'));}
 }
 if($checkoutRequest&&!hash_equals($checkoutRequest['signature'],$requestSignature))hcq_fail($checkoutContext,$groupId,htp('changed'));
+// Resolve (or expire) the checkout Mini Game session before the order transaction opens.
+$gameSessionId=hcgs_prize_row($groupId)?hcgs_session_id():'';
 $no=order_no();hcq_saved($checkoutToken,$no,'unknown');
 // Persist the reservation before SQL. A process crash must leave an unknown result, never an open retry.
 if(session_status()!==PHP_SESSION_ACTIVE||!session_write_close())hcq_fail($checkoutContext,$groupId,htp_ux('unknown'));
@@ -79,6 +81,13 @@ try{
     $subtotal=cart_subtotal($cart);$discount=(float)$coupon['discount'];$total=max(0,$subtotal-$discount);$couponCode=$coupon['valid']?$coupon['code']:'';
     $eligibleDrinkQty=0;foreach($cart as $r){if(!empty($r['product_id'])&&empty($r['standalone_topping_id']))$eligibleDrinkQty+=(int)$r['qty'];}
     $expectedGameChances=$choice['mode']==='draw'&&$couponCode===''&&$discount<=0?game_saved_chance_count($eligibleDrinkQty,(int)$choice['expected_chances']):0;
+    // Money prizes won in this checkout session are summed, taken off this order and spent with it.
+    $gameCash=hcgs_cash_discount($cart,$coupon,hcgs_row($gameSessionId));
+    if($gameCash['discount']>0){
+        $discount+=$gameCash['discount'];$total=max(0,$subtotal-$discount);
+        foreach($gameCash['line_discounts'] as $k=>$v)$coupon['line_discounts'][$k]=($coupon['line_discounts'][$k]??0)+$v;
+        $couponCode=implode(',',$gameCash['codes']);if(strlen($couponCode)>80)$couponCode=$gameCash['codes'][0].' +'.(count($gameCash['codes'])-1);
+    }
     $st=$pdo->prepare('INSERT INTO orders(order_no,customer_name,phone,address,payment_method,invoice_required,invoice_company_name,invoice_tax_id,invoice_company_address,invoice_company_representative,invoice_company_phone,invoice_email,order_note,coupon_code,subtotal_amount,discount_amount,total_amount,game_wallet_token,group_room_id,group_title,member_id,promotion_mode,game_chances_expected,checkout_request_hash) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
     $st->execute([$no,$name,$phone,$address,$pay,$invoice?1:0,$companyName?:null,$taxId?:null,$companyAddress?:null,$companyRepresentative?:null,$companyPhone?:null,$invoiceEmail?:null,$orderNote?:null,$couponCode?:null,$subtotal,$discount,$total,$choice['mode']==='draw'?($walletToken?:null):null,$groupCheckout['room']['id']??null,$groupCheckout['room']['title']??null,$orderMemberId,$choice['mode'],$expectedGameChances,hash('sha256',$checkoutToken)]);
     $oid=(int)$pdo->lastInsertId();
@@ -93,8 +102,24 @@ try{
     if(($coupon['source']??'')==='game' && $couponCode!==''){
         if(!mark_customer_coupon_used($couponCode,$oid)) throw new RuntimeException('Coupon already used.');
     }
-    if($groupCheckout)hyg_finish($groupCheckout,$oid);
+    foreach($gameCash['codes'] as $gameCode)if(!mark_customer_coupon_used($gameCode,$oid))throw new RuntimeException('Coupon already used.');
+    // Free drink/topping prizes are saved as 0đ gift lines, tagged with their coupon, and spent with this order.
+    $giftSt=$pdo->prepare('INSERT INTO order_items(order_id,product_id,standalone_topping_id,product_name,cup_size,base_price,ice_choice,sugar_choice,toppings_text,unit_price,discount_amount,qty,line_total,game_reward_code) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)');
+    foreach(hcgs_gift_rewards(hcgs_row($gameSessionId)) as $gift){
+        $pick=$gift['item'];$tea=$gift['kind']==='tea';
+        $giftSt->execute([$oid,$tea?$pick['id']:null,$tea?null:$pick['id'],'🎁 Quà Mini Game: '.$pick['name'],$pick['cup_size']?:null,$pick['price'],'','','',0,$pick['price']*$gift['qty'],$gift['qty'],0,$gift['code']]);
+        $usedGifts[$gift['code']]=true;
+    }
+    // One coupon may hold several gift items; it is spent once.
+    foreach(array_keys($usedGifts??[]) as $giftCode)if(!mark_customer_coupon_used($giftCode,$oid))throw new RuntimeException('Coupon already used.');
+    if($groupCheckout){
+        hyg_finish($groupCheckout,$oid);
+        // Members become children of the leader; the leader's parent earns points (see member_referral.php).
+        hym_group_referral_after_order((int)$groupCheckout['room']['id'],$oid);
+    }
     htp_initialize_order($oid);
+    // Chances already granted at checkout are kept by this order and never awarded twice.
+    if($gameSessionId!=='')hcgs_complete_locked($gameSessionId,$oid);
     // This server-generated reference also authorizes recovery if COMMIT loses its reply.
     if($orderMemberId===null)htp_remember_customer_order($no);
     $commitStarted=true;
@@ -112,6 +137,7 @@ try{
 
 // The order is committed. A notification failure must never turn it into a failed checkout.
 hcq_saved($checkoutToken,$no);unset($_SESSION['checkout_drafts'][$checkoutContext],$_SESSION['checkout_errors'][$checkoutContext]);
+if($gameSessionId!=='')unset($_SESSION[HCGS_KEY]);
 if($groupId===''){$_SESSION['cart']=[]; clear_coupon();unset($_SESSION['promotion_mode']);}
 $_SESSION['last_order_no']=$no;
 $_SESSION['last_order_expected_game_chances']=$expectedGameChances;
@@ -124,6 +150,8 @@ ignore_user_abort(true);
 if(function_exists('fastcgi_finish_request'))fastcgi_finish_request();
 // Locate the committed order after releasing the session; maps failure never fails checkout.
 try{hds_recommend_order($oid);}catch(Throwable $e){error_log('[dispatch] Recommendation unavailable for order '.$oid);}
+// Báo hệ mới (Laravel): tự giao cửa hàng gần nhất + bắn socket cho partner-web. Chạy sau khi đã có tọa độ.
+hq_bridge_notify('order.created',$oid);
 try{hqp_process_queue(20,9,$oid);}catch(Throwable $e){hqp_log('post_order_push_error',$e);}
 try{$mailDetail='';send_order_notification_by_id($oid,$mailDetail);}catch(Throwable $e){hqp_log('post_order_mail_error',$e);}
 exit;

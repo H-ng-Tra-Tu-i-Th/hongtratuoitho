@@ -29,6 +29,7 @@ hyg_schema();
 
 require_once __DIR__ . '/member.php';
 require_once __DIR__ . '/member_sync.php';
+require_once __DIR__ . '/member_zalo.php';
 require_once __DIR__ . '/member_i18n.php';
 require_once __DIR__ . '/member_admin_i18n.php';
 require_once __DIR__ . '/member_orders.php';
@@ -36,6 +37,8 @@ hym_schema();
 hym_orders_schema();
 require_once __DIR__ . '/member_rewards.php';
 hym_reward_schema();
+require_once __DIR__ . '/member_referral.php';
+hym_referral_schema();
 promotion_schema();
 require_once __DIR__ . '/dispatch.php';
 require_once __DIR__ . '/dispatch_i18n.php';
@@ -48,3 +51,10 @@ hds_maintenance();
 
 require_once __DIR__.'/game_rewards.php';
 hgr_schema();
+
+require_once __DIR__.'/checkout_game_session.php';
+
+// Cầu nối sang hệ mới (Laravel) -- xoá khi bỏ hệ cũ
+require_once __DIR__.'/new_api_bridge.php';
+hcgs_schema();
+hcgs_sweep();

@@ -267,9 +267,10 @@ function hyg_create(string $title,string $nickname,bool $copy,string $request,?a
         $previous=hyg_one('SELECT * FROM group_rooms WHERE owner_hash=? AND create_key=?',[$owner,$request]);if($previous)return $previous;
         $n=hyg_one('SELECT COUNT(*) n FROM group_rooms WHERE owner_hash=? AND created_at>DATE_SUB(NOW(),INTERVAL 1 DAY)',[$owner]);if((int)$n['n']>=20)hyg_fail('too_many');
         $public=bin2hex(random_bytes(16));$invite=bin2hex(random_bytes(32));
-        hyg_exec('INSERT INTO group_rooms(public_id,invite_token,owner_hash,create_key,title,promotion_mode,expires_at) VALUES(?,?,?,?,?,?,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 4 HOUR))',[$public,$invite,$owner,$request,$title,minigame_enabled()?'draw':'none']);$id=(int)db()->lastInsertId();
+        $account=(int)($_SESSION['member_id']??0)?:null; // The signed-in member who creates the group is its owner.
+        hyg_exec('INSERT INTO group_rooms(public_id,invite_token,owner_hash,create_key,title,promotion_mode,owner_member_id,expires_at) VALUES(?,?,?,?,?,?,?,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 4 HOUR))',[$public,$invite,$owner,$request,$title,minigame_enabled()?'draw':'none',$account]);$id=(int)db()->lastInsertId();
         if($hostAccount!==null){htp_group_save($id,$hostAccount);hyg_exec("UPDATE group_rooms SET checkout_mode='split' WHERE id=?",[$id]);}
-        hyg_exec('INSERT INTO group_members(room_id,device_hash,nickname) VALUES(?,?,?)',[$id,$owner,$nickname]);$mid=(int)db()->lastInsertId();
+        hyg_exec('INSERT INTO group_members(room_id,device_hash,nickname,member_id) VALUES(?,?,?,?)',[$id,$owner,$nickname,$account]);$mid=(int)db()->lastInsertId();
         if($copy){$cart=$_SESSION['cart']??[];if(count($cart)>200)hyg_fail('room_full');foreach($cart as $row){$selection=hyg_selection($row);$resolved=hyg_resolve($selection);hyg_insert_item($id,$mid,$selection,$resolved,bin2hex(random_bytes(16)));}}
         return hyg_room($public);
     });
@@ -283,7 +284,7 @@ function hyg_join(string $invite,string $nickname): array {
         $old=hyg_one('SELECT id FROM group_members WHERE room_id=? AND device_hash=?',[$r['id'],$hash]);if($old)return $r;
         hyg_open($r);$count=hyg_one('SELECT COUNT(*) n FROM group_members WHERE room_id=?',[$r['id']]);if((int)$count['n']>=50)hyg_fail('room_full');
         $same=hyg_one('SELECT id FROM group_members WHERE room_id=? AND nickname=?',[$r['id'],$nickname]);if($same)hyg_fail('name_taken');
-        hyg_exec('INSERT INTO group_members(room_id,device_hash,nickname) VALUES(?,?,?)',[$r['id'],$hash,$nickname]);hyg_touch((int)$r['id']);return $r;
+        hyg_exec('INSERT INTO group_members(room_id,device_hash,nickname,member_id) VALUES(?,?,?,?)',[$r['id'],$hash,$nickname,(int)($_SESSION['member_id']??0)?:null]);hyg_touch((int)$r['id']);return $r;
     });
 }
 function hyg_insert_item(int $rid,int $mid,array $selection,array $row,string $request): void {
@@ -464,6 +465,14 @@ function hyg_context(): ?array {
     if(empty($_GET['group']))return null;
     hyg_schema();$r=hyg_room(hyg_code($_GET['group']));$m=hyg_member($r);hyg_open($r);hyg_headers();
     return $GLOBALS['hyg_context']=['room'=>$r,'member'=>$m];
+}
+/** True while this device is in a group still taking orders, or the host has an unsent group checkout (header shows "Giỏ nhóm"). */
+function hyg_in_active_group(): bool {
+    if(!empty($GLOBALS['front_cart_room']))return true;
+    try{
+        $device=hyg_device();if($device==='')return false;
+        return (bool)hyg_one("SELECT 1 FROM group_rooms r JOIN group_members m ON m.room_id=r.id WHERE m.device_hash=? AND r.status='open' AND r.expires_at>UTC_TIMESTAMP() LIMIT 1",[$device]);
+    }catch(Throwable $e){return false;}
 }
 function hyg_url(string $path): string {
     $ctx=$GLOBALS['hyg_context']??null;

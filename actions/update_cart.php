@@ -2,6 +2,7 @@
 require __DIR__.'/../lib/bootstrap.php';
 if($_SERVER['REQUEST_METHOD']!=='POST') exit;
 verify_csrf();
+hcgs_guard_cart();
 
 $remove = $_POST['remove'] ?? [];
 $removeKey = isset($_POST['remove_key']) ? (string)$_POST['remove_key'] : '';
