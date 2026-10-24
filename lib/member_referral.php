@@ -2,7 +2,8 @@
 /**
  * Group referral (grandparent → parent → child):
  * when a group order is submitted, every member of the group whose parent_id is NULL becomes a child of the
- * group's leader, and the leader's own parent (the grandparent) earns group_referral_points once per group.
+ * group's leader, and the leader's own parent (the grandparent) earns group_referral_points once per group —
+ * only when at least one other member account (not the leader) ordered items in it.
  *
  * settings:
  *   group_referral_enabled  1 = on, 0 = off (both parent assignment and points)
@@ -83,9 +84,12 @@ function hym_group_referral_after_order(int $roomId,int $orderId): void {
             hyg_exec('UPDATE members SET parent_id=? WHERE id=? AND parent_id IS NULL',[$ownerId,$childId]);
         }
 
-        // The grandparent (leader's parent) earns points once for each group the leader submits.
+        // The grandparent (leader's parent) earns points once for each real group the leader submits.
         $parentId=(int)($owner['parent_id']??0);$points=hym_referral_points();
         if($parentId<1||$points<1)return;
+        // A solo group (only the leader, or the leader plus guests/own devices) earns nothing:
+        // at least one other member account must have ordered items in this group.
+        if(!hyg_one('SELECT gm.id FROM group_members gm JOIN group_items gi ON gi.member_id=gm.id AND gi.room_id=gm.room_id WHERE gm.room_id=? AND gm.member_id IS NOT NULL AND gm.member_id<>? LIMIT 1',[$roomId,$ownerId]))return;
         $credit=db()->prepare("INSERT IGNORE INTO member_point_transactions(member_id,points,reason,order_id,group_room_id,source_member_id) VALUES(?,?,'group_order',?,?,?)");
         $credit->execute([$parentId,$points,$orderId,$roomId,$ownerId]);
         if($credit->rowCount()===1)hyg_exec('UPDATE members SET points_balance=points_balance+? WHERE id=?',[$points,$parentId]);
