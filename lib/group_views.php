@@ -525,17 +525,20 @@ function hyg_render_room(array $r): string
 
           <?= promotion_selector($promotion, ['group_public' => $r['public_id'], 'revision' => $r['revision'], 'host_discount_available' => $payment['host_obligation'] > 0]) ?>
 
-          <!-- Like checkout in the cart, locking submits the chosen offer together. -->
-          <button class="btn primary block" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm="<?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>><?= e(gt('lock')) ?></button>
+          <!-- Button chốt món -->
+          <button class="btn primary block" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>>
+            <?= e(gt('lock')) ?>
+          </button>
         <?php endif; ?>
 
-        <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?><?php if ($cart && !$hasInvalid): ?>
-        <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'checkout') ?>
-          <button class="btn primary block" type="submit"><?= e(gt('continue_checkout')) ?></button>
-        </form>
+        <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?>
+        <?php if (!empty($payment['can_checkout']) && $cart && !$hasInvalid): ?>
+          <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'checkout') ?>
+            <button class="btn primary block" type="submit"><?= e(gt($split ? 'submit_group' : 'checkout')) ?></button>
+          </form>
+        <?php endif; ?>
       <?php endif; ?>
-    <?php endif; ?>
-    <?php if (!$hasReports): ?>
+      <?php if (!$hasReports): ?>
 
             <!-- btn mở lại chọn món  -->
             <form action="<?= e(base_url('group/action.php')) ?>" method="post"><?= hyg_action_fields($r, 'reopen') ?>
@@ -556,12 +559,8 @@ function hyg_render_room(array $r): string
         <?php endif; ?>
 
         <?php if (in_array($r['status'], ['open', 'locked'], true) && $host): ?>
-          <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form"
-            data-confirm="<?= e(gt('cancel_confirm')) ?>">
-            <?= hyg_payment_action_fields($r, 'cancel') ?>    <?php if ($r['status'] === 'locked'): ?>
-              <p class="hyg-muted"><?= e(gt('payment_cancel_hint')) ?></p>
-            <?php endif; ?><label><?= e(gt('payment_reason')) ?><input name="reason" required minlength="3"
-                maxlength="240"></label><button class="btn danger block" type="submit"><?= e(gt('cancel')) ?></button>
+          <form action="<?= e(base_url('group/action.php')) ?>" method="post" class="hyg-payment-form" data-confirm="<?= e(gt('cancel_confirm')) ?>"><?= hyg_payment_action_fields($r, 'cancel') ?><?php if ($r['status'] === 'locked'): ?>
+            <p class="hyg-muted"><?= e(gt('payment_cancel_hint')) ?></p><?php endif; ?><label><?= e(gt('payment_reason')) ?><input name="reason" required minlength="3" maxlength="240"></label><button class="btn danger block" type="submit"><?= e(gt('cancel')) ?></button>
           </form><?php endif; ?>
       </aside>
     </div>

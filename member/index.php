@@ -124,14 +124,18 @@ front_header(mt('member_title'));
         <div class="hym-points-value"><b><?= number_format($groupPoints, 0, ',', '.') ?></b><span><?= e(mt('member_group_points_unit')) ?></span></div>
       </div>
       <div class="hym-reward-toolbar"><strong><?= e(mt('member_draw_balance', ['chances' => (int)$rewardBalance])) ?></strong><?php if (minigame_enabled() && $rewardBalance > 0): ?><a class="btn" href="<?= e(base_url('minigame/')) ?>"><?= e(mt('member_go_draw')) ?></a><?php endif; ?></div>
-      <?php if ($rewardsFailed): ?><p class="hym-note" role="status"><?= e(mt('member_rewards_load_failed')) ?></p><?php elseif (!$rewardCoupons): ?><p class="hym-empty"><?= e(mt('member_rewards_empty')) ?></p><?php else: ?><div class="hym-reward-list">
+      <?php if ($rewardsFailed): ?><p class="hym-note" role="status"><?= e(mt('member_rewards_load_failed')) ?></p><?php elseif (!$rewardCoupons): ?><p class="hym-empty"><?= e(mt('member_rewards_empty')) ?></p><?php else: ?>
+
+        <!-- close-test-Hai | Danh sách thẻ khuyến mãi -->
+        <!-- <div class="hym-reward-list">
           <?php foreach ($rewardCoupons as $reward): ?><article class="hym-reward">
               <div><span class="hym-label"><?= e(pt('reward_code')) ?></span><code><?= e($reward['code']) ?></code><strong><?= e($reward['coupon_type'] === 'game_reward' ? hgr_label($reward) : mt('member_reward_amount', ['amount' => currency() . money($reward['amount'])])) ?></strong>
                 <p class="hym-note"><?= e($reward['coupon_type'] === 'game_reward' ? hgr_label($reward, 'terms') . ' · ' . hgr_text('expires') . ' ' . hgr_expiry((string)($reward['expires_at'] ?? '')) : mt('member_reward_rule')) ?></p>
               </div>
               <form method="post" action="<?= e(base_url('actions/apply_coupon.php')) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="apply"><input type="hidden" name="promotion_mode" value="reward"><input type="hidden" name="coupon_code" value="<?= e($reward['code']) ?>"><button class="btn primary" type="submit"><?= e(mt('member_reward_use')) ?></button></form>
             </article><?php endforeach; ?>
-        </div><?php endif; ?>
+        </div> -->
+      <?php endif; ?>
     </section>
     <section class="hym-card" id="member-local-profile">
       <h2><?= e(mt('member_local_profile')) ?></h2>
