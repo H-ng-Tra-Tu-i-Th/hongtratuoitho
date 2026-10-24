@@ -42,6 +42,16 @@
     }
   };
   const t = words[language];
+  // Checkout dialog: prizes apply to the order being placed, not to a later one.
+  const inCheckout = root.dataset.checkout === '1';
+  const appliedNow = { vi: 'Quà đã được áp dụng trực tiếp vào đơn hàng hiện tại.', zh: '獎品已直接套用於目前這筆訂單。', en: 'This prize has been applied to your current order.' }[language];
+  // A 0đ prize offers one guaranteed replay for sharing the website on Facebook.
+  Object.assign(t, {
+    vi: { zero: 'Tiếc quá, lượt này trúng 0đ!', share_offer: 'Chia sẻ website lên Facebook để nhận thêm 1 lượt chơi — lượt này chắc chắn trúng quà.', share_button: 'Chia sẻ & nhận lượt chơi', share_bonus: 'Cảm ơn bạn đã chia sẻ! Lượt chơi mới này chắc chắn trúng quà.' },
+    zh: { zero: '可惜，這次抽到 0đ！', share_offer: '把網站分享到 Facebook，即可再獲得 1 次遊戲機會，這次保證中獎。', share_button: '分享並領取機會', share_bonus: '感謝分享！這次新的遊戲機會保證中獎。' },
+    en: { zero: 'So close — this play won 0đ!', share_offer: 'Share the website on Facebook to get 1 more play — that play is guaranteed to win a prize.', share_button: 'Share & get a play', share_bonus: 'Thanks for sharing! This new play is guaranteed to win a prize.' }
+  }[language]);
+  if (inCheckout) t.saved = { vi: 'Hoàn thành! Quà đã được áp dụng vào đơn hàng này.', zh: '配對完成！獎品已套用於這筆訂單。', en: 'Complete! Your prize has been applied to this order.' }[language];
   const paths = [
     '<path d="m5 29 38-22-12 38-9-13-17-3Z"/><path d="M22 32 43 7M22 32l-2 10 7-5"/>',
     '<path d="M26 5v8M9 21c0-6 34-6 34 0S9 27 9 21Z"/><path d="M9 21c3 13 17 22 17 26 0-4 14-13 17-26M13 30c9 4 17 4 26 0M19 38h14"/>',
@@ -56,7 +66,8 @@
   const retry = root.querySelector('[data-game-retry]');
   const next = root.querySelector('[data-game-next]');
   const rewardElement = root.querySelector('[data-game-reward]');
-  let board = null, reward = null, busy = false, blocked = true, balance = 0;
+  const shareBox = root.querySelector('[data-game-share-bonus]');
+  let board = null, reward = null, busy = false, blocked = true, balance = 0, shareBonus = false;
   let appearance = { faces: [] }, appearanceKey = '';
   let elapsedAt = Date.now(), waitUntil = 0, retryAt = 0, hideTimer = null, finishTimer = null, freshTimer = null, rateTimer = null;
   let freshMatches = [], errorNotice = false;
@@ -112,13 +123,44 @@
     const prizes = Array.isArray(response.prizes) ? response.prizes : [];
     const name = prize => prize.name?.[language] || prize.name?.vi || '';
     const odds = root.querySelector('[data-game-odds]');
-    if (odds) { odds.hidden = prizes.length === 0; odds.textContent = prizes.map(prize => `${name(prize)} ${Number(prize.odds_percent).toFixed(2).replace(/\.?0+$/, '')}%`).join(' · '); }
+    if (odds) {
+      odds.hidden = prizes.length === 0;
+      // Same layout as hgr_odds_html(): money prizes on one line (largest highlighted, 0đ hidden), each gift on its own line.
+      odds.replaceChildren();
+      const label = (prize, into) => name(prize).split(/(\d[\d.,]*\s?(?:đ|₫))/u).forEach((part, j) => {
+        if (!part) return;
+        if (j % 2) { const b = document.createElement('b'); b.className = 'kyuc-money'; b.textContent = part; into.append(b); }
+        else into.append(part);
+      });
+      const line = (cls) => { const span = document.createElement('span'); span.className = 'kyuc-odds-line ' + cls; odds.append(span); return span; };
+      const amount = prize => Number(prize.amount) || 0;
+      const money = prizes.filter(prize => prize.kind === 'discount' && amount(prize) > 0);
+      const gifts = prizes.filter(prize => prize.kind !== 'discount');
+      const top = Math.max(0, ...money.map(amount));
+      if (money.length) {
+        // One heading, then the amounts only (no "Giảm" before each one).
+        const row = line('kyuc-odds-money');
+        if (odds.dataset.moneyLabel) row.append(odds.dataset.moneyLabel + ' ');
+        money.forEach((prize, i) => {
+          if (i) row.append(' · ');
+          const b = document.createElement('b');
+          b.className = 'kyuc-money';
+          b.textContent = Math.round(amount(prize)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, language === 'vi' ? '.' : ',') + 'đ';
+          if (amount(prize) === top) { const hi = document.createElement('span'); hi.className = 'kyuc-odds-top'; hi.append(b); row.append(hi); }
+          else row.append(b);
+        });
+      }
+      gifts.forEach(prize => label(prize, line('kyuc-odds-gift')));
+      odds.hidden = !money.length && !gifts.length;
+    }
+    // 0đ prizes win nothing, so the prize list hides them.
+    const listed = prizes.filter(prize => !(prize.kind === 'discount' && !(Number(prize.amount) > 0)));
     const details = root.querySelector('[data-game-prize-details]');
-    if (details) details.hidden = prizes.length === 0;
+    if (details) details.hidden = listed.length === 0;
     const list = root.querySelector('[data-game-prizes]');
     if (list) {
       list.replaceChildren();
-      prizes.forEach(prize => {
+      listed.forEach(prize => {
         const li = document.createElement('li'), title = document.createElement('strong'), terms = document.createElement('span');
         title.textContent = name(prize);
         terms.textContent = (prize.terms?.[language] || prize.terms?.vi || '') + ' ' + ({ zh: `有效 ${prize.valid_days} 天`, vi: `Có hiệu lực ${prize.valid_days} ngày`, en: `Valid for ${prize.valid_days} days` }[language]);
@@ -178,6 +220,7 @@
     if (retry) retry.disabled = busy || Date.now() < retryAt;
     if (next) { next.hidden = !reward || balance < 1; next.disabled = busy; }
     if (rewardElement) rewardElement.hidden = !reward;
+    if (shareBox) { shareBox.hidden = !reward || !shareBonus; shareBox.querySelector('button').disabled = busy; }
     root.querySelector('[data-game-cleared]')?.toggleAttribute('hidden', !board?.complete || freshMatches.length > 0);
   }
 
@@ -196,11 +239,15 @@
     const name = root.querySelector('[data-game-reward-name]');
     const terms = root.querySelector('[data-game-reward-terms]');
     const expiry = root.querySelector('[data-game-reward-expiry]');
-    if (name) name.textContent = reward.name?.[language] || reward.name?.vi || '';
-    if (terms) terms.textContent = reward.terms?.[language] || reward.terms?.vi || '';
+    // A 0đ prize wins nothing: show a better-luck message instead of "Giảm 0đ".
+    const zero = reward.kind === 'discount' && !(Number(reward.amount) > 0);
+    if (name) name.textContent = zero
+      ? { vi: 'Chúc bạn may mắn lần sau! Hãy chia sẻ để nhận thêm lượt chơi', zh: '祝你下次好運！分享即可獲得再玩一次的機會', en: 'Better luck next time! Share to get another play' }[language]
+      : reward.name?.[language] || reward.name?.vi || '';
+    if (terms) { terms.textContent = zero ? '' : inCheckout ? appliedNow : reward.terms?.[language] || reward.terms?.vi || ''; terms.hidden = zero; }
     if (expiry) {
       const date = new Date(reward.expires_at || '');
-      expiry.hidden = Number.isNaN(date.getTime());
+      expiry.hidden = inCheckout || Number.isNaN(date.getTime());
       if (!expiry.hidden) expiry.textContent = ({ vi: 'Hạn dùng: ', zh: '有效至：', en: 'Valid until: ' }[language]) + new Intl.DateTimeFormat({ vi: 'vi-VN', zh: 'zh-TW', en: 'en-GB' }[language], {
         timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
       }).format(date) + ' (UTC+7)';
@@ -215,12 +262,49 @@
     if (copy) { copy.hidden = !reward.coupon_code; copy.setAttribute('aria-label', t.copy); }
   }
 
+  // Checkout dialog only: one code per play, listed for the whole order session.
+  function showSessionRewards(session) {
+    const box = root.querySelector('[data-game-session-rewards]');
+    if (!box || session === undefined) return;
+    const rewards = Array.isArray(session?.rewards) ? session.rewards : [];
+    box.hidden = rewards.length === 0;
+    const heading = box.querySelector('[data-game-session-heading]');
+    if (heading) heading.textContent = ({ vi: 'Mã quà của đơn này', zh: '本訂單的獎品代碼', en: 'Reward codes for this order' }[language])
+      + ` (${rewards.length}/${Number(session?.granted) || rewards.length})`;
+    const cash = box.querySelector('[data-game-session-cash]');
+    if (cash) {
+      const total = Number(session?.cash_total) || 0;
+      cash.hidden = total <= 0;
+      cash.textContent = ({ vi: 'Tổng tiền giảm cho đơn này: ', zh: '本訂單可折抵總額：', en: 'Total discount for this order: ' }[language])
+        + (root.dataset.currency || '') + new Intl.NumberFormat({ vi: 'vi-VN', zh: 'zh-TW', en: 'en-US' }[language], { maximumFractionDigits: 2 }).format(total);
+    }
+    const list = box.querySelector('[data-game-session-list]');
+    if (!list) return;
+    list.replaceChildren(...rewards.map((item, index) => {
+      const li = document.createElement('li');
+      const label = document.createElement('span');
+      label.textContent = `${({ vi: 'Lượt', zh: '第', en: 'Play' }[language])} ${index + 1}: ${item.name?.[language] || item.name?.vi || ''}`;
+      const code = document.createElement('code');
+      code.textContent = item.coupon_code || '';
+      li.append(label, code);
+      return li;
+    }));
+  }
+
   function applyResponse(response, animate = false) {
     showSettings(response);
+    showSessionRewards(response.checkout_session);
+    // Checkout: keep the unplayed-chance count current and remember that a prize now applies to the order.
+    const checkout = document.querySelector('[data-checkout-form]');
+    const session = response.checkout_session;
+    if (checkout && session) checkout.dataset.gameRemaining = String(Math.max(0, (Number(session.granted) || 0) - (Number(session.played) || 0)));
+    if (session && typeof window.hcgsSetClock === 'function') window.hcgsSetClock(session.remaining);
+    if (response.event === 'awarded') root.dataset.awarded = '1';
     const oldMatched = board?.matched || [];
     board = response.board || null;
     balance = Math.max(0, Number(response.balance) || 0);
     reward = response.reward || null;
+    shareBonus = !!response.share_bonus;
     elapsedAt = Date.now();
     waitUntil = Date.now() + Math.max(0, Number(board?.wait_ms) || 0);
     blocked = !board || (!reward && balance < 1);
@@ -230,7 +314,7 @@
     clearTimeout(freshTimer);
     freshMatches = animate && board ? board.matched.filter(position => !oldMatched.includes(position)) : [];
     if (retry) retry.hidden = true;
-    if (reward) { showReward(); message(t.saved); }
+    if (reward) { showReward(); message(shareBonus ? t.zero : t.saved); }
     else if (board?.complete) message(t.complete);
     else if (!board) message(balance > 0 ? t.loading : t.no_chances);
     else message(t[response.event] || (board.open.length === 1 ? t.first : board.wait_ms > 0 ? t.mismatch : t.ready));
@@ -328,9 +412,36 @@
     run('flip', false, { board_id: board.id, seq: String(board.seq), position: card.dataset.position });
   }));
   retry?.addEventListener('click', () => run('state'));
+  // A new play starts from a clean board: the previous prize, completion banner and stats are cleared at once.
+  function resetRound() {
+    reward = null; board = null; freshMatches = []; shareBonus = false;
+    ['name', 'terms', 'code', 'amount', 'expiry'].forEach(key => {
+      const element = root.querySelector(`[data-game-reward-${key}]`);
+      if (element) element.textContent = '';
+    });
+    clearTimeout(hideTimer); clearTimeout(freshTimer); clearTimeout(finishTimer);
+    message(t.loading);
+    render();
+    (root.querySelector('.kyuc-board') || root).scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
+  }
   next?.addEventListener('click', () => {
-    if (!busy && reward && balance > 0 && board) run('next', false, { board_id: board.id });
+    if (busy || !reward || balance < 1 || !board) return;
+    const id = board.id;
+    resetRound();
+    run('next', false, { board_id: id });
   });
+  if (shareBox) {
+    shareBox.querySelector('p').textContent = t.share_offer;
+    shareBox.querySelector('button').textContent = t.share_button;
+    shareBox.querySelector('button').addEventListener('click', () => {
+      if (busy || !reward || !shareBonus || !board) return;
+      // Open the Facebook share inside this click so the pop-up is allowed, then claim the guaranteed play.
+      document.querySelector('[data-fb-share-open]')?.click();
+      const id = board.id;
+      resetRound();
+      run('share_bonus', false, { board_id: id });
+    });
+  }
   root.querySelector('[data-game-reward-copy]')?.addEventListener('click', async () => {
     if (!reward?.coupon_code) return;
     try { await navigator.clipboard.writeText(reward.coupon_code); message(t.copied); }

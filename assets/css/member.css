@@ -6,7 +6,7 @@
 .front-body .cart-symbol{width:21px;height:21px;flex:0 0 21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .hym-page{max-width:1080px;margin:auto;min-width:0;overflow-wrap:anywhere}
 .hym-page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin:6px 0 24px}
-.hym-page-head>div{min-width:0}.hym-page-head>form{flex-shrink:0}
+.hym-page-head>div{min-width:0;flex:1}.hym-page-head>form{flex-shrink:0}
 .hym-page-head h1{font-size:clamp(30px,4vw,40px);line-height:1.2;letter-spacing:-.035em;margin:7px 0 12px}
 .hym-page-head p{margin:0;color:var(--muted);line-height:1.7}
 .hym-eyebrow{font-size:14px;font-weight:800;color:var(--muted)}
@@ -40,6 +40,7 @@
 .hym-verification-note,.hym-sync-message{font-size:16px;line-height:1.7;padding:15px;border:1px solid #dfe6ef;border-radius:14px;background:#f7f9fc;color:#344054;margin:16px 0}
 .hym-updated{font-size:14px;margin-bottom:16px}
 .hym-order-list,.hym-transaction-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin-top:20px}
+.hym-order-list.is-capped{overflow-y:auto;overscroll-behavior:contain;padding-right:6px;align-content:start}
 .hym-order,.hym-transaction{padding:18px;border:1px solid var(--line);border-radius:16px;background:#fafbfc;min-width:0}
 .hym-record-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .hym-record-head>div{min-width:0}
@@ -47,6 +48,10 @@
 .hym-order-status{flex-shrink:0;max-width:45%;padding:6px 8px;border-radius:8px;background:#eef2f6;color:#344054;font-size:14px;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
 .hym-record-amount{padding-top:13px;border-top:1px solid var(--line)}
 .hym-facts .hym-record-amount dd{font-size:22px;font-variant-numeric:tabular-nums;line-height:1.4;text-align:right}
+.hym-order-type{font-size:15px;font-weight:600;color:var(--muted);white-space:nowrap}
+.hym-order-detail{margin:12px 0}
+.hym-order-detail>summary{cursor:pointer;font-weight:700;color:var(--primary,#111827)}
+.hym-order-detail .order-detail{margin:8px 0 0}
 .hym-items-title{font-size:16px;margin:18px 0 10px}
 .hym-purchased-items{list-style:none;padding:0;margin:0}
 .hym-purchased-items li{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
@@ -88,3 +93,24 @@
  .hym-record-head{flex-wrap:wrap}
  .hym-order-status{max-width:100%}
 }
+.hym-auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--muted);font-size:15px}
+.hym-auth-divider::before,.hym-auth-divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.btn-zalo-login{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;font-size:17px;font-weight:750;background:#0068FF;border-color:#0068FF;color:#fff;text-decoration:none;white-space:normal}
+.btn-zalo-login:hover{background:#0057d6;border-color:#0057d6;color:#fff}
+.btn-zalo-login:focus-visible{outline:3px solid #0068FF;outline-offset:3px}
+.btn-zalo-login svg{width:26px;height:26px;flex:0 0 26px}
+/* Sign-in and registration: one centered column. */
+.hym-page-auth{max-width:560px}
+.hym-page-auth .hym-page-head{justify-content:center;text-align:center}
+.hym-page-auth .hym-auth-single{margin-inline:auto}
+/* Group referral points strip on the member page. */
+.hym-points{display:flex;align-items:center;gap:16px;margin:18px 0 6px;padding:18px 20px;border-radius:18px;background:linear-gradient(135deg,#fff7e6 0%,#ffe9c7 55%,#ffd9a0 100%);border:1px solid #f3c77a;box-shadow:0 6px 18px rgba(214,140,30,.16);min-width:0}
+.hym-points-icon{flex:0 0 48px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d9480f);color:#fff;font-size:24px;box-shadow:0 4px 10px rgba(217,72,15,.3)}
+.hym-points-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.hym-points-text strong{font-size:17px;color:#7c2d12}
+.hym-points-text small{font-size:14px;line-height:1.6;color:#9a5b1e}
+.hym-points-children{align-self:flex-start;margin-top:2px;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.75);color:#9a3412;font-size:13px;font-weight:700}
+.hym-points-value{flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:92px;padding:10px 14px;border-radius:14px;background:#fff;border:1px solid #f3c77a;color:#c2410c}
+.hym-points-value b{font-size:32px;line-height:1.1;font-weight:900;font-variant-numeric:tabular-nums}
+.hym-points-value span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b45309}
+@media(max-width:560px){.hym-points{flex-wrap:wrap;padding:16px}.hym-points-icon{flex-basis:42px;width:42px;height:42px;font-size:20px}.hym-points-value{width:100%;flex-direction:row;gap:8px;align-items:baseline}}

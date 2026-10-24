@@ -73,15 +73,21 @@ function hymg_payload(?array $row,?array $board,int $balance,string $event): arr
     $presentation=$board['presentation']??($legacyAwarded?['theme'=>'memory','back_image'=>'','faces'=>array_fill(0,6,'')]:hymg_presentation());
     return ['ok'=>true,'board'=>$board?hymg_matching_view($board):null,'balance'=>max(0,$balance),
         'reward'=>$row?hymg_saved_reward($row):null,'event'=>$event,
-        'appearance'=>hymg_public_presentation($presentation),
+        'appearance'=>hymg_public_presentation($presentation),'share_bonus'=>hymg_share_offer($row,$board),
         'prizes'=>$pool?hgr_public_pool($pool):[]];
+}
+/** A 0đ prize earns one replay for sharing the website, once per board. */
+function hymg_share_offer(?array $row,?array $board): bool {
+    if(!$row||$row['awarded_at']===null||!isset($row['reward_json'])||!is_array($board['reward_pool']??null))return false;
+    $reward=hymg_saved_reward($row);
+    return $reward!==null&&hgr_reward_is_zero($reward)&&hgr_winning_pool($board['reward_pool'])!==null;
 }
 function hymg_save_board(string $token,array $board): void {
     $statement=db()->prepare('UPDATE game_matching_boards SET state_json=? WHERE wallet_token=?');
     $statement->execute([json_encode($board,JSON_THROW_ON_ERROR),$token]);
 }
-function hymg_create_board(string $token,bool $replace=false): array {
-    $config=hgr_config();$pool=hgr_reward_pool($config);
+function hymg_create_board(string $token,bool $replace=false,?array $pool=null): array {
+    $config=hgr_config();$pool??=hgr_reward_pool($config);
     if(!$pool)hymg_fail('rewards_unavailable',403);
     $board=hymg_matching_new();$board['presentation']=hymg_presentation($config);$board['reward_pool']=$pool;
     $state=json_encode($board,JSON_THROW_ON_ERROR);
@@ -102,7 +108,7 @@ function hymg_complete_locked(string $token,?array $pool=null): array {
 
 /** All operations lock wallet then board, so sessions/devices share one resumable game. */
 function hymg_request(string $action,array $data=[]): array {
-    if(!in_array($action,['state','start','flip','finish','next'],true))hymg_fail('invalid');
+    if(!in_array($action,['state','start','flip','finish','next','share_bonus'],true))hymg_fail('invalid');
     minigame_schema();
     $token=customer_game_wallet_token(false);
     if($token===''||!hym_reward_wallet_accessible($token)){
@@ -138,12 +144,26 @@ function hymg_request(string $action,array $data=[]): array {
                 if($balance<1)hymg_fail('no_chances',403);
                 if($board['completed_at']===null||count($board['matched'])!==12||count(array_unique($board['matched']))!==12)hymg_fail('matching_incomplete');
                 $reward=hymg_complete_locked($token,$board['reward_pool']);$balance--;
+                // A 0đ prize has no coupon; a marker ties its board to the checkout session so it is not cleared as an old board.
+                $marker=(string)($reward['coupon_code']??'');if($marker==='')$marker='ZERO-'.strtoupper(bin2hex(random_bytes(6)));
+                hcgs_record_play_locked($token,$marker);
                 $statement=$pdo->prepare('UPDATE game_matching_boards SET coupon_code=?,coupon_amount=?,reward_json=?,awarded_at=UTC_TIMESTAMP() WHERE wallet_token=? AND awarded_at IS NULL');
-                $statement->execute([$reward['coupon_code']??'',(float)($reward['coupon_amount']??0),json_encode($reward,JSON_THROW_ON_ERROR),$token]);
+                $statement->execute([$marker,(float)($reward['coupon_amount']??0),json_encode($reward,JSON_THROW_ON_ERROR),$token]);
                 if($statement->rowCount()!==1)throw new RuntimeException('minigame_award_marker_failed');
                 $row['coupon_code']=$reward['coupon_code']??'';$row['coupon_amount']=(float)($reward['coupon_amount']??0);
                 $row['reward_json']=json_encode($reward,JSON_THROW_ON_ERROR);$row['awarded_at']='awarded';$event='awarded';
             }
+        }elseif($action==='share_bonus'){
+            // Sharing after a 0đ prize grants one more chance on a board whose pool has no 0đ prize.
+            $id=hymg_board_id($data);
+            if(!$row)hymg_fail('board_missing');
+            if(!hash_equals($row['board_id'],$id))hymg_fail('board_changed');
+            if(!minigame_enabled())hymg_fail('campaign_disabled',403);
+            if(!hymg_share_offer($row,$board))hymg_fail('share_unavailable');
+            $pool=hgr_winning_pool($board['reward_pool']);
+            $pdo->prepare('UPDATE game_wallets SET available_chances=available_chances+1,total_earned=total_earned+1 WHERE wallet_token=?')->execute([$token]);$balance++;
+            hcgs_add_chance_locked($token);
+            $board=hymg_create_board($token,true,$pool);$row=['board_id'=>$board['id'],'awarded_at'=>null];
         }else{
             if(!minigame_enabled())hymg_fail('campaign_disabled',403);
             if(($action==='next'||!$board)?!hgr_ready():!hymg_board_ready($board))hymg_fail('rewards_unavailable',403);

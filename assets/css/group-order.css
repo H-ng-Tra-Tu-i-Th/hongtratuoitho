@@ -51,15 +51,11 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
 }
 @media(max-width:360px){.hyg-share{padding:16px}.hyg-qr-frame{width:224px}.hyg-share-head p{font-size:13px}}
 
-/* v19.3: collapsed participant cards, per-person payments and host obligations. */
-details.hyg-person{padding:0;overflow:hidden}
-.hyg-person>summary.hyg-person-head{cursor:pointer;list-style:none;margin:0;border:0;padding:20px 22px;min-height:72px;align-items:center}
-.hyg-person>summary::-webkit-details-marker{display:none}
-.hyg-person>summary::after{content:'⌄';font-size:20px;line-height:1;flex:0 0 18px;text-align:center;color:#667085;transition:transform .15s}
-.hyg-person[open]>summary::after{transform:rotate(180deg)}
-.hyg-person>summary strong{flex:1;min-width:0}
-.hyg-person>summary:focus-visible,.hyg-settlement-person>summary:focus-visible{outline:3px solid var(--hyg-accent);outline-offset:-3px}
-.hyg-person[open]>summary{border-bottom:1px solid #edf0f3}
+/* v19.3: participant cards and per-person payments. */
+.hyg-person{padding:0;overflow:hidden}
+.hyg-person>.hyg-person-head{margin:0;border:0;border-bottom:1px solid #edf0f3;padding:20px 22px;min-height:72px;align-items:center}
+.hyg-person>.hyg-person-head strong{flex:1;min-width:0}
+.hyg-settlement-person>summary:focus-visible{outline:3px solid var(--hyg-accent);outline-offset:-3px}
 .hyg-person-body{padding:0 22px 22px}
 .hyg-person-identity{display:flex;align-items:center;gap:8px;margin:15px 0 0;font-size:12px;color:#667085}
 .hyg-person-status{display:flex;align-items:flex-end;gap:6px;flex-direction:column;flex:0 1 auto;text-align:right;max-width:50%}
@@ -105,9 +101,9 @@ details.hyg-person{padding:0;overflow:hidden}
 .hyg-settlement-person>div{padding:0 12px 12px}
 .hyg-settlement-person>.hyg-settlement-totals{margin:0;padding:0 12px 12px}
 @media(max-width:760px){
- .hyg-person>summary.hyg-person-head{padding:17px;gap:8px;min-height:70px}
+ .hyg-person>.hyg-person-head{padding:17px;gap:8px;min-height:70px}
  .hyg-person-body{padding:0 17px 17px}
- .hyg-person>summary strong{font-size:16px}
+ .hyg-person>.hyg-person-head strong{font-size:16px}
  .hyg-person-status{max-width:47%}
  .hyg-payment-overview .hyg-totals-line b{white-space:normal;text-align:right}
 }
@@ -120,7 +116,7 @@ details.hyg-person{padding:0;overflow:hidden}
 .front-body :is(.hyg-muted,.hyg-options,.hyg-counts,.hyg-privacy,.hyg-sync,.hyg-eyebrow,.hyg-room-state,.hyg-person-identity,.hyg-person-status .hyg-ready,.hyg-payment-status,.hyg-order-tag,.hyg-member-tag,.hyg-you){font-size:14px;line-height:1.6}
 .front-body :is(.hyg-form small,.hyg-coupon-form small,.hyg-payment-form small,.hyg-progress small,.hyg-progress strong,.hyg-step-line span,.hyg-qty-form label,.hyg-bank-account dl,.hyg-payment-reference,.hyg-link-options,.hyg-deadline-note){font-size:14px;line-height:1.65}
 .front-body :is(.hyg-status,.hyg-payment-method,.hyg-totals-line,.hyg-person-total,.hyg-settlement-totals,.hyg-entry p,.hyg-mode small,.hyg-mode-actions>a:last-child,.hyg-checkout-note p){font-size:15px;line-height:1.6}
-.front-body :is(.hyg-item-head strong,.hyg-person>summary strong,.hyg-entry strong,.hyg-mode strong){font-size:19px;line-height:1.5}
+.front-body :is(.hyg-item-head strong,.hyg-person>.hyg-person-head strong,.hyg-entry strong,.hyg-mode strong){font-size:19px;line-height:1.5}
 .front-body .hyg-item-head>span,.front-body .hyg-item-bottom>b{font-size:20px}
 .front-body .hyg-summary{top:98px}
 .front-body .hyg-share-main #hyg-invite{font-size:17px}
@@ -129,7 +125,7 @@ details.hyg-person{padding:0;overflow:hidden}
 .front-body .hyg-bank-account>div,.front-body .hyg-bank-account dd,.front-body .hyg-bank-accounts>strong{font-size:17px}
 .front-body .hyg-settlement-person>summary{font-size:17px;line-height:1.5}
 .front-body .hyg-payment-overview h2,.front-body .hyg-payment-overview h3{font-size:22px}
-.front-body .hyg-person>summary.hyg-person-head{gap:10px}
+.front-body .hyg-person>.hyg-person-head{gap:10px}
 .front-body .hyg-person-status{max-width:50%}
 .front-body .hyg-totals-line b,.front-body .hyg-person-total b{white-space:normal;text-align:right;overflow-wrap:anywhere}
 .front-body .hyg-item-head>span{max-width:46%;white-space:normal;text-align:right;overflow-wrap:anywhere}
@@ -137,7 +133,7 @@ details.hyg-person{padding:0;overflow:hidden}
  .front-body :is(.hyg-muted,.hyg-options,.hyg-counts,.hyg-privacy,.hyg-sync,.hyg-room-state,.hyg-person-identity,.hyg-person-status .hyg-ready,.hyg-payment-status,.hyg-order-tag,.hyg-member-tag,.hyg-form small,.hyg-coupon-form small,.hyg-payment-form small,.hyg-progress small,.hyg-progress strong,.hyg-step-line span,.hyg-payment-reference,.hyg-link-options,.hyg-deadline-note){font-size:15px}
  .front-body .hyg-page-head{flex-wrap:wrap}
  .front-body .hyg-page-head .btn,.front-body .hyg-item-actions .btn,.front-body .hyg-share-actions .btn,.front-body .hyg-qty-form .btn{font-size:17px}
- .front-body .hyg-person>summary strong{font-size:18px}
+ .front-body .hyg-person>.hyg-person-head strong{font-size:18px}
  .front-body .hyg-person-status{max-width:48%}
  .front-body .hyg-totals-line,.front-body .hyg-person-total{gap:9px}
  .front-body .hyg-summary{position:static}
@@ -182,6 +178,7 @@ details.hyg-person{padding:0;overflow:hidden}
 .promotion-reward-field input{font-size:17px;max-width:100%;min-width:0;text-transform:uppercase}
 .promotion-reward-field small{font-size:14px;line-height:1.65;color:var(--muted,#667085)}
 .promotion-selector .btn{font-size:17px;min-height:48px;width:100%;white-space:normal;margin:0}
+.promotion-selector [data-promotion-apply][hidden]{display:none!important}
 .promotion-summary{min-width:0;margin:18px 0;padding:14px;background:#f8fafc;border:1px solid #e4e7ec;border-radius:13px;overflow-wrap:anywhere}
 .promotion-summary h3{margin:0 0 8px;font-size:15px;line-height:1.5;color:var(--muted,#667085)}
 .promotion-summary>strong{display:block;font-size:17px;line-height:1.5}

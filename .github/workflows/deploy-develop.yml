@@ -1,0 +1,50 @@
+name: Deploy to Vietnix Develop
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: develop-vietnix
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Sync to Develop FTPS Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Sync files via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_DEV_SERVER }}
+          username: ${{ secrets.FTP_DEV_USERNAME }}
+          password: ${{ secrets.FTP_DEV_PASSWORD }}
+          port: 21
+          protocol: ftps
+          dangerous-clean-slate: false
+          timeout: 60000
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .github/**
+            config.local.php
+            uploads/**
+            .htaccess
+            README.md
+            *.md
+            install.sql
+            *.zip
+            *.tar.gz
+            error_log
+            */error_log
+            *.log
+            *.bak
+            .ftpquota

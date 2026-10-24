@@ -10,6 +10,20 @@ $message='';$error='';
 if($_SERVER['REQUEST_METHOD']==='POST') {
     if(!is_string($_POST['csrf']??null)||empty($_SESSION['_csrf'])) { http_response_code(419);exit(e(t('csrf_expired'))); }
     verify_csrf();
+}
+if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['form']??'')==='referral') {
+    // Group referral settings (see lib/member_referral.php).
+    $points=filter_var($_POST['group_referral_points']??'',FILTER_VALIDATE_INT,['options'=>['min_range'=>0,'max_range'=>1000000]]);
+    if($points===false) $error=ma('referral_invalid');
+    else try {
+        set_setting('group_referral_enabled',isset($_POST['group_referral_enabled'])?'1':'0');
+        set_setting('group_referral_points',(string)$points);
+        unset($GLOBALS['__drink_order_setting_cache']['group_referral_enabled'],$GLOBALS['__drink_order_setting_cache']['group_referral_points']);
+        $message=ma('referral_saved');
+    } catch(Throwable $exception) {
+        $error=ma('save_failed');
+    }
+} elseif($_SERVER['REQUEST_METHOD']==='POST') {
     try {
         $rules=[];
         $sourceLines=preg_split('/\R/',trim((string)($_POST['allowed_sources']??'')));
@@ -57,6 +71,16 @@ admin_header(ma('ipos_settings'));
     <label class="toggle-row"><input type="checkbox" name="transactions_enabled" value="1" <?=!empty($configuration['transactions_enabled'])?'checked':''?>><span><?=e(ma('transactions_enabled'))?></span></label>
     <label><?=e(ma('rules'))?><textarea name="allowed_sources" rows="5" maxlength="12000" spellcheck="false"><?=e($sourceText)?></textarea><small class="field-hint"><?=e(ma('rules_help'))?></small></label>
     <p class="field-hint"><?=e(ma('rules_pending'))?></p>
+    <button class="btn primary" type="submit"><?=e(ma('save'))?></button>
+  </form>
+</section>
+<section class="panel narrow">
+  <h2><?=e(ma('referral_title'))?></h2>
+  <p class="field-hint"><?=e(ma('referral_help'))?></p>
+  <form method="post" class="form-grid" autocomplete="off">
+    <?=csrf_field()?><input type="hidden" name="form" value="referral">
+    <label class="toggle-row"><input type="checkbox" name="group_referral_enabled" value="1" <?=hym_referral_enabled()?'checked':''?>><span><?=e(ma('referral_enabled'))?></span></label>
+    <label><?=e(ma('referral_points'))?><input type="number" name="group_referral_points" required min="0" max="1000000" step="1" inputmode="numeric" value="<?=hym_referral_points()?>"></label>
     <button class="btn primary" type="submit"><?=e(ma('save'))?></button>
   </form>
 </section>
