@@ -25,8 +25,8 @@ function htow_schema(): void {
     }$done=true;
 }
 function htow_targets(string $status): array {
-    // Cancellation after completion is explicit and retains the established reward policy.
-    return ['new'=>['accepted','cancelled'],'accepted'=>['done','cancelled'],'done'=>['cancelled'],'cancelled'=>[]][$status]??[];
+    // A done order is final: it has earned its rewards (game chances, referral points) and can no longer be cancelled.
+    return ['new'=>['accepted','cancelled'],'accepted'=>['done','cancelled'],'done'=>[],'cancelled'=>[]][$status]??[];
 }
 function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int $adminId): void {
     htp_staff_guard($adminId);
@@ -54,6 +54,8 @@ function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int
             award_game_chances_for_order($orderId);
             $processed=hyg_one('SELECT game_award_processed FROM orders WHERE id=?',[$orderId]);
             if(empty($processed['game_award_processed']))htow_fail('reward_failed');
+            // Group referral points are earned only by completed orders.
+            hym_group_referral_credit($orderId);
         }
         $pdo->commit();
     }catch(Throwable $error){if($pdo->inTransaction())$pdo->rollBack();throw $error;}

@@ -114,7 +114,7 @@ try{
     foreach(array_keys($usedGifts??[]) as $giftCode)if(!mark_customer_coupon_used($giftCode,$oid))throw new RuntimeException('Coupon already used.');
     if($groupCheckout){
         hyg_finish($groupCheckout,$oid);
-        // Members become children of the leader; the leader's parent earns points (see member_referral.php).
+        // Members become children of the leader; the leader's parent earns points once the order is done (see member_referral.php).
         hym_group_referral_after_order((int)$groupCheckout['room']['id'],$oid);
     }
     htp_initialize_order($oid);

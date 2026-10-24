@@ -193,7 +193,7 @@ admin_header(t('order_center'));?>
 .aol-metric.good{border-left-color:#16a34a}.aol-metric.warn{border-left-color:#d97706}.aol-metric.bad{border-left-color:#dc2626}
 .aol-type{display:inline-block;margin-top:4px;padding:2px 7px;border-radius:6px;font-size:11px;font-weight:700}
 .aol-type.personal{background:#e0f2fe;color:#0369a1}.aol-type.group{background:#fef3c7;color:#92400e}
-.aol-row-actions{white-space:nowrap}
+.aol-row-actions{white-space:nowrap}.aol-row-actions .btn{white-space:nowrap;width:max-content}
 .aol-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.aol-in{color:#16a34a}
 .aol-code{color:#0284c7;font-weight:700}
 .aol-method{display:inline-block;padding:2px 7px;border-radius:6px;font-size:12px;font-weight:700;border:1px solid}
