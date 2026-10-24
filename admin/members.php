@@ -267,7 +267,8 @@ admin_header(ma('members'));
 .mbl-metric.good{border-left-color:#16a34a}.mbl-metric.warn{border-left-color:#d97706}
 .mbl-num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.mbl-in{color:#16a34a}.mbl-out{color:#dc2626}
 .mbl-c-actions form{margin:0}.mbl-c-actions .btn{white-space:nowrap}
-.mbl-pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+/* Compact row buttons on desktop; beats the shared admin-ui .btn sizing (44px, 14px, wrapping). Mobile keeps its full-width rule. */
+@media(min-width:641px){.admin-shell .admin-container .mbl-c-actions .btn{min-height:0;padding:5px 10px;font-size:12px;line-height:1.3;border-radius:8px;white-space:nowrap}}.mbl-pager{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 .mbl-pager>span:last-child{display:flex;align-items:center;gap:8px}
 .mbl-points{appearance:none;border:1px solid #0284c7;background:#0284c7;color:#fff;border-radius:9px;padding:5px 12px;font:inherit;font-weight:800;cursor:pointer;min-width:44px}
 .mbl-points:hover{background:#0369a1;border-color:#0369a1}.mbl-points:focus-visible{outline:3px solid #7dd3fc;outline-offset:2px}
