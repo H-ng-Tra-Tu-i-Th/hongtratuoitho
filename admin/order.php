@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!is_string($action)) throw new InvalidArgumentException('invalid_action');
     if (in_array($action, ['dispatch_refresh', 'dispatch_assign', 'dispatch_adopt', 'dispatch_clear'], true)) {
       $_SESSION['dispatch_order_flash'] = ['id' => $id, 'key' => hds_view_order_action($id, $action, $_POST, (int)$_SESSION['admin_id'])];
-      redirect(base_url('admin/order.php?id=' . $id . '#hds-dispatch-heading'));
+      redirect(base_url('admin/order.php?id=' . $id . (admin_is_embed() ? '&embed=1' : '') . '#hds-dispatch-heading'));
     } elseif ($action === 'confirm_merchant_payment') {
       htp_confirm($id, $_POST['payment_version'] ?? null, (int)$_SESSION['admin_id']);
       $msg = htp('staff_saved');

@@ -8,8 +8,11 @@
  * settings:
  *   group_referral_enabled  1 = on, 0 = off (both parent assignment and points)
  *   group_referral_points   points the leader's parent receives per submitted group order
+ *
+ * Cancelling a credited group order reverses its credit (hym_group_referral_revoke): a negative
+ * 'group_order_cancel' row is written next to the original 'group_order' row, so the history keeps both.
  */
-const HYM_REFERRAL_SCHEMA = '19.16.2';
+const HYM_REFERRAL_SCHEMA = '19.16.3';
 
 function hym_referral_schema(): void {
     static $done=false;
@@ -51,6 +54,12 @@ function hym_referral_schema(): void {
                 if(!$index->fetchColumn())$pdo->exec('ALTER TABLE member_point_transactions ADD UNIQUE KEY uq_member_point_order(reason,order_id)');
                 $defaults=$pdo->prepare('INSERT IGNORE INTO settings(setting_key,setting_value) VALUES(?,?)');
                 $defaults->execute(['group_referral_enabled','1']);$defaults->execute(['group_referral_points','1']);
+                // 19.16.3: group orders cancelled before reversals existed still hold their credit; reverse them once.
+                $pdo->beginTransaction();
+                try{
+                    foreach($pdo->query("SELECT t.order_id FROM member_point_transactions t JOIN orders o ON o.id=t.order_id WHERE t.reason='group_order' AND o.status='cancelled'")->fetchAll(PDO::FETCH_COLUMN) as $orderId)hym_group_referral_revoke((int)$orderId);
+                    $pdo->commit();
+                }catch(Throwable $e){if($pdo->inTransaction())$pdo->rollBack();throw $e;}
                 set_setting('member_referral_schema_version',HYM_REFERRAL_SCHEMA);
             }else $GLOBALS['__drink_order_setting_cache']['member_referral_schema_version']=HYM_REFERRAL_SCHEMA;
         }finally{$pdo->query("SELECT RELEASE_LOCK(CONCAT(DATABASE(),':referral-schema'))");}
@@ -96,4 +105,17 @@ function hym_group_referral_after_order(int $roomId,int $orderId): void {
     }catch(Throwable $e){
         error_log('group_referral order '.$orderId.': '.$e->getMessage());
     }
+}
+
+/**
+ * Runs inside the cancel transaction (htow_change). Unlike the credit it is not swallowed: if the
+ * reversal fails, the cancellation rolls back too, so a cancelled order never keeps its points.
+ * The unique (reason,order_id) key makes it a no-op when the order was never credited or is already reversed.
+ */
+function hym_group_referral_revoke(int $orderId): void {
+    $credit=hyg_one("SELECT member_id,points,group_room_id,source_member_id FROM member_point_transactions WHERE reason='group_order' AND order_id=? FOR UPDATE",[$orderId]);
+    if(!$credit)return;
+    $reverse=db()->prepare("INSERT IGNORE INTO member_point_transactions(member_id,points,reason,order_id,group_room_id,source_member_id) VALUES(?,?,'group_order_cancel',?,?,?)");
+    $reverse->execute([(int)$credit['member_id'],-(int)$credit['points'],$orderId,$credit['group_room_id'],$credit['source_member_id']]);
+    if($reverse->rowCount()===1)hyg_exec('UPDATE members SET points_balance=points_balance-? WHERE id=?',[(int)$credit['points'],(int)$credit['member_id']]);
 }

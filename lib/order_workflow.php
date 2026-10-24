@@ -32,7 +32,9 @@ function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int
     htp_staff_guard($adminId);
     if(!is_string($target)||!in_array($target,['new','accepted','done','cancelled'],true))htow_fail('status_transition_error');
     if((!is_string($version)&&!is_int($version))||!preg_match('/^[1-9]\d{0,9}$/D',(string)$version))htow_fail('status_changed_error');
-    try{$reason=htp_reason($reason);}catch(TransferPaymentError $e){htow_fail('reason_required');}
+    // Status reason is optional: blank stays '' in order_status_events; a given reason is still validated.
+    if($reason===null||(is_string($reason)&&trim($reason)===''))$reason='';
+    else try{$reason=htp_reason($reason);}catch(TransferPaymentError $e){htow_fail('reason_required');}
     $pdo=db();if($pdo->inTransaction())htow_fail('storage');$pdo->beginTransaction();
     try{
         htp_staff_locked($adminId);
@@ -43,6 +45,8 @@ function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int
         $pdo->prepare('UPDATE orders SET status=?,status_version=status_version+1 WHERE id=? AND status_version=?')->execute([$target,$orderId,$version]);
         $pdo->prepare('INSERT INTO order_status_events(order_id,from_status,to_status,from_version,to_version,admin_id,reason,created_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP())')->execute([$orderId,$order['status'],$target,$version,(int)$version+1,$adminId,$reason]);
         if($target==='cancelled'){
+            // A cancelled group order must not keep the referral points it earned on submit.
+            hym_group_referral_revoke($orderId);
             $r=hyg_one('SELECT * FROM transfer_order_receipts WHERE order_id=? FOR UPDATE',[$orderId]);
             if($r){$after=$r;$after['version']=(int)$r['version']+1;$pdo->prepare('UPDATE transfer_order_receipts SET version=version+1 WHERE order_id=?')->execute([$orderId]);htp_event($orderId,'cancelled',$r,$after,$adminId,$reason);}
         }
@@ -61,18 +65,38 @@ function htow_error(Throwable $error): string {
     return function_exists('hds_view_error')?hds_view_error($error):htp('storage');
 }
 function htow_render_history(array $order): string {
-    $history=htow_history((int)$order['id']);ob_start();?><section class="panel ma-panel"><p class="muted"><?=e(pwf('policy_hint'))?></p><details><summary><?=e(pwf('order_history'))?></summary><?php foreach($history as $entry):?><p><?=e(status_label($entry['from_status']))?> → <?=e(status_label($entry['to_status']))?> · <?=e(hds_view_time($entry['created_at']))?> · <?=e(pwf('staff'))?> #<?=(int)$entry['admin_id']?> · <?=e($entry['reason'])?></p><?php endforeach;?></details></section><?php return ob_get_clean();
+    $history=htow_history((int)$order['id']);ob_start();?><section class="panel ma-panel"><p class="muted"><?=e(pwf('policy_hint'))?></p><details><summary><?=e(pwf('order_history'))?></summary><?php foreach($history as $entry):?><p><?=e(status_label($entry['from_status']))?> → <?=e(status_label($entry['to_status']))?> · <?=e(hds_view_time($entry['created_at']))?> · <?=e(pwf('staff'))?> #<?=(int)$entry['admin_id']?><?=$entry['reason']!==''?' · '.e($entry['reason']):''?></p><?php endforeach;?></details></section><?php return ob_get_clean();
 }
 /** Shared filters use real receipt balances, never fulfillment status as a paid indicator. */
-function htp_list_query(array $filters,int $limit=200): array {
+function htp_list_query(array $filters,int $limit=200,int $offset=0,string $order='o.id DESC'): array {
+    [$sql,$args]=htp_list_sql($filters);
+    return hyg_all($sql.' ORDER BY '.$order.' LIMIT '.max(1,min(500,$limit)).' OFFSET '.max(0,$offset),$args);
+}
+/** Unordered list SQL + args; callers wrap it for paging, totals or export. */
+function htp_list_sql(array $filters): array {
     $where=[];$args=[];$status=$filters['status']??'';$payment=$filters['payment_state']??'';
     if(is_string($status)&&in_array($status,['new','accepted','done','cancelled'],true)){$where[]='o.status=?';$args[]=$status;}
+    // Admin list filters: free text, payment method, personal/group, dispatch store and created_at day range.
+    $q=trim(is_string($filters['q']??null)?$filters['q']:'');
+    if($q!==''){$where[]='(o.order_no LIKE ? OR o.customer_name LIKE ? OR o.phone LIKE ? OR o.group_title LIKE ?)';$like='%'.addcslashes(mb_substr($q,0,80),'%_\\').'%';array_push($args,$like,$like,$like,$like);}
+    $method=$filters['method']??'';
+    if(is_string($method)&&in_array($method,['transfer','cash','split'],true)){$where[]='o.payment_method=?';$args[]=$method;}
+    $type=$filters['type']??'';
+    if($type==='group')$where[]='o.group_room_id IS NOT NULL';elseif($type==='personal')$where[]='o.group_room_id IS NULL';
+    $store=$filters['store']??'';
+    if($store==='hq')$where[]='o.dispatch_store_id IS NULL';elseif(is_string($store)&&preg_match('/^[1-9]\d{0,9}$/D',$store)){$where[]='o.dispatch_store_id=?';$args[]=(int)$store;}
+    foreach(['date_from'=>['>=',''],'date_to'=>['<','+1 day']] as $key=>[$op,$shift]){
+        $day=$filters[$key]??'';if(!is_string($day)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$day))continue;
+        $date=DateTimeImmutable::createFromFormat('!Y-m-d',$day);if(!$date||$date->format('Y-m-d')!==$day)continue;
+        // orders.created_at is a session-time TIMESTAMP, shown as-is in the list, so days compare in that same clock.
+        $where[]='o.created_at'.$op.'?';$args[]=($shift?$date->modify($shift):$date)->format('Y-m-d H:i:s');
+    }
     // Group orders are collected per member in the room (group_members); a staff ledger row, if any, adds to it.
     $due='COALESCE(r.amount,o.total_amount)';$recv='(COALESCE(r.received_amount,0)+COALESCE(g.received,0))';$ref='(COALESCE(r.refunded_amount,0)+COALESCE(g.refunded,0))';
     $state="CASE WHEN o.status='cancelled' AND $recv-$ref>0 THEN 'refund_pending' WHEN o.status='cancelled' AND $recv>0 AND $recv=$ref THEN 'refunded' WHEN r.order_id IS NULL AND g.room_id IS NULL THEN 'legacy' WHEN $recv-$ref>$due THEN 'overpaid' WHEN $due=0 AND $recv=$ref THEN 'not_required' WHEN $due>0 AND $recv-$ref>=$due THEN 'confirmed' WHEN $recv-$ref>0 THEN 'partial' WHEN r.report_state='requested' THEN 'requested' WHEN r.report_state='rejected' THEN 'rejected' ELSE 'unpaid' END";
     if(is_string($payment)&&in_array($payment,['unpaid','requested','partial','confirmed','overpaid','refund_pending','refunded','legacy','not_required','rejected'],true)){$where[]='('.$state.')=?';$args[]=$payment;}
-    $sql="SELECT o.*,r.status AS receipt_status,r.version AS receipt_version,$due AS receipt_due,$recv AS received_amount,$ref AS refunded_amount,r.report_state,r.ledger_only,$state AS financial_state FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id LEFT JOIN (SELECT room_id,SUM(payment_received_amount) AS received,SUM(payment_refunded_amount) AS refunded FROM group_members GROUP BY room_id) g ON g.room_id=o.group_room_id".($where?' WHERE '.implode(' AND ',$where):'').' ORDER BY o.id DESC LIMIT '.max(1,min(500,$limit));
-    return hyg_all($sql,$args);
+    $sql="SELECT o.*,r.status AS receipt_status,r.version AS receipt_version,$due AS receipt_due,$recv AS received_amount,$ref AS refunded_amount,r.report_state,r.ledger_only,$state AS financial_state FROM orders o LEFT JOIN transfer_order_receipts r ON r.order_id=o.id LEFT JOIN (SELECT room_id,SUM(payment_received_amount) AS received,SUM(payment_refunded_amount) AS refunded FROM group_members GROUP BY room_id) g ON g.room_id=o.group_room_id".($where?' WHERE '.implode(' AND ',$where):'');
+    return [$sql,$args];
 }
 function htp_render_list_filters(string $path,array $filters,bool $export=true): string {
     ob_start();?><section class="panel ma-panel"><form method="get" action="<?=e($path)?>" class="form-grid"><input type="hidden" name="status" value="<?=e(is_string($filters['status']??'')?$filters['status']??'':'')?>"><label><?=e(pwf('payment_state'))?><select name="payment_state"><option value=""><?=e(pwf('filter_all'))?></option><?php foreach(['unpaid','requested','partial','confirmed','overpaid','refund_pending','refunded','legacy','not_required','rejected'] as $key):?><option value="<?=e($key)?>" <?=($filters['payment_state']??'')===$key?'selected':''?>><?=e(pwf($key))?></option><?php endforeach;?></select></label><button class="btn ma-btn" type="submit"><?=e(pwf('filter'))?></button></form><?php if($export&&!admin_is_operator()):?><p><a class="btn ma-btn" href="<?=e(base_url('admin/payment_export.php'))?>"><?=e(pwf('export'))?></a></p><?php endif;?></section><?php return ob_get_clean();
