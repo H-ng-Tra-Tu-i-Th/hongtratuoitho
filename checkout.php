@@ -175,120 +175,7 @@ front_header(t('order_info'));
       <?php if ($groupCheckout): ?><input type="hidden" name="group_id" value="<?= e($groupCheckout['room']['public_id']) ?>"><input type="hidden" name="group_revision" value="<?= (int)$groupCheckout['room']['revision'] ?>"><input type="hidden" name="group_signature" value="<?= e($groupCheckout['room']['lock_signature']) ?>"><?php endif; ?>
       <label><?= e(t('customer_name')) ?><input name="customer_name" value="<?= e($values['customer_name']) ?>" required maxlength="100" autocomplete="name" <?= hcq_field_attrs($fieldErrors, 'customer_name') ?>><?= hcq_field_error($fieldErrors, 'customer_name') ?></label>
       <label><?= e(t('phone')) ?><input name="phone" value="<?= e($values['phone']) ?>" required maxlength="50" inputmode="tel" autocomplete="tel" <?= hcq_field_attrs($fieldErrors, 'phone') ?>><?= hcq_field_error($fieldErrors, 'phone') ?></label>
-      <?php
-      $savedDeliveryAddress = $checkoutMember ? trim((string)($checkoutMember['delivery_address'] ?? '')) : '';
-      $hasSavedAddress = $savedDeliveryAddress !== '';
-      $addressMode = in_array($values['address_mode'], ['saved', 'new'], true) && $hasSavedAddress ? $values['address_mode'] : ($hasSavedAddress ? 'saved' : 'new');
-      ?>
-      <link rel="stylesheet" href="<?= e(base_url('assets/css/location-selector.css?v=' . filemtime(__DIR__ . '/assets/css/location-selector.css'))) ?>">
-      <div class="location-container address-input-wrap" data-location-container data-location-endpoint="<?= e(base_url('api/location.php')) ?>" data-stores-endpoint="<?= e(base_url('api/stores.php')) ?>" data-location-token="<?= e(hcq_location_token()) ?>">
-        <div class="address-input-action-bar">
-          <label class="address-input-label"><span><?= e(t('delivery_address')) ?></span></label>
-        </div>
-
-        <?php if ($hasSavedAddress): ?>
-          <div class="address-mode-selector" data-address-mode-selector>
-            <!-- (a) Giao tới địa chỉ đã lưu -->
-            <label class="address-mode-card <?= $addressMode === 'saved' ? 'is-selected' : '' ?>" for="address-mode-saved">
-              <div class="mode-radio-header">
-                <input type="radio" id="address-mode-saved" name="address_mode" value="saved" <?= $addressMode === 'saved' ? 'checked' : '' ?> class="mode-radio-input" data-mode-radio>
-                <span class="mode-radio-title"><?= e(addr_t('addr_mode_saved')) ?></span>
-                <span class="mode-badge-saved">✓ <?= e(addr_t('addr_saved_verified_badge')) ?></span>
-              </div>
-              <div class="saved-address-content">
-                <div class="saved-address-info">
-                  <svg class="saved-address-pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" /></svg>
-                  <p class="saved-address-text" data-saved-address-display><?= e($savedDeliveryAddress) ?></p>
-                </div>
-                <button type="button" class="btn-edit-saved-addr" title="<?= e(addr_t('addr_btn_edit')) ?>" data-btn-edit-saved>
-                  <svg class="btn-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                  <span><?= e(addr_t('addr_btn_edit')) ?></span>
-                </button>
-              </div>
-            </label>
-            <!-- (b) Giao tới địa chỉ khác -->
-            <label class="address-mode-card <?= $addressMode === 'new' ? 'is-selected' : '' ?>" for="address-mode-new">
-              <div class="mode-radio-header">
-                <input type="radio" id="address-mode-new" name="address_mode" value="new" <?= $addressMode === 'new' ? 'checked' : '' ?> class="mode-radio-input" data-mode-radio>
-                <span class="mode-radio-title"><?= e(addr_t('addr_mode_new')) ?></span>
-              </div>
-            </label>
-          </div>
-        <?php else: ?>
-          <input type="hidden" name="address_mode" value="new" data-mode-hidden>
-        <?php endif; ?>
-
-        <!-- Chọn địa chỉ 2 cấp (Tỉnh → Phường) từ JSON cục bộ; Google Maps chỉ dùng để định vị GPS và tính chi nhánh gần nhất -->
-        <div class="address-cascade-container" data-address-cascade
-          data-json-url="<?= e(base_url('assets/data/vietnam-provinces.json?v=' . filemtime(__DIR__ . '/assets/data/vietnam-provinces.json'))) ?>"
-          data-saved-address="<?= e($savedDeliveryAddress) ?>"
-          data-has-saved="<?= $hasSavedAddress ? '1' : '0' ?>"
-          data-address-mode="<?= e($addressMode) ?>"
-          style="<?= $addressMode === 'saved' ? 'display:none;' : '' ?>">
-
-          <div class="address-box-header">
-            <div class="address-box-header-titles">
-              <span class="address-box-badge">📍 <?= e(addr_t('addr_box_title')) ?></span>
-              <span class="address-box-sub"><?= e(addr_t('addr_box_sub')) ?></span>
-            </div>
-            <button type="button" class="btn-gps-trigger" data-btn-gps title="<?= e(addr_t('gps_tooltip')) ?>">
-              <span class="gps-radar-dot" aria-hidden="true"></span>
-              <svg class="gps-icon-crosshair" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z" /></svg>
-              <span class="btn-gps-text"><?= e(addr_t('gps_use_current')) ?></span>
-            </button>
-          </div>
-
-          <div class="address-two-col-grid">
-            <div class="address-field-group">
-              <label for="address-province-input" class="address-sub-label"><span class="sub-label-title"><?= e(addr_t('addr_province_label')) ?></span><span class="required-star">*</span></label>
-              <div class="address-input-relative">
-                <input type="text" id="address-province-input" class="address-cascade-input" placeholder="<?= e(addr_t('addr_province_placeholder')) ?>" autocomplete="off">
-                <div class="autocomplete-dropdown" data-province-dropdown></div>
-              </div>
-              <input type="hidden" name="province_code" value="<?= e($values['province_code']) ?>" data-province-code>
-              <input type="hidden" name="province_name" value="<?= e($values['province_name']) ?>" data-province-name>
-            </div>
-            <div class="address-field-group">
-              <label for="address-ward-input" class="address-sub-label"><span class="sub-label-title"><?= e(addr_t('addr_ward_label')) ?></span><span class="required-star">*</span></label>
-              <div class="address-input-relative">
-                <input type="text" id="address-ward-input" class="address-cascade-input" placeholder="<?= e(addr_t('addr_ward_placeholder_disabled')) ?>" autocomplete="off" disabled>
-                <div class="autocomplete-dropdown" data-ward-dropdown></div>
-              </div>
-              <input type="hidden" name="ward_code" value="<?= e($values['ward_code']) ?>" data-ward-code>
-              <input type="hidden" name="ward_name" value="<?= e($values['ward_name']) ?>" data-ward-name>
-            </div>
-          </div>
-
-          <div class="address-field-group">
-            <label for="address-street-input" class="address-sub-label"><span class="sub-label-title"><?= e(addr_t('addr_street_label')) ?></span><span class="required-star">*</span></label>
-            <input type="text" id="address-street-input" name="street_address" class="address-cascade-input" placeholder="<?= e(addr_t('addr_street_placeholder')) ?>" maxlength="150" autocomplete="address-line1" value="<?= e($values['street_address']) ?>" data-street-address>
-          </div>
-
-          <div class="address-find-store-wrap">
-            <button type="button" class="btn-trigger-find-store" data-btn-find-store disabled>
-              <span class="btn-find-icon">🎯</span>
-              <span class="btn-find-text"><?= e(addr_t('addr_btn_confirm')) ?></span>
-            </button>
-            <div class="find-store-helper-text"><?= e(addr_t('addr_hint')) ?></div>
-          </div>
-
-          <?php if ($checkoutMember): ?>
-            <div class="save-profile-checkbox-wrap">
-              <label class="save-profile-label">
-                <input type="checkbox" name="save_to_profile" value="1" <?= !$hasSavedAddress ? 'checked' : '' ?> class="save-profile-checkbox" data-save-profile-checkbox>
-                <span class="save-profile-text"><?= e(addr_t($hasSavedAddress ? 'addr_save_default_profile' : 'addr_save_new_profile')) ?></span>
-              </label>
-            </div>
-          <?php endif; ?>
-        </div>
-
-        <!-- Địa chỉ đầy đủ "Số nhà, Phường, Tỉnh" do JS ghép, server lưu vào orders.address -->
-        <textarea id="delivery-address-field" name="address" maxlength="255" hidden <?= hcq_field_attrs($fieldErrors, 'address') ?>><?= e($values['address']) ?></textarea>
-        <input type="hidden" name="delivery_address" id="delivery-address-alias" value="<?= e($values['address']) ?>">
-        <div class="address-select-warning" data-address-warning role="alert"></div>
-        <input type="hidden" name="address_verified" value="0" data-address-verified-input>
-        <?= hcq_field_error($fieldErrors, 'address') ?>
-      </div>
+      <label><?= e(t('delivery_address')) ?><textarea name="address" required maxlength="255" rows="3" autocomplete="street-address" <?= hcq_field_attrs($fieldErrors, 'address') ?>><?= e($values['address']) ?></textarea><?= hcq_field_error($fieldErrors, 'address') ?></label>
 
       <!-- close-test-Hai Ẩn thông tin thanh toán của đơn nhóm (Thanh toán chung · Chuyển khoản); đơn lẻ vẫn chọn Chuyển khoản / Tiền mặt -->
       <fieldset<?= $groupPayment ? ' style="display: none;"' : '' ?>>
@@ -384,27 +271,10 @@ front_header(t('order_info'));
       </div>
     <?php endforeach; ?>
     <div class="review-totals">
-      <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong></div><?php if ($coupon['discount'] > 0): ?><div class="discount-line"><span><?= e(t('coupon_discount')) ?> · <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div><?php endif; ?><?php if ($gameCash['discount'] > 0): ?><div class="discount-line"><span>Quà Mini Game (<?= count($gameCash['codes']) ?> mã) · <?= e(implode(', ', $gameCash['codes'])) ?></span><strong>-<?= e(currency()) ?><?= money($gameCash['discount']) ?></strong></div><?php endif; ?><div class="shipping-review-line" data-review-shipping-wrap style="display:none;"><span><?= e(addr_t('shipping_fee_label')) ?></span><strong data-review-shipping-text></strong></div><div class="review-total"><span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
+      <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong></div><?php if ($coupon['discount'] > 0): ?><div class="discount-line"><span><?= e(t('coupon_discount')) ?> · <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div><?php endif; ?><?php if ($gameCash['discount'] > 0): ?><div class="discount-line"><span>Quà Mini Game (<?= count($gameCash['codes']) ?> mã) · <?= e(implode(', ', $gameCash['codes'])) ?></span><strong>-<?= e(currency()) ?><?= money($gameCash['discount']) ?></strong></div><?php endif; ?><div class="review-total"><span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
     </div>
   </aside>
 </div>
-
-<div class="app-loading-overlay" id="checkout-loading-overlay" aria-hidden="true" style="display: none;">
-  <div class="app-loading-box">
-    <svg class="app-loading-spinner" viewBox="0 0 100 100" width="56" height="56" aria-hidden="true">
-      <circle cx="61.1" cy="15.8" r="8.2" fill="#555555" />
-      <circle cx="79.1" cy="28.8" r="9.8" fill="#444444" />
-      <circle cx="79.1" cy="71.2" r="4.2" fill="#dcdcdc" />
-      <circle cx="61.1" cy="84.2" r="5.2" fill="#c4c4c4" />
-      <circle cx="35.4" cy="82.9" r="6.0" fill="#a8a8a8" />
-      <circle cx="16.6" cy="63.5" r="6.8" fill="#888888" />
-      <circle cx="16.8" cy="35.9" r="7.4" fill="#707070" />
-      <circle cx="35.9" cy="16.8" r="7.8" fill="#606060" />
-    </svg>
-  </div>
-</div>
-<?= address_render_js_i18n() ?>
-<script src="<?= e(base_url('assets/js/google-location.js?v=' . filemtime(__DIR__ . '/assets/js/google-location.js'))) ?>" defer></script>
 
 <!-- Dialog Mua 10ly nước được chơi game: chỉ khi khách chọn "Mua 10 nhận lượt rút thưởng" và đủ 10 ly -->
 <?php if ($gameSession) require_once __DIR__ . '/minigame/minigame_dialog.php'; ?>
