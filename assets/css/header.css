@@ -70,3 +70,153 @@
     background: var(--sh-red);
     color: #fff;
 }
+
+/* Nút giỏ hàng: tông dark blue #1e40af (cùng màu khối các bước đặt nhóm) */
+.front-body .topbar .cart-link {
+    border-color: #93c5fd;
+    color: #1e40af;
+}
+
+.front-body .topbar .cart-link:hover {
+    border-color: #1e40af;
+    color: #1e40af;
+}
+
+.front-body .topbar .cart-link .cart-count,
+body.theme-deep-red .front-body .topbar .cart-link .cart-count,
+body.theme-deep-red.front-body .topbar .cart-link .cart-count {
+    background: #1e40af !important;
+    border-color: #1e40af !important;
+    color: #fff !important;
+}
+
+.front-body .topbar .cart-link .cart-label {
+    background: #eff6ff;
+    color: #1e40af;
+}
+
+/* Menu thành viên: nhấn để sổ xuống tên + đăng xuất */
+.front-body .topbar .member-menu {
+    position: relative;
+    display: inline-flex;
+    min-width: 0;
+}
+
+.front-body .topbar .member-menu-toggle {
+    font: inherit;
+    font-size: 17px;
+    font-weight: 750;
+    cursor: pointer;
+    appearance: none;
+}
+
+.front-body .topbar .member-menu-caret {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    transition: transform .2s;
+}
+
+.front-body .topbar .member-menu.is-open .member-menu-toggle {
+    border-color: var(--sh-red);
+    color: var(--sh-red);
+}
+
+.front-body .topbar .member-menu.is-open .member-menu-caret {
+    transform: rotate(180deg);
+}
+
+.front-body .topbar .member-menu-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 80;
+    width: max-content;
+    min-width: 220px;
+    max-width: min(300px, calc(100vw - 32px));
+    padding: 6px;
+    border: 1px solid var(--sh-line, #e5e7eb);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 14px 34px rgba(17, 24, 39, .14);
+    color: var(--sh-text, #111827);
+    animation: member-menu-in .16s ease-out;
+}
+
+.front-body .topbar .member-menu-panel[hidden] {
+    display: none;
+}
+
+@keyframes member-menu-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+}
+
+.front-body .topbar .member-menu-name {
+    display: block;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--sh-line, #e5e7eb);
+    font-size: 15px;
+    font-weight: 750;
+    line-height: 1.4;
+    color: inherit;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.front-body .topbar .member-menu-panel form {
+    margin: 0;
+}
+
+.front-body .topbar .member-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 0;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: none;
+}
+
+.front-body .topbar .member-menu-item:hover,
+.front-body .topbar .member-menu-name:hover {
+    background: var(--sh-red-soft, #f4f6f8);
+    color: var(--sh-red, inherit);
+}
+
+.front-body .topbar .member-menu-item svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+@media (max-width: 760px) {
+    .front-body .topbar .member-menu {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .front-body .topbar .member-menu .member-link {
+        max-width: 140px;
+    }
+
+    .front-body .topbar .member-menu-caret {
+        display: none;
+    }
+}

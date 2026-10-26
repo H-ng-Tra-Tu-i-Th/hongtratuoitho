@@ -75,9 +75,18 @@ front_header(mt('member_title'));
   <header class="hym-page-head">
     <div><span class="hym-eyebrow"><?= e(mt('member_entry')) ?></span>
       <h1><?= e(mt('member_title')) ?></h1>
-      <p><?= e(mt('member_intro')) ?></p>
+      <?php if ($member): ?>
+        <div class="hym-points" aria-label="<?= e(mt('member_group_points_title')) ?>">
+          <span class="hym-points-icon" aria-hidden="true">★</span>
+          <div class="hym-points-text">
+            <strong><?= e(mt('member_group_points_title')) ?></strong>
+            <small><?= e(mt('member_group_points_hint', ['points' => hym_referral_points()])) ?></small>
+            <span class="hym-points-children"><?= e(mt('member_group_children', ['count' => $groupChildren])) ?></span>
+          </div>
+          <div class="hym-points-value"><b><?= number_format($groupPoints, 0, ',', '.') ?></b><span><?= e(mt('member_group_points_unit')) ?></span></div>
+        </div>
+      <?php else: ?><p><?= e(mt('member_intro')) ?></p><?php endif; ?>
     </div>
-    <?php if ($member): ?><form method="post" action="<?= e(base_url('member/action.php')) ?>"><?= csrf_field() ?><input type="hidden" name="action" value="logout"><button type="submit" class="btn"><?= e(mt('member_logout')) ?></button></form><?php endif; ?>
   </header>
   <?php if (is_array($flash) && !empty($flash['key'])): $flashType = in_array($flash['type'] ?? '', ['success', 'info', 'danger'], true) ? $flash['type'] : 'danger';
     $flashText = mt((string)$flash['key']);
@@ -114,15 +123,6 @@ front_header(mt('member_title'));
       <h2><?= e(mt('member_rewards_title')) ?></h2>
       <p class="hym-source"><?= e(mt('member_rewards_source')) ?></p>
       <p class="hym-note"><?= e(mt('member_rewards_hint')) ?></p>
-      <div class="hym-points" aria-label="<?= e(mt('member_group_points_title')) ?>">
-        <span class="hym-points-icon" aria-hidden="true">★</span>
-        <div class="hym-points-text">
-          <strong><?= e(mt('member_group_points_title')) ?></strong>
-          <small><?= e(mt('member_group_points_hint', ['points' => hym_referral_points()])) ?></small>
-          <span class="hym-points-children"><?= e(mt('member_group_children', ['count' => $groupChildren])) ?></span>
-        </div>
-        <div class="hym-points-value"><b><?= number_format($groupPoints, 0, ',', '.') ?></b><span><?= e(mt('member_group_points_unit')) ?></span></div>
-      </div>
       <div class="hym-reward-toolbar"><strong><?= e(mt('member_draw_balance', ['chances' => (int)$rewardBalance])) ?></strong><?php if (minigame_enabled() && $rewardBalance > 0): ?><a class="btn" href="<?= e(base_url('minigame/')) ?>"><?= e(mt('member_go_draw')) ?></a><?php endif; ?></div>
       <?php if ($rewardsFailed): ?><p class="hym-note" role="status"><?= e(mt('member_rewards_load_failed')) ?></p><?php elseif (!$rewardCoupons): ?><p class="hym-empty"><?= e(mt('member_rewards_empty')) ?></p><?php else: ?>
 
@@ -253,4 +253,23 @@ front_header(mt('member_title'));
   <?= sepay_render_js_i18n() ?>
   <script src="<?= e(base_url('assets/js/member-location.js?v=' . filemtime(__DIR__ . '/../assets/js/member-location.js'))) ?>" defer></script>
 <?php endif; ?>
+<script>
+  // Giới hạn danh sách đơn website hiển thị 3 đơn, phần còn lại cuộn trong khung
+  (function() {
+    var list = document.querySelector('#member-platform-orders .hym-order-list');
+    if (!list || list.children.length <= 3) return;
+    function cap() {
+      list.classList.remove('is-capped');
+      list.style.maxHeight = '';
+      list.style.overflowY = '';
+      var listTop = list.getBoundingClientRect().top;
+      var third = list.children[2].getBoundingClientRect();
+      list.style.maxHeight = Math.ceil(third.bottom - listTop + 2) + 'px';
+      list.style.overflowY = 'auto';
+      list.classList.add('is-capped');
+    }
+    cap();
+    window.addEventListener('resize', cap);
+  })();
+</script>
 <?php front_footer(); ?>

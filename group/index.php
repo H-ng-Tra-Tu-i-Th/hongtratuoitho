@@ -65,7 +65,9 @@ unset($_SESSION['hyg_message']);
     <header class="hyg-page-head">
       <div><span class="hyg-eyebrow"><?= e(gt('title')) ?></span>
         <h1><?= e($r['title']) ?></h1>
-      </div><a class="btn" href="<?= e(base_url('group/')) ?>"><?= e(gt('my_groups')) ?></a>
+      </div><?php /* TẠM ẨN nút "Nhóm của tôi" ở đầu phòng nhóm (danh sách nhóm đã có ở trang giỏ hàng cart.php)
+      <a class="btn" href="<?= e(base_url('group/')) ?>"><?= e(gt('my_groups')) ?></a>
+      */ ?>
     </header>
     <?php if (hyg_host($r)): ?>
       <div id="hyg-share-slot"><?= hyg_render_share($r) ?></div><?php endif; ?>

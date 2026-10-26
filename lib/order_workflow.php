@@ -29,14 +29,16 @@ function htow_schema(): void {
     }$done=true;
 }
 function htow_targets(string $status): array {
-    // Cancellation after completion is explicit and retains the established reward policy.
-    return ['new'=>['accepted','cancelled'],'accepted'=>['done','cancelled'],'done'=>['cancelled'],'cancelled'=>[]][$status]??[];
+    // A done order is final: it has earned its rewards (game chances, referral points) and can no longer be cancelled.
+    return ['new'=>['accepted','cancelled'],'accepted'=>['done','cancelled'],'done'=>[],'cancelled'=>[]][$status]??[];
 }
 function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int $adminId): void {
     htp_staff_guard($adminId);
     if(!is_string($target)||!in_array($target,['new','accepted','done','cancelled'],true))htow_fail('status_transition_error');
     if((!is_string($version)&&!is_int($version))||!preg_match('/^[1-9]\d{0,9}$/D',(string)$version))htow_fail('status_changed_error');
-    try{$reason=htp_reason($reason);}catch(TransferPaymentError $e){htow_fail('reason_required');}
+    // Status reason is optional: blank stays '' in order_status_events; a given reason is still validated.
+    if($reason===null||(is_string($reason)&&trim($reason)===''))$reason='';
+    else try{$reason=htp_reason($reason);}catch(TransferPaymentError $e){htow_fail('reason_required');}
     $pdo=db();if($pdo->inTransaction())htow_fail('storage');$pdo->beginTransaction();
     try{
         htp_staff_locked($adminId);
@@ -48,6 +50,8 @@ function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int
         $pdo->prepare('UPDATE orders SET status=?,status_version=status_version+1 WHERE id=? AND status_version=?')->execute([$target,$orderId,$version]);
         $pdo->prepare('INSERT INTO order_status_events(order_id,from_status,to_status,from_version,to_version,admin_id,reason,created_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP())')->execute([$orderId,$order['status'],$target,$version,(int)$version+1,$adminId,$reason]);
         if($target==='cancelled'){
+            // A cancelled group order must not keep the referral points it earned on submit.
+            hym_group_referral_revoke($orderId);
             $r=hyg_one('SELECT * FROM transfer_order_receipts WHERE order_id=? FOR UPDATE',[$orderId]);
             if($r){$after=$r;$after['version']=(int)$r['version']+1;$pdo->prepare('UPDATE transfer_order_receipts SET version=version+1 WHERE order_id=?')->execute([$orderId]);htp_event($orderId,'cancelled',$r,$after,$adminId,$reason);}
         }
@@ -55,6 +59,8 @@ function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int
             award_game_chances_for_order($orderId);
             $processed=hyg_one('SELECT game_award_processed FROM orders WHERE id=?',[$orderId]);
             if(empty($processed['game_award_processed']))htow_fail('reward_failed');
+            // Group referral points are earned only by completed orders.
+            hym_group_referral_credit($orderId);
         }
         $pdo->commit();
     }catch(Throwable $error){if($pdo->inTransaction())$pdo->rollBack();throw $error;}
@@ -66,10 +72,15 @@ function htow_error(Throwable $error): string {
     return function_exists('hds_view_error')?hds_view_error($error):htp('storage');
 }
 function htow_render_history(array $order): string {
-    $history=htow_history((int)$order['id']);ob_start();?><section class="panel ma-panel"><p class="muted"><?=e(pwf('policy_hint'))?></p><details><summary><?=e(pwf('order_history'))?></summary><?php foreach($history as $entry):?><p><?=e(status_label($entry['from_status']))?> → <?=e(status_label($entry['to_status']))?> · <?=e(hds_view_time($entry['created_at']))?> · <?=e(pwf('staff'))?> #<?=(int)$entry['admin_id']?> · <?=e($entry['reason'])?></p><?php endforeach;?></details></section><?php return ob_get_clean();
+    $history=htow_history((int)$order['id']);ob_start();?><section class="panel ma-panel"><p class="muted"><?=e(pwf('policy_hint'))?></p><details><summary><?=e(pwf('order_history'))?></summary><?php foreach($history as $entry):?><p><?=e(status_label($entry['from_status']))?> → <?=e(status_label($entry['to_status']))?> · <?=e(hds_view_time($entry['created_at']))?> · <?=e(pwf('staff'))?> #<?=(int)$entry['admin_id']?><?=$entry['reason']!==''?' · '.e($entry['reason']):''?></p><?php endforeach;?></details></section><?php return ob_get_clean();
 }
 /** Shared filters use real receipt balances, never fulfillment status as a paid indicator. */
-function htp_list_query(array $filters,int $limit=200): array {
+function htp_list_query(array $filters,int $limit=200,int $offset=0,string $order='o.id DESC'): array {
+    [$sql,$args]=htp_list_sql($filters);
+    return hyg_all($sql.' ORDER BY '.$order.' LIMIT '.max(1,min(500,$limit)).' OFFSET '.max(0,$offset),$args);
+}
+/** Unordered list SQL + args; callers wrap it for paging, totals or export. */
+function htp_list_sql(array $filters): array {
     $where=[];$args=[];$status=$filters['status']??'';$payment=$filters['payment_state']??'';
     $adminStore = admin_store_id();
     $storeId = $adminStore !== null ? $adminStore : (!empty($filters['store_id']) ? (int)$filters['store_id'] : null);
@@ -78,6 +89,21 @@ function htp_list_query(array $filters,int $limit=200): array {
         $args[] = $storeId;
     }
     if(is_string($status)&&in_array($status,['new','accepted','done','cancelled'],true)){$where[]='o.status=?';$args[]=$status;}
+    // Admin list filters: free text, payment method, personal/group, dispatch store and created_at day range.
+    $q=trim(is_string($filters['q']??null)?$filters['q']:'');
+    if($q!==''){$where[]='(o.order_no LIKE ? OR o.customer_name LIKE ? OR o.phone LIKE ? OR o.group_title LIKE ?)';$like='%'.addcslashes(mb_substr($q,0,80),'%_\\').'%';array_push($args,$like,$like,$like,$like);}
+    $method=$filters['method']??'';
+    if(is_string($method)&&in_array($method,['transfer','cash','split'],true)){$where[]='o.payment_method=?';$args[]=$method;}
+    $type=$filters['type']??'';
+    if($type==='group')$where[]='o.group_room_id IS NOT NULL';elseif($type==='personal')$where[]='o.group_room_id IS NULL';
+    $store=$filters['store']??'';
+    if($store==='hq')$where[]='o.dispatch_store_id IS NULL';elseif(is_string($store)&&preg_match('/^[1-9]\d{0,9}$/D',$store)){$where[]='o.dispatch_store_id=?';$args[]=(int)$store;}
+    foreach(['date_from'=>['>=',''],'date_to'=>['<','+1 day']] as $key=>[$op,$shift]){
+        $day=$filters[$key]??'';if(!is_string($day)||!preg_match('/^\d{4}-\d{2}-\d{2}$/D',$day))continue;
+        $date=DateTimeImmutable::createFromFormat('!Y-m-d',$day);if(!$date||$date->format('Y-m-d')!==$day)continue;
+        // orders.created_at is a session-time TIMESTAMP, shown as-is in the list, so days compare in that same clock.
+        $where[]='o.created_at'.$op.'?';$args[]=($shift?$date->modify($shift):$date)->format('Y-m-d H:i:s');
+    }
     $orderType=$filters['order_type']??'';
     if($orderType==='group'){$where[]='o.group_room_id IS NOT NULL AND o.group_room_id > 0';}
     elseif($orderType==='personal'){$where[]='(o.group_room_id IS NULL OR o.group_room_id = 0)';}
