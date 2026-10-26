@@ -24,7 +24,39 @@ if(hcq_outcome($postedToken,$checkoutContext)){
 }
 $groupCheckout=null;
 $cart=$_SESSION['cart']??[]; if(!$groupId&&!$cart) redirect(base_url('index.php'));
+/** province_code => ['name'=>…, 'wards'=>[ward_code=>name]] from the same JSON the checkout picker uses; null if unreadable. */
+function hcq_location_index(string $path): ?array {
+    static $index=null;if($index!==null)return $index;
+    if(!is_file($path)){error_log('[checkout] Missing address data: '.$path);return null;}
+    try{$data=json_decode((string)file_get_contents($path),true,512,JSON_THROW_ON_ERROR);}catch(JsonException $e){error_log('[checkout] Invalid address data: '.$e->getMessage());return null;}
+    $built=[];foreach($data as $p){$code=(string)($p['code']??'');$built[$code]=['name'=>(string)($p['name']??''),'wards'=>[]];foreach(($p['wards']??[]) as $w)$built[$code]['wards'][(string)$w['code']]=(string)$w['name'];}
+    return $index=$built;
+}
+// Saved: the address comes from the member row, never from the form. New: Tỉnh/Phường must be a real pair and the
+// stored address is rebuilt from the street plus the canonical names, not the client-joined text.
+$orderMember=hym_current_member();
+$addressMode=($_POST['address_mode']??'new')==='saved'?'saved':'new';$addressError='';
+if($addressMode==='saved'){
+    $savedAddress=$orderMember?trim((string)($orderMember['delivery_address']??'')):'';
+    if($savedAddress==='')$addressError='addr_err_saved_empty';
+    $_POST['address']=$savedAddress;
+}else{
+    $provinceCode=trim((string)($_POST['province_code']??''));$wardCode=trim((string)($_POST['ward_code']??''));
+    $street=preg_replace('/\s+/u',' ',trim((string)($_POST['street_address']??'')));
+    $index=$provinceCode!==''&&$wardCode!==''?hcq_location_index(__DIR__.'/../assets/data/vietnam-provinces.json'):null;
+    $province=$index[$provinceCode]??null;
+    if($provinceCode===''||$wardCode==='')$addressError='addr_err_prov_ward_req';
+    elseif($index===null)$addressError='addr_err_system_address';
+    elseif($province===null||!isset($province['wards'][$wardCode]))$addressError='addr_err_ward_mismatch';
+    elseif($street==='')$addressError='addr_err_street';
+    if($addressError===''){
+        $_POST['province_name']=$province['name'];$_POST['ward_name']=$province['wards'][$wardCode];
+        $_POST['address']=mb_substr($street.', '.$province['wards'][$wardCode].', '.$province['name'],0,255,'UTF-8');
+    }
+}
+// Capture first so a rejected address comes back with the customer's choices still filled in.
 $draft=hcq_capture($checkoutContext,$_POST);$values=$draft['values'];
+if($addressError!=='')hcq_fail($checkoutContext,$groupId,addr_t($addressError));
 if($groupId===''&&$values['payment_method']==='split'){$_SESSION['checkout_drafts'][$checkoutContext]['errors']['payment_method']='incomplete_data';$draft['errors']['payment_method']='incomplete_data';}
 if($draft['errors'])hcq_fail($checkoutContext,$groupId,htp_ux('draft_error'));
 $name=$values['customer_name'];$phone=$values['phone'];$address=$values['address'];$pay=$values['payment_method'];$invoice=(int)$values['invoice_required'];$orderNote=$values['order_note'];
@@ -33,7 +65,6 @@ if(!$invoice)$companyName=$taxId=$companyAddress=$companyRepresentative=$company
 
 // A locked group may already have earned eligibility before the activity is disabled.
 $walletToken=customer_game_wallet_token(true);
-$orderMember=hym_current_member();
 $orderMemberId=$orderMember?(int)$orderMember['id']:null;
 if($groupId===''){
     $given=$_POST['promotion_signature']??null;
@@ -120,6 +151,10 @@ try{
     htp_initialize_order($oid);
     // Chances already granted at checkout are kept by this order and never awarded twice.
     if($gameSessionId!=='')hcgs_complete_locked($gameSessionId,$oid);
+    // "Lưu địa chỉ này vào hồ sơ": only a newly entered address replaces the member's default.
+    if($orderMemberId!==null&&$addressMode==='new'&&in_array((string)($_POST['save_to_profile']??''),['1','true','on'],true)){
+        $pdo->prepare('UPDATE members SET delivery_address=?,updated_at=UTC_TIMESTAMP() WHERE id=?')->execute([$address,$orderMemberId]);
+    }
     // This server-generated reference also authorizes recovery if COMMIT loses its reply.
     if($orderMemberId===null)htp_remember_customer_order($no);
     $commitStarted=true;

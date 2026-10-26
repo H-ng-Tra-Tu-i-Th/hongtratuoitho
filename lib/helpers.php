@@ -45,6 +45,42 @@ function base_url(string $path = ''): string
     $base = defined('APP_BASE_URL') ? rtrim(APP_BASE_URL, '/') : '';
     return $base . '/' . ltrim($path, '/');
 }
+/** Cloudflare edge ranges (https://www.cloudflare.com/ips/); update when Cloudflare publishes new ones. */
+function cloudflare_ip_ranges(): array
+{
+    return [
+        '173.245.48.0/20', '103.21.244.0/22', '103.22.200.0/22', '103.31.4.0/22', '141.101.64.0/18', '108.162.192.0/18',
+        '190.93.240.0/20', '188.114.96.0/20', '197.234.240.0/22', '198.41.128.0/17', '162.158.0.0/15', '104.16.0.0/13',
+        '104.24.0.0/14', '172.64.0.0/13', '131.0.72.0/22',
+        '2400:cb00::/32', '2606:4700::/32', '2803:f800::/32', '2405:b500::/32', '2405:8100::/32', '2a06:98c0::/29', '2c0f:f248::/32',
+    ];
+}
+function ip_in_cidr(string $ip, string $cidr): bool
+{
+    [$subnet, $bits] = explode('/', $cidr) + [1 => ''];
+    $ipBin = @inet_pton($ip);
+    $subnetBin = @inet_pton($subnet);
+    if ($ipBin === false || $subnetBin === false || strlen($ipBin) !== strlen($subnetBin)) return false;
+    $bits = (int)$bits;
+    $bytes = intdiv($bits, 8);
+    if (strncmp($ipBin, $subnetBin, $bytes) !== 0) return false;
+    if ($bits % 8 === 0) return true;
+    $mask = chr((0xFF << (8 - $bits % 8)) & 0xFF);
+    return ($ipBin[$bytes] & $mask) === ($subnetBin[$bytes] & $mask);
+}
+/**
+ * The visitor's IP. Behind Cloudflare every request arrives from an edge IP, so CF-Connecting-IP is used,
+ * but only when the request really came from Cloudflare; anyone else could send that header themselves.
+ */
+function client_ip(): string
+{
+    $remote = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    $forwarded = trim((string)($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
+    if ($forwarded !== '' && filter_var($forwarded, FILTER_VALIDATE_IP)) {
+        foreach (cloudflare_ip_ranges() as $range) if (ip_in_cidr($remote, $range)) return $forwarded;
+    }
+    return $remote !== '' ? $remote : 'local';
+}
 function redirect(string $url): never
 {
     header('Location: ' . $url);
