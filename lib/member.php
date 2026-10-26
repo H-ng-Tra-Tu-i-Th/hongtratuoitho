@@ -128,7 +128,7 @@ function hym_rate_limit(string $scope,string $subject,int $limit,int $seconds): 
         if($own)$pdo->commit();
     }catch(Throwable $e){if($own&&$pdo->inTransaction())$pdo->rollBack();throw $e;}
 }
-function hym_client_ip(): string { return substr((string)($_SERVER['REMOTE_ADDR']??'local'),0,64); }
+function hym_client_ip(): string { return substr(client_ip(),0,64); }
 function hym_register(string $phone,string $password,string $confirm,string $displayName='',string $address=''): array {
     hym_rate_limit('register-ip',hym_client_ip(),6,3600);
     $phone=hym_normalize_phone($phone);
