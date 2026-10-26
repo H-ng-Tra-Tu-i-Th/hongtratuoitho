@@ -11,7 +11,7 @@ function hcq_context(string $group = ''): string
 }
 function hcq_fields(): array
 {
-    return ['customer_name' => 100, 'phone' => 50, 'address' => 255, 'payment_method' => 16, 'invoice_required' => 1, 'invoice_company_name' => 200, 'invoice_tax_id' => 50, 'invoice_company_address' => 255, 'invoice_company_representative' => 120, 'invoice_company_phone' => 50, 'invoice_email' => 190, 'order_note' => 1000, 'address_mode' => 5, 'province_code' => 10, 'province_name' => 100, 'ward_code' => 10, 'ward_name' => 100, 'street_address' => 150];
+    return ['customer_name' => 100, 'phone' => 50, 'address' => 255, 'payment_method' => 16, 'invoice_required' => 1, 'invoice_company_name' => 200, 'invoice_tax_id' => 50, 'invoice_company_address' => 255, 'invoice_company_representative' => 120, 'invoice_company_phone' => 50, 'invoice_email' => 190, 'order_note' => 1000];
 }
 function hcq_capture(string $context, array $input): array
 {
@@ -141,44 +141,4 @@ function hcq_field_error(array $errors, string $name): string
 function hcq_field_attrs(array $errors, string $name): string
 {
     return isset($errors[$name]) ? ' aria-invalid="true" aria-describedby="error-' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '"' : '';
-}
-const HCQ_LOCATION_TOKEN_TTL = 7200;
-/** Issued only by checkout.php: api/location.php (paid Google calls) answers only sessions that opened checkout. */
-function hcq_location_token(): string
-{
-    $saved = $_SESSION['hcq_location_token'] ?? null;
-    if (is_array($saved) && is_string($saved['token'] ?? null) && time() - (int)($saved['issued_at'] ?? 0) < HCQ_LOCATION_TOKEN_TTL - 600) return $saved['token'];
-    $token = bin2hex(random_bytes(24));
-    $_SESSION['hcq_location_token'] = ['token' => $token, 'issued_at' => time()];
-    return $token;
-}
-function hcq_location_token_valid(mixed $given): bool
-{
-    $saved = $_SESSION['hcq_location_token'] ?? null;
-    return is_string($given) && $given !== '' && is_array($saved) && is_string($saved['token'] ?? null)
-        && time() - (int)($saved['issued_at'] ?? 0) < HCQ_LOCATION_TOKEN_TTL && hash_equals($saved['token'], $given);
-}
-/** Per-IP counter kept outside the session, so dropping the cookie does not reset it. False once over $limit in the window. */
-function hcq_ip_rate_allow(string $bucket, int $limit, int $window = 60): bool
-{
-    $dir = sys_get_temp_dir() . '/hongtra-rate';
-    if (!is_dir($dir) && !@mkdir($dir, 0700, true) && !is_dir($dir)) return true;
-    $file = $dir . '/' . $bucket . '-' . substr(hash('sha256', client_ip()), 0, 24) . '.json';
-    $handle = @fopen($file, 'c+');
-    if ($handle === false) return true;
-    try {
-        if (!flock($handle, LOCK_EX)) return true;
-        $now = time();
-        $data = json_decode((string)stream_get_contents($handle), true);
-        if (!is_array($data) || !is_int($data['start'] ?? null) || !is_int($data['count'] ?? null) || $now - $data['start'] >= $window || $data['start'] > $now) $data = ['start' => $now, 'count' => 0];
-        $data['count']++;
-        ftruncate($handle, 0);
-        rewind($handle);
-        fwrite($handle, json_encode($data));
-        fflush($handle);
-        return $data['count'] <= $limit;
-    } finally {
-        flock($handle, LOCK_UN);
-        fclose($handle);
-    }
 }

@@ -42,7 +42,6 @@ hym_referral_schema();
 promotion_schema();
 require_once __DIR__ . '/dispatch.php';
 require_once __DIR__ . '/dispatch_i18n.php';
-require_once __DIR__ . '/address_i18n.php';
 hds_schema();
 require_once __DIR__.'/transfer_payments.php';
 htp_schema();
