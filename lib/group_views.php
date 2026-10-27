@@ -105,9 +105,16 @@ function hyg_render_steps(int $current): string
   return (string) ob_get_clean();
 }
 
-/** Room page step: 2 (share the cart) until the group has at least one drink, then 3 (choose drinks). */
+/**
+ * Room page step: 2 (share the cart) until the group has at least one drink, then 3 (choose drinks);
+ * 5 (send the order) once the order has been submitted.
+ */
 function hyg_room_step(array $r): int
 {
+  if (($r['status'] ?? '') === 'submitted') {
+    return 5;
+  }
+
   $drinks = 0;
   foreach (hyg_cart($r, false) as $row) {
     // Same count as the room summary: drink lines only, standalone toppings excluded.
