@@ -189,7 +189,7 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
 
 /* ---------- Group order guide (group/index.php create page): 5 steps under "← Back to menu" ----------
    Stepper: numbered circles joined by a line (radio-like), label under each circle.
-   Colours = header cart button (assets/css/header.css): #1e40af / #93c5fd / #eff6ff. */
+   Colours = header cart button (assets/css/header.css): #B32424 / #E8A3A3 / #FDF2F2. */
 .hyg-steps {
     display: flex;
     margin: 18px 0 22px;
@@ -218,7 +218,7 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
     left: calc(50% + 20px);
     width: calc(100% - 40px);
     height: 2px;
-    background: #bfdbfe;
+    background: #F2C4C4;
 }
 
 .hyg-step-no {
@@ -229,10 +229,10 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
     justify-content: center;
     width: 36px;
     height: 36px;
-    border: 2px solid #93c5fd;
+    border: 2px solid #E8A3A3;
     border-radius: 50%;
-    background: #eff6ff;
-    color: #1e40af;
+    background: #FDF2F2;
+    color: #B32424;
     font-size: 15px;
     font-weight: 800;
 }
@@ -245,29 +245,29 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
 }
 
 .hyg-step.is-current {
-    color: #1e40af;
+    color: #B32424;
 }
 
 .hyg-step.is-current .hyg-step-no {
-    border-color: #1e40af;
-    background: #1e40af;
+    border-color: #B32424;
+    background: #B32424;
     color: #fff;
-    box-shadow: 0 0 0 4px #dbeafe;
+    box-shadow: 0 0 0 4px #FBE3E3;
 }
 
-/* Steps already passed: light blue circle, blue line to the next step */
+/* Steps already passed: light red circle, red line to the next step */
 .hyg-step.is-done {
-    color: #1e40af;
+    color: #B32424;
 }
 
 .hyg-step.is-done .hyg-step-no {
-    border-color: #1e40af;
-    background: #dbeafe;
-    color: #1e40af;
+    border-color: #B32424;
+    background: #FBE3E3;
+    color: #B32424;
 }
 
 .hyg-step.is-done:not(:last-child)::after {
-    background: #1e40af;
+    background: #B32424;
 }
 
 /* Phones: same row, smaller circles and text */
@@ -295,14 +295,14 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
 }
 
 /* ---------- "Nhóm của tôi" list (cart.php): rows look clickable ----------
-   Same blue as the header cart button; amber pill for "locked" like the room page. */
+   Same red as the header cart button; amber pill for "locked" like the room page. */
 .hyg-room-list > a.hyg-room-link {
     position: relative;
     padding: 16px 16px 16px 20px;
-    border: 1px solid #bfdbfe;
+    border: 1px solid #F2C4C4;
     border-radius: 14px;
     background: #fff;
-    box-shadow: 0 2px 8px rgba(30, 64, 175, .06);
+    box-shadow: 0 2px 8px rgba(179, 36, 36, .06);
     color: inherit;
     transition: border-color .15s, background .15s, box-shadow .15s, transform .15s;
 }
@@ -316,21 +316,21 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
     left: 0;
     width: 4px;
     border-radius: 0 4px 4px 0;
-    background: #93c5fd;
+    background: #E8A3A3;
 }
 
 .hyg-room-list > a.hyg-room-link:hover,
 .hyg-room-list > a.hyg-room-link:focus-visible {
-    border-color: #1e40af;
-    background: #eff6ff;
-    box-shadow: 0 6px 18px rgba(30, 64, 175, .14);
+    border-color: #B32424;
+    background: #FDF2F2;
+    box-shadow: 0 6px 18px rgba(179, 36, 36, .14);
     transform: translateY(-1px);
 }
 
 .hyg-room-list > a.hyg-room-link:hover::before,
 .hyg-room-list > a.hyg-room-link:focus-visible::before,
 .hyg-room-list > a.hyg-room-link.is-ready::before {
-    background: #1e40af;
+    background: #B32424;
 }
 
 .hyg-room-link strong {
@@ -352,8 +352,8 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
 }
 
 .hyg-room-link .hyg-status.is-open {
-    background: #eff6ff;
-    color: #1e40af;
+    background: #FDF2F2;
+    color: #B32424;
 }
 
 /* Action button on the right: outline by default, filled when the order can be sent now */
@@ -361,10 +361,10 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
     display: inline-flex;
     align-items: center;
     padding: 7px 12px;
-    border: 1px solid #93c5fd;
+    border: 1px solid #E8A3A3;
     border-radius: 9px;
     background: #fff;
-    color: #1e40af;
+    color: #B32424;
     font-size: 13px;
     font-weight: 800;
     white-space: nowrap;
@@ -372,8 +372,8 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
 
 .hyg-room-link.is-ready .hyg-room-cta,
 .hyg-room-link:hover .hyg-room-cta {
-    border-color: #1e40af;
-    background: #1e40af;
+    border-color: #B32424;
+    background: #B32424;
     color: #fff;
 }
 
@@ -384,15 +384,15 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
 }
 
 /* ---------- Home page "Cùng nhau đặt đồ uống" card (index.php): stand-out group order button ----------
-   Same blue as the header cart button. */
+   Same red as the header cart button. */
 .hyg-entry.hyg-entry-highlight {
-    border-color: #bfdbfe;
-    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 70%);
-    box-shadow: 0 6px 20px rgba(30, 64, 175, .08);
+    border-color: #F2C4C4;
+    background: linear-gradient(135deg, #FDF2F2 0%, #ffffff 70%);
+    box-shadow: 0 6px 20px rgba(179, 36, 36, .08);
 }
 
 .hyg-entry.hyg-entry-highlight strong {
-    color: #1e3a8a;
+    color: #8F1D1D;
 }
 
 .hyg-entry .btn.hyg-entry-cta {
@@ -404,19 +404,19 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
     padding: 0 22px;
     border: 0;
     border-radius: 14px;
-    background: #1e40af;
+    background: #B32424;
     color: #fff;
     font-size: 16px;
     font-weight: 800;
-    box-shadow: 0 8px 20px rgba(30, 64, 175, .35);
+    box-shadow: 0 8px 20px rgba(179, 36, 36, .35);
     transition: background .15s, box-shadow .15s, transform .15s;
     animation: hyg-entry-pulse 2.4s ease-in-out infinite;
 }
 
 .hyg-entry .btn.hyg-entry-cta:hover,
 .hyg-entry .btn.hyg-entry-cta:focus-visible {
-    background: #1e3a8a;
-    box-shadow: 0 10px 24px rgba(30, 64, 175, .45);
+    background: #8F1D1D;
+    box-shadow: 0 10px 24px rgba(179, 36, 36, .45);
     transform: translateY(-2px);
     animation: none;
 }
@@ -433,15 +433,15 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
     transform: translateX(3px);
 }
 
-/* Soft blue halo so the button catches the eye without moving the layout */
+/* Soft red halo so the button catches the eye without moving the layout */
 @keyframes hyg-entry-pulse {
     0%,
     100% {
-        box-shadow: 0 8px 20px rgba(30, 64, 175, .35), 0 0 0 0 rgba(59, 130, 246, .35);
+        box-shadow: 0 8px 20px rgba(179, 36, 36, .35), 0 0 0 0 rgba(179, 36, 36, .35);
     }
 
     50% {
-        box-shadow: 0 8px 20px rgba(30, 64, 175, .35), 0 0 0 8px rgba(59, 130, 246, 0);
+        box-shadow: 0 8px 20px rgba(179, 36, 36, .35), 0 0 0 8px rgba(179, 36, 36, 0);
     }
 }
 
