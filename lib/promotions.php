@@ -47,6 +47,11 @@ function promotion_drink_qty(array $cart): int
     foreach ($cart as $row) if (!empty($row['product_id']) && empty($row['standalone_topping_id'])) $qty += max(0, (int)($row['qty'] ?? 0));
     return $qty;
 }
+/** "Buy 4 get 1" only applies from this many drinks: the discount is 1 drink per full 5 (cart_coupon_summary). */
+function promotion_buy4_min_qty(): int
+{
+    return 5;
+}
 function promotion_infer_mode(string $code, string $type = ''): string
 {
     if ($code === '') return minigame_enabled() ? 'draw' : 'none';

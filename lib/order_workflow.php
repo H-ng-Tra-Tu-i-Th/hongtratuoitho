@@ -7,11 +7,11 @@ function htow_fail(string $key): never {throw new OrderWorkflowError($key);}
 function htow_schema(): void {
     static $done=false;if($done)return;$pdo=db();if($pdo->inTransaction())htow_fail('storage');
     $st=$pdo->prepare('SELECT setting_value FROM settings WHERE setting_key=?');$st->execute(['order_workflow_schema']);
-    if($st->fetchColumn()!=='19.16.0'){
+    if($st->fetchColumn()!=='19.17.0'){
         $lock='htow:'.substr(hash('sha256',(string)$pdo->query('SELECT DATABASE()')->fetchColumn()),0,40);
         $guard=$pdo->prepare('SELECT GET_LOCK(?,10)');$guard->execute([$lock]);if((int)$guard->fetchColumn()!==1)htow_fail('storage');
         try{
-            $st->execute(['order_workflow_schema']);if($st->fetchColumn()!=='19.16.0'){
+            $st->execute(['order_workflow_schema']);if($st->fetchColumn()!=='19.17.0'){
                 $check=$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='orders' AND COLUMN_NAME='status_version'");
                 if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE orders ADD COLUMN status_version INT UNSIGNED NOT NULL DEFAULT 1');
                 $check=$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='orders' AND COLUMN_NAME='checkout_request_hash'");
@@ -24,6 +24,14 @@ function htow_schema(): void {
                 if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE orders ADD INDEX idx_orders_payment_expiry (status, payment_method, payment_expires_at)');
                 $pdo->exec("CREATE TABLE IF NOT EXISTS order_status_events (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED NOT NULL,from_status VARCHAR(16) NOT NULL,to_status VARCHAR(16) NOT NULL,from_version INT UNSIGNED NOT NULL,to_version INT UNSIGNED NOT NULL,admin_id BIGINT UNSIGNED NOT NULL,reason VARCHAR(1000) NOT NULL,created_at DATETIME NOT NULL,KEY idx_order_status_history(order_id,id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
                 $pdo->prepare('INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)')->execute(['order_workflow_schema','19.16.0']);
+                $pdo->exec("CREATE TABLE IF NOT EXISTS order_status_events (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,order_id BIGINT UNSIGNED NOT NULL,from_status VARCHAR(16) NOT NULL,to_status VARCHAR(16) NOT NULL,from_version INT UNSIGNED NOT NULL,to_version INT UNSIGNED NOT NULL,admin_id BIGINT UNSIGNED NULL,partner_id BIGINT UNSIGNED NULL,reason VARCHAR(1000) NOT NULL,created_at DATETIME NOT NULL,KEY idx_order_status_history(order_id,id),KEY idx_status_events_partner(partner_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                // Store partners act with admin_id NULL and their partners.id; admin_id 0 keeps meaning "system".
+                if($pdo->query("SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='order_status_events' AND COLUMN_NAME='admin_id'")->fetchColumn()==='NO')$pdo->exec('ALTER TABLE order_status_events MODIFY COLUMN admin_id BIGINT UNSIGNED NULL');
+                $check=$pdo->query("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='order_status_events' AND COLUMN_NAME='partner_id'");
+                if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE order_status_events ADD COLUMN partner_id BIGINT UNSIGNED NULL AFTER admin_id');
+                $check=$pdo->query("SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='order_status_events' AND INDEX_NAME='idx_status_events_partner'");
+                if(!(int)$check->fetchColumn())$pdo->exec('ALTER TABLE order_status_events ADD KEY idx_status_events_partner(partner_id)');
+                $pdo->prepare('INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)')->execute(['order_workflow_schema','19.17.0']);
             }
         }finally{$pdo->prepare('SELECT RELEASE_LOCK(?)')->execute([$lock]);}
     }$done=true;
@@ -34,21 +42,31 @@ function htow_targets(string $status): array {
 }
 function htow_change(int $orderId,mixed $target,mixed $version,mixed $reason,int $adminId): void {
     htp_staff_guard($adminId);
+    htow_transition($orderId,$target,$version,$reason,$adminId,null,function()use($adminId):?int{htp_staff_locked($adminId);return null;});
+}
+/**
+ * Exactly one of $adminId (staff) or $partnerId (store partner) is the actor. $lockActor runs first inside the
+ * transaction; a store id it returns limits the change to orders dispatched to that store.
+ */
+function htow_transition(int $orderId,mixed $target,mixed $version,mixed $reason,?int $adminId,?int $partnerId,callable $lockActor): void {
     if(!is_string($target)||!in_array($target,['new','accepted','done','cancelled'],true))htow_fail('status_transition_error');
+    // Cancelling touches refunds and referral points, so it stays a staff decision.
+    if(($adminId===null)===($partnerId===null)||($partnerId!==null&&$target==='cancelled'))htow_fail('status_transition_error');
     if((!is_string($version)&&!is_int($version))||!preg_match('/^[1-9]\d{0,9}$/D',(string)$version))htow_fail('status_changed_error');
     // Status reason is optional: blank stays '' in order_status_events; a given reason is still validated.
     if($reason===null||(is_string($reason)&&trim($reason)===''))$reason='';
     else try{$reason=htp_reason($reason);}catch(TransferPaymentError $e){htow_fail('reason_required');}
     $pdo=db();if($pdo->inTransaction())htow_fail('storage');$pdo->beginTransaction();
     try{
-        htp_staff_locked($adminId);
-        $order=hyg_one('SELECT * FROM orders WHERE id=? FOR UPDATE',[$orderId]);if(!$order)htow_fail('not_found');
+        $storeId=$lockActor();
+        $order=hyg_one('SELECT * FROM orders WHERE id=? FOR UPDATE',[$orderId]);
+        if(!$order||($storeId!==null&&(int)($order['dispatch_store_id']??0)!==$storeId))htow_fail('not_found');
         if(!admin_order_allowed($order))htow_fail('forbidden');
         if((int)$order['status_version']!==(int)$version)htow_fail('status_changed_error');
         if($order['status']===$target){$pdo->commit();return;}
         if(!in_array($target,htow_targets($order['status']),true))htow_fail('status_transition_error');
         $pdo->prepare('UPDATE orders SET status=?,status_version=status_version+1 WHERE id=? AND status_version=?')->execute([$target,$orderId,$version]);
-        $pdo->prepare('INSERT INTO order_status_events(order_id,from_status,to_status,from_version,to_version,admin_id,reason,created_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP())')->execute([$orderId,$order['status'],$target,$version,(int)$version+1,$adminId,$reason]);
+        $pdo->prepare('INSERT INTO order_status_events(order_id,from_status,to_status,from_version,to_version,admin_id,partner_id,reason,created_at) VALUES(?,?,?,?,?,?,?,?,UTC_TIMESTAMP())')->execute([$orderId,$order['status'],$target,$version,(int)$version+1,$adminId,$partnerId,$reason]);
         if($target==='cancelled'){
             // A cancelled group order must not keep the referral points it earned on submit.
             hym_group_referral_revoke($orderId);
@@ -72,7 +90,7 @@ function htow_error(Throwable $error): string {
     return function_exists('hds_view_error')?hds_view_error($error):htp('storage');
 }
 function htow_render_history(array $order): string {
-    $history=htow_history((int)$order['id']);ob_start();?><section class="panel ma-panel"><p class="muted"><?=e(pwf('policy_hint'))?></p><details><summary><?=e(pwf('order_history'))?></summary><?php foreach($history as $entry):?><p><?=e(status_label($entry['from_status']))?> → <?=e(status_label($entry['to_status']))?> · <?=e(hds_view_time($entry['created_at']))?> · <?=e(pwf('staff'))?> #<?=(int)$entry['admin_id']?><?=$entry['reason']!==''?' · '.e($entry['reason']):''?></p><?php endforeach;?></details></section><?php return ob_get_clean();
+    $history=htow_history((int)$order['id']);$partners=hpa_partner_names(array_column($history,'partner_id'));ob_start();?><section class="panel ma-panel"><p class="muted"><?=e(pwf('policy_hint'))?></p><details><summary><?=e(pwf('order_history'))?></summary><?php foreach($history as $entry):?><p><?=e(status_label($entry['from_status']))?> → <?=e(status_label($entry['to_status']))?> · <?=e(hds_view_time($entry['created_at']))?> · <?=e(hpa_actor_label($entry,$partners,pwf('staff').' #'.(int)$entry['admin_id']))?><?=$entry['reason']!==''?' · '.e($entry['reason']):''?></p><?php endforeach;?></details></section><?php return ob_get_clean();
 }
 /** Shared filters use real receipt balances, never fulfillment status as a paid indicator. */
 function htp_list_query(array $filters,int $limit=200,int $offset=0,string $order='o.id DESC'): array {

@@ -79,7 +79,7 @@ try {
           </div>
           <div class="cart-side">
             <strong><?= e(currency()) ?><?= money($r['unit_price'] * $r['qty']) ?></strong>
-            <label class="cart-qty-field"><span><?= e(t('quantity')) ?></span><input aria-label="<?= e(t('quantity')) ?>" type="number" name="qty[<?= e($key) ?>]" min="0" max="20" value="<?= $r['qty'] ?>"></label>
+            <label class="cart-qty-field"><span><?= e(t('quantity')) ?></span><input aria-label="<?= e(t('quantity')) ?>" type="number" name="qty[<?= e($key) ?>]" min="0" max="<?= order_qty_max() ?>" value="<?= $r['qty'] ?>"></label>
             <button class="cart-remove-btn" type="submit" name="remove_key" value="<?= e($key) ?>" aria-label="<?= e(t('remove')) ?> <?= e($r['name']) ?>"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
               </svg><span><?= e(t('remove')) ?></span></button>

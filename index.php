@@ -125,10 +125,19 @@ front_header(); ?>
 </section> -->
 
 <?php if (!$groupContext && !hyg_in_active_group()): ?>
-  <section class="hyg-entry">
+  <section class="hyg-entry hyg-entry-highlight">
     <div><strong><?= e(gt('entry_title')) ?></strong>
       <p><?= e(gt('entry_desc')) ?></p>
-    </div><a class="btn primary" href="<?= e(hym_login_gate_url('group')) ?>"><?= e(gt('share_cart')) ?></a>
+    </div>
+    <a class="btn primary hyg-entry-cta" href="<?= e(hym_login_gate_url('group')) ?>">
+      <!-- people icon -->
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6M21 20v-1a6 6 0 0 0-4-5.6" />
+      </svg>
+      <span><?= e(gt('entry_cta')) ?></span>
+      <span class="hyg-entry-arrow" aria-hidden="true">→</span>
+    </a>
   </section><?php endif; ?>
 <?php if ($firstKey !== ''): ?>
   <section class="catalog-shell" data-catalog>

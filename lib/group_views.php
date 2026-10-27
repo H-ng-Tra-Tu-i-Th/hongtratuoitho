@@ -19,7 +19,7 @@ function hyg_render_share(array $r): string
   ob_start(); ?>
   <section class="hyg-share hyg-card" data-group-share data-expires="<?= $expires ?>">
     <div class="hyg-share-head">
-      <h2><?= e(gt('share_cart')) ?></h2>
+      <h2><?= e(gt('share_cart')) ?> - <?= e($r['title']) ?></h2>
       <p><?= e(gt('qr_hint')) ?></p>
     </div>
     <div class="hyg-share-layout">
@@ -93,6 +93,50 @@ function hyg_render_member_banks(array $accounts): string
   </div> -->
   <?php return ob_get_clean();
 }
+/**
+ * Group order guide: 1 Tạo nhóm → 2 Chia sẻ giỏ hàng → 3 Chọn đồ uống → 4 Chọn ưu đãi & chốt đơn → 5 Gửi đơn hàng.
+ * Steps before $current are marked done; $current is highlighted.
+ */
+function hyg_render_steps(int $current): string
+{
+  $steps = ['guide_step_create', 'guide_step_share', 'guide_step_drinks', 'guide_step_offer', 'guide_step_send'];
+  ob_start(); ?>
+  <ol class="hyg-steps" aria-label="<?= e(gt('guide_title')) ?>">
+    <?php foreach ($steps as $index => $key): ?>
+      <?php
+      $number = $index + 1;
+      $state = $number < $current ? ' is-done' : ($number === $current ? ' is-current' : '');
+      ?>
+      <li class="hyg-step<?= $state ?>"<?= $number === $current ? ' aria-current="step"' : '' ?>>
+        <span class="hyg-step-no"><?= $number ?></span>
+        <span class="hyg-step-label"><?= e(gt($key)) ?></span>
+      </li>
+    <?php endforeach; ?>
+  </ol>
+<?php
+  return (string) ob_get_clean();
+}
+
+/**
+ * Room page step: 2 (share the cart) until the group has at least one drink, then 3 (choose drinks);
+ * 5 (send the order) once the order has been submitted.
+ */
+function hyg_room_step(array $r): int
+{
+  if (($r['status'] ?? '') === 'submitted') {
+    return 5;
+  }
+
+  $drinks = 0;
+  foreach (hyg_cart($r, false) as $row) {
+    // Same count as the room summary: drink lines only, standalone toppings excluded.
+    if (!empty($row['product_id'])) {
+      $drinks += (int) $row['qty'];
+    }
+  }
+  return $drinks >= 1 ? 3 : 2;
+}
+
 function hyg_render_room(array $r): string
 {
   $m = hyg_member($r);

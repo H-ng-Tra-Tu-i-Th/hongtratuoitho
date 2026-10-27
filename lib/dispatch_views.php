@@ -125,7 +125,7 @@ function hds_render_order_dispatch(array $order): string {
         </script>
       </div>
       <?php else:?><p class="hds-help"><?=e(dt('terminal_hint'))?></p><?php endif;?>
-      <details class="hds-history"><summary><?=e(dt('audit'))?></summary><?php if(!$history):?><p class="hds-help"><?=e(dt('audit_empty'))?></p><?php else:?><ol><?php foreach($history as $entry):?><li><strong><?=e(($entry['store_id']??null)?($entry['name']??dt('none')):dt('unassigned'))?></strong><span><?=e(($entry['admin_name']??'')?:dt('staff_number',['id'=>(int)($entry['admin_id']??0)]))?> · <?=e(hds_view_time((string)($entry['created_at']??'')))?></span><?php if(!empty($entry['address'])):?><p><?=e($entry['address'])?></p><?php endif;?></li><?php endforeach;?></ol><?php endif;?></details>
+      <details class="hds-history"><summary><?=e(dt('audit'))?></summary><?php if(!$history):?><p class="hds-help"><?=e(dt('audit_empty'))?></p><?php else:?><ol><?php $partners=hpa_partner_names(array_column($history,'partner_id'));foreach($history as $entry):?><li><strong><?=e(($entry['store_id']??null)?($entry['name']??dt('none')):dt('unassigned'))?></strong><span><?=e(hpa_actor_label($entry,$partners,($entry['admin_name']??'')?:dt('staff_number',['id'=>(int)($entry['admin_id']??0)])))?> · <?=e(hds_view_time((string)($entry['created_at']??'')))?></span><?php if(($entry['reason']??'')!==''):?><p><?=e($entry['reason'])?></p><?php endif;?><?php if(!empty($entry['address'])):?><p><?=e($entry['address'])?></p><?php endif;?></li><?php endforeach;?></ol><?php endif;?></details>
     </section>
     <?php return ob_get_clean();
 }

@@ -44,10 +44,10 @@ function front_header(string $title = ''): void
         <link rel="apple-touch-icon" href="<?= e(base_url('assets/icons/apple-touch-icon.png?v=19')) ?>">
         <link rel="manifest" href="<?= e(base_url('manifest.webmanifest?v=19')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/app.css?v=' . $assetVersion)) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.7')) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/member.css?v=19.8.4')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.14')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/member.css?v=19.8.5')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/footer.css?v=1.0.4')) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/header.css?v=1.0.5')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/header.css?v=1.0.6')) ?>">
         <title><?= e($title ? $title . '｜' . $store : $store) ?></title><?php $ogDesc = ['vi' => '🎁 Mua 4 tặng 1 · 🎮 Mua 10 ly nhận 1 lượt Mini Game – cơ hội trúng giải đến 145K · 👥 Đặt đơn nhóm cùng bạn bè, giao tận nơi.', 'zh' => '🎁 買4送1 · 🎮 買10杯送1次小遊戲機會，最高抽中145K好禮 · 👥 揪團點單，外送到府。', 'en' => '🎁 Buy 4 get 1 free · 🎮 Buy 10 drinks for a Mini Game chance to win up to 145K · 👥 Group orders, delivered to your door.'][current_lang()] ?? ''; ?>
         <meta name="description" content="<?= e($ogDesc) ?>">
         <meta property="og:type" content="website">
@@ -265,7 +265,7 @@ function front_header(string $title = ''): void
 
 
         <script src="<?= e(base_url('assets/js/app.js?v=19.15.0')) ?>"></script><?php if (!empty($GLOBALS['hyg_qr_page'])): ?><script src="<?= e(base_url('assets/vendor/huiyi-qrcode.js?v=19.8.0')) ?>"></script>
-            <script src="<?= e(base_url('assets/js/group-qr.js?v=19.8.0')) ?>"></script><?php endif; ?><script src="<?= e(base_url('assets/js/group-order.js?v=19.8.6')) ?>"></script>
+            <script src="<?= e(base_url('assets/js/group-qr.js?v=19.8.0')) ?>"></script><?php endif; ?><script src="<?= e(base_url('assets/js/group-order.js?v=19.8.6.1')) ?>"></script>
         <script src="<?= e(base_url('assets/js/promotion.js?v=19.9.2')) ?>"></script>
         <script src="<?= e(base_url('assets/js/game-entry.js?v=19.9.1')) ?>"></script>
     </body>
@@ -310,7 +310,7 @@ function front_header(string $title = ''): void
         <link rel="apple-touch-icon" href="<?= e(base_url('assets/icons/apple-touch-icon.png?v=19')) ?>">
         <link rel="manifest" href="<?= e(base_url('admin/manifest.webmanifest?v=19.1')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/app.css?v=19.15.2')) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.7')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.14')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/dispatch.css?v=19.8.0')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/admin-shell.css?v=19.14.3')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/admin-ui.css?v=19.14.4')) ?>">

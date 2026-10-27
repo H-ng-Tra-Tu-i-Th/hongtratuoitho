@@ -59,20 +59,31 @@ unset($_SESSION['hyg_message']);
 <script src="<?= e(base_url('assets/js/sepay-payment.js?v=1.0.0')) ?>" defer></script>
 <div class="hyg-page" <?php if ($r): ?> data-sepay-group-panel data-group-id="<?= e($r['public_id']) ?>" <?php endif; ?>>
   <a class="back" href="<?= e(base_url('index.php')) ?>">← <?= e(t('back_menu')) ?></a>
-  <?php if ($msg !== ''): ?>
-    <div class="alert info"><?= e($msg) ?></div><?php endif; ?>
+  <?php if ($msg !== ''): ?><div class="alert info"><?= e($msg) ?></div><?php endif; ?>
+  <?php if (!$r && !$invited): ?>
+    <!-- Group order guide: create page = step 1. -->
+    <?= hyg_render_steps(1) ?>
+  <?php elseif ($r): ?>
+    <!-- Group order guide: room page = step 2, or 3 once the group has a drink. group-order.js refreshes this slot. -->
+    <div id="hyg-steps-slot"><?= hyg_render_steps(hyg_room_step($r)) ?></div>
+  <?php endif; ?>
   <?php if ($r): ?>
-    <header class="hyg-page-head">
-      <div><span class="hyg-eyebrow"><?= e(gt('title')) ?></span>
-        <h1><?= e($r['title']) ?></h1>
-      </div><?php /* TẠM ẨN nút "Nhóm của tôi" ở đầu phòng nhóm (danh sách nhóm đã có ở trang giỏ hàng cart.php)
-      <a class="btn" href="<?= e(base_url('group/')) ?>"><?= e(gt('my_groups')) ?></a>
-      */ ?>
-    </header>
-    <?php if (hyg_host($r)): ?>
-      <div id="hyg-share-slot"><?= hyg_render_share($r) ?></div><?php endif; ?>
-    <div class="hyg-sync" role="status"><span data-sync-status><?= e(gt('sync')) ?></span><button type="button"
-        class="hyg-text-btn" data-group-refresh><?= e(gt('refresh')) ?></button></div>
+    <?php
+    // The host's share card is titled "Chia sẻ giỏ hàng - <group name>". Without it (members, or a closed/expired
+    // room) the group name stays as the page title. The "Đặt hàng nhóm" eyebrow is no longer shown.
+    $share = hyg_host($r) ? hyg_render_share($r) : '';
+    ?>
+    <?php if ($share === ''): ?>
+      <header class="hyg-page-head">
+        <div>
+          <h1><?= e($r['title']) ?></h1>
+        </div><?php /* TẠM ẨN nút "Nhóm của tôi" ở đầu phòng nhóm (danh sách nhóm đã có ở trang giỏ hàng cart.php)
+        <a class="btn" href="<?= e(base_url('group/')) ?>"><?= e(gt('my_groups')) ?></a>
+        */ ?>
+      </header>
+    <?php endif; ?>
+    <?php if (hyg_host($r)): ?><div id="hyg-share-slot"><?= $share ?></div><?php endif; ?>
+    <div class="hyg-sync" role="status"><span data-sync-status><?= e(gt('sync')) ?></span><button type="button" class="hyg-text-btn" data-group-refresh><?= e(gt('refresh')) ?></button></div>
     <?= hyg_render_room($r) ?>
     <script id="hyg-config" type="application/json">
       <?= json_encode(['snapshot' => base_url('group/state.php?id=' . $r['public_id']), 'copy' => gt('copied'), 'manual' => gt('manual_copy'), 'offline' => gt('offline'), 'changed' => gt('changed_notice'), 'sync' => gt('sync'), 'serverTime' => time(), 'qrError' => gt('qr_error'), 'roomExpired' => gt('room_expired')], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>
