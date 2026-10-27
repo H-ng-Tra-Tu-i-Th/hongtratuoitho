@@ -166,7 +166,7 @@ function hyg_profile_signature(string $kind,string $code): string {
     return hash('sha256',json_encode($parts));
 }
 function hyg_selection(array $row): array {
-    $qty=(int)($row['qty']??0);if($qty<1||$qty>20)hyg_fail('invalid_quantity');
+    $qty=(int)($row['qty']??0);if($qty<1||$qty>order_qty_max())hyg_fail('invalid_quantity');
     if(!empty($row['standalone_topping_id']))return ['kind'=>'topping','id'=>(int)$row['standalone_topping_id'],'qty'=>$qty];
     $p=hyg_catalog_one('SELECT * FROM products WHERE id=? AND active=1',[(int)($row['product_id']??0)]);
     if(!$p)hyg_fail('item_unavailable');
@@ -178,7 +178,7 @@ function hyg_selection(array $row): array {
         'topping_ids'=>array_values(array_unique(array_map(fn($t)=>(int)$t['id'],$row['toppings']??[])))];
 }
 function hyg_resolve(array $s): array {
-    $qty=(int)($s['qty']??0);if($qty<1||$qty>20)hyg_fail('invalid_quantity');
+    $qty=(int)($s['qty']??0);if($qty<1||$qty>order_qty_max())hyg_fail('invalid_quantity');
     if(($s['kind']??'')==='topping'){
         $p=hyg_catalog_one('SELECT * FROM toppings WHERE id=? AND active=1 AND sell_separately=1',[(int)$s['id']]);
         if(!$p)hyg_fail('item_unavailable');$price=(float)$p['retail_price'];
@@ -426,7 +426,7 @@ function hyg_mutate(string $public,string $action,array $data): void {
             if(!$i||((int)$i['member_id']!==(int)$m['id']&&!hyg_host($r)))hyg_fail('own_items_only');
             if((int)$i['version']!==(int)($data['item_version']??-1))hyg_fail('changed_reload');
             if($action==='remove')hyg_exec('DELETE FROM group_items WHERE id=?',[$i['id']]);
-            else{$qty=filter_var($data['qty']??'',FILTER_VALIDATE_INT);if($qty===false||$qty<1||$qty>20)hyg_fail('invalid_quantity');$s=json_decode($i['selection_json'],true);$s['qty']=$qty;$row=hyg_resolve($s);hyg_exec('UPDATE group_items SET selection_json=?,snapshot_json=?,version=version+1 WHERE id=?',[json_encode($s,JSON_UNESCAPED_UNICODE),json_encode($row,JSON_UNESCAPED_UNICODE),$i['id']]);}
+            else{$qty=filter_var($data['qty']??'',FILTER_VALIDATE_INT);if($qty===false||$qty<1||$qty>order_qty_max())hyg_fail('invalid_quantity');$s=json_decode($i['selection_json'],true);$s['qty']=$qty;$row=hyg_resolve($s);hyg_exec('UPDATE group_items SET selection_json=?,snapshot_json=?,version=version+1 WHERE id=?',[json_encode($s,JSON_UNESCAPED_UNICODE),json_encode($row,JSON_UNESCAPED_UNICODE),$i['id']]);}
         }else hyg_fail('invalid_input');
         hyg_touch($rid);
     });

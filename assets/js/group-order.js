@@ -41,6 +41,17 @@
     if (form.closest('.hyg-page') && form.dataset.submitting) { event.preventDefault(); return; }
     if (form.closest('.hyg-page')) form.dataset.submitting = '1';
   });
+  // Step guide (2 → 3 once the group has a drink); server-rendered and escaped like the share card.
+  function updateSteps(data) {
+    const slot = document.getElementById('hyg-steps-slot');
+    if (!slot || typeof data.steps_html !== 'string' || slot.innerHTML.trim() === data.steps_html.trim()) {
+      return;
+    }
+    const template = document.createElement('template');
+    template.innerHTML = data.steps_html;
+    slot.replaceChildren(template.content);
+  }
+
   function updateShare(data) {
     const slot = document.getElementById('hyg-share-slot');
     if (!slot || typeof data.share_html !== 'string') return;
@@ -70,6 +81,7 @@
       }
       // Do not defer revoked/rotated invitations even while the host is editing a quantity.
       updateShare(data);
+      updateSteps(data);
       const live = document.getElementById('hyg-room-live');
       if (data.signature !== lastSignature) {
         const template = document.createElement('template'); template.innerHTML = data.html;

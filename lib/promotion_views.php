@@ -29,6 +29,7 @@ function pt(string $key, array $vars = []): string
       'draw_progress' => '目前 {qty} / 10 杯飲品。',
       'host_discount_note' => '團主需有自己的訂購或墊付款，才能使用買4送1或獎項序號；仍可選買10抽獎。',
       'buy4_unavailable' => '目前未提供買4送1優惠。',
+      'buy4_need_qty' => '需滿 {min} 杯飲品才可使用（目前 {qty} 杯）。',
       'draw_unavailable' => '目前未提供買10抽獎優惠。',
       'frozen' => '已截止收單，本次優惠與付款金額已固定。',
       'member_saved' => '抽獎機會與獎項券會保存在你的會員帳號。',
@@ -60,6 +61,7 @@ function pt(string $key, array $vars = []): string
       'draw_progress' => 'Hiện có {qty} / 10 ly đồ uống.',
       'host_discount_note' => 'Trưởng nhóm cần có món hoặc khoản trả hộ để dùng Mua 4 tặng 1 hay mã phần thưởng; vẫn có thể chọn Mua 10 nhận lượt rút thưởng.',
       'buy4_unavailable' => 'Hiện chưa có ưu đãi Mua 4 tặng 1.',
+      'buy4_need_qty' => 'Cần ít nhất {min} ly đồ uống để áp dụng (hiện có {qty} ly).',
       'draw_unavailable' => 'Hiện chưa có ưu đãi Mua 10 nhận lượt rút thưởng.',
       'frozen' => 'Đã chốt món. Ưu đãi và số tiền phải trả của đơn này đã được cố định.',
       'member_saved' => 'Lượt rút thưởng và mã phần thưởng được lưu trong tài khoản thành viên của bạn.',
@@ -91,6 +93,7 @@ function pt(string $key, array $vars = []): string
       'draw_progress' => 'Currently {qty} / 10 drinks.',
       'host_discount_note' => 'The host needs their own items or payments for members to use Buy 4 get 1 or a prize code. Buy 10 for a prize draw is still available.',
       'buy4_unavailable' => 'Buy 4 get 1 is currently unavailable.',
+      'buy4_need_qty' => 'Needs at least {min} drinks to apply (currently {qty}).',
       'draw_unavailable' => 'Buy 10 for a prize draw is currently unavailable.',
       'frozen' => 'Ordering is closed. This offer and the payment amounts are fixed.',
       'member_saved' => 'Draw chances and prize coupons are saved in your member account.',
@@ -108,12 +111,13 @@ function promotion_selector(array $choice, array $options = []): string
 {
   $group = (string)($options['group_public'] ?? '');
   $hostDiscount = $options['host_discount_available'] ?? true;
-  $buy4 = coupon_enabled() && coupon_code() !== '';
+  // Whether admin offers "buy 4 get 1" at all; the 5-drink minimum is checked below as $buy4.
+  $buy4Offered = coupon_enabled() && coupon_code() !== '';
   $draw = minigame_enabled();
   $coupons = available_game_coupons();
   $mode = (string)($choice['mode'] ?? 'none');
   if (!in_array($mode, ['none', 'buy4get1', 'draw', 'reward'], true)) $mode = 'none';
-  if ((!$hostDiscount && in_array($mode, ['buy4get1', 'reward'], true)) || (!$buy4 && $mode === 'buy4get1') || (!$draw && $mode === 'draw')) $mode = 'none';
+  if ((!$hostDiscount && in_array($mode, ['buy4get1', 'reward'], true)) || (!$buy4Offered && $mode === 'buy4get1') || (!$draw && $mode === 'draw')) $mode = 'none';
   $prefix = $group !== '' ? 'group-promotion' : 'cart-promotion';
   // close-test-Hai | Tạm ẩn "Mã phần thưởng": ưu đãi đã lưu kiểu này hiển thị như "Không dùng ưu đãi"
   if ($mode === 'reward') $mode = 'none';
@@ -127,7 +131,9 @@ function promotion_selector(array $choice, array $options = []): string
   $hasVoucher    = !empty($voucherCode); // Kiểm tra xem khách có đang dùng Voucher không
 
   // 1. Kiểm tra các mốc số lượng ly
-  $buy4  = $totalQuantity >= 4;
+  // "Mua 4 tặng 1" giảm 1 ly cho mỗi đủ 5 ly, nên chỉ cho chọn từ 5 ly trở lên (và khi admin đang bật ưu đãi).
+  $buy4MinQty = promotion_buy4_min_qty();
+  $buy4  = $buy4Offered && $totalQuantity >= $buy4MinQty;
   $buy10 = $totalQuantity >= 10;
 
   // 2. Logic Không dùng Voucher
@@ -187,8 +193,10 @@ function promotion_selector(array $choice, array $options = []): string
                 <?= e($value === 'buy4get1' && $group !== '' ? gt('coupon_hint') : pt($value . '_hint')) ?>
               </small>
 
-              <?php if ($value === 'buy4get1' && !$buy4): ?>
+              <?php if ($value === 'buy4get1' && !$buy4Offered): ?>
                 <small><?= e(pt('buy4_unavailable')) ?></small>
+              <?php elseif ($value === 'buy4get1' && !$buy4): ?>
+                <small><?= e(pt('buy4_need_qty', ['min' => $buy4MinQty, 'qty' => (int) $totalQuantity])) ?></small>
               <?php elseif ($value === 'draw' && !$draw): ?>
                 <small><?= e(pt('draw_unavailable')) ?></small>
               <?php endif; ?>
