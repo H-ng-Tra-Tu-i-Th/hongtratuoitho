@@ -16,15 +16,48 @@ $hotProducts = array_values(array_filter($allProducts, fn($p) => !empty($p['is_h
 $standaloneToppings = db()->query('SELECT * FROM toppings WHERE active=1 AND sell_separately=1 ORDER BY sort_order,id')->fetchAll();
 $featuredProducts = db()->query("SELECT p.*,COALESCE(s.sold_qty,0) sold_qty FROM products p LEFT JOIN (SELECT oi.product_id,SUM(oi.qty) sold_qty FROM order_items oi WHERE oi.product_id IS NOT NULL GROUP BY oi.product_id) s ON s.product_id=p.id WHERE p.active=1 AND (p.is_new=1 OR p.is_hot=1) ORDER BY p.is_new DESC,p.is_hot DESC,p.sort_order,p.id LIMIT 12")->fetchAll();
 $featuredToppings = db()->query('SELECT * FROM toppings WHERE active=1 AND sell_separately=1 AND (is_new=1 OR is_hot=1) ORDER BY is_new DESC,is_hot DESC,sort_order,id LIMIT 12')->fetchAll();
-$banner = homepage_banner();
-if ($banner && $groupContext) {
-  $banner['url'] .= (str_contains($banner['url'], '?') ? '&' : '?') . 'group=' . $groupContext['room']['public_id'];
+// Home banner slider (admin/banners.php). Inside a group order, banner links keep the group context.
+$banners = hbn_active();
+if ($groupContext) {
+  foreach ($banners as &$slide) {
+    if ($slide['url'] !== '') {
+      $slide['url'] .= (str_contains($slide['url'], '?') ? '&' : '?') . 'group=' . $groupContext['room']['public_id'];
+    }
+  }
+  unset($slide);
 }
 $firstKey = $hotProducts ? 'hot' : ($cats ? 'cat-' . (int) $cats[0]['id'] : ($standaloneToppings ? 'standalone' : ''));
 front_header(); ?>
-<?php if ($banner): ?>
-  <section class="home-banner-wrap"><a class="home-banner" href="<?= e($banner['url']) ?>"><img
-        src="<?= e(base_url('uploads/' . $banner['image'])) ?>" alt="<?= e(t('homepage_banner')) ?>"></a></section>
+<?php if ($banners): ?>
+  <link rel="stylesheet" href="<?= e(base_url('assets/css/home-slider.css?v=2')) ?>">
+  <!-- Auto-playing banner slider: assets/js/home-slider.js. A single banner shows as a still image. -->
+  <section class="home-banner-wrap home-slider" data-home-slider data-interval="<?= hbn_interval() * 1000 ?>"
+    aria-roledescription="carousel" aria-label="<?= e(t('homepage_banner')) ?>">
+    <div class="home-slider-track" data-slider-track>
+      <?php foreach ($banners as $index => $slide): ?>
+        <?php
+        $alt = t('homepage_banner') . ' ' . ($index + 1);
+        $img = '<img src="' . e(base_url('uploads/' . $slide['image'])) . '" alt="' . e($alt) . '"'
+          . ($index === 0 ? ' fetchpriority="high"' : ' loading="lazy"') . '>';
+        ?>
+        <?php if ($slide['url'] !== ''): ?>
+          <a class="home-banner home-slide" href="<?= e($slide['url']) ?>" data-slide><?= $img ?></a>
+        <?php else: ?>
+          <div class="home-banner home-slide" data-slide><?= $img ?></div>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    </div>
+    <?php if (count($banners) > 1): ?>
+      <button class="home-slider-arrow is-prev" type="button" data-slider-prev aria-label="<?= e(hbn_t('prev')) ?>">‹</button>
+      <button class="home-slider-arrow is-next" type="button" data-slider-next aria-label="<?= e(hbn_t('next')) ?>">›</button>
+      <div class="home-slider-dots">
+        <?php foreach ($banners as $index => $slide): ?>
+          <button type="button" data-slider-dot="<?= $index ?>" aria-label="<?= e(hbn_t('go_to', ['n' => $index + 1])) ?>"<?= $index === 0 ? ' aria-current="true"' : '' ?>></button>
+        <?php endforeach; ?>
+      </div>
+      <script src="<?= e(base_url('assets/js/home-slider.js?v=2')) ?>" defer></script>
+    <?php endif; ?>
+  </section>
 <?php endif; ?>
 
 <!-- close-test-Hai | đóng thẻ liên kế dời xuống footer -->

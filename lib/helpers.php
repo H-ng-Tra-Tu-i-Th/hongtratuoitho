@@ -241,18 +241,6 @@ function product_price_text(array $product): string
     }
     return currency() . money($product['price'] ?? 0);
 }
-function homepage_banner(): ?array
-{
-    if (setting('home_banner_active', '0') !== '1') return null;
-    $image = trim(setting('home_banner_image', ''));
-    if ($image === '') return null;
-    $type = setting('home_banner_link_type', 'product');
-    $id = (int)setting('home_banner_target_id', '0');
-    $url = base_url('index.php');
-    if ($id > 0 && $type === 'topping') $url = base_url('topping.php?id=' . $id);
-    elseif ($id > 0) $url = base_url('product.php?id=' . $id);
-    return ['image' => $image, 'url' => $url, 'type' => $type, 'target_id' => $id];
-}
 function coupon_enabled(): bool
 {
     return setting('buy4get1_enabled', '1') === '1';
