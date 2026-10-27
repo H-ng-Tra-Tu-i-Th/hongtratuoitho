@@ -4,6 +4,7 @@ require __DIR__ . '/lib/layout.php';
 require_once __DIR__ . '/lib/group_payment_views.php';
 require_once __DIR__ . '/lib/promotion_views.php';
 require_once __DIR__ . '/lib/customer_checkout.php';
+require_once __DIR__ . '/lib/group_views.php'; // hyg_render_steps(): group order guide
 header('Cache-Control: private, no-store, max-age=0');
 $groupCheckout = null;
 $cart = $_SESSION['cart'] ?? [];
@@ -122,6 +123,10 @@ front_header(t('order_info'));
     <p><?= e(gt('locked_snapshot')) ?></p><a class="btn" href="<?= e(hyg_room_url($groupCheckout['room']['public_id'])) ?>"><?= e(gt('back_room')) ?></a>
   </section><?php endif; ?>
 */ ?>
+<?php if ($groupCheckout): ?>
+  <!-- Group order guide: the group checkout is step 4 (choose an offer & confirm the order). -->
+  <?= hyg_render_steps(4) ?>
+<?php endif; ?>
 <div class="checkout-wrap">
   <section>
     <span class="eyebrow"><?= e(t('checkout')) ?></span>
