@@ -95,9 +95,9 @@
 }
 .hym-auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--muted);font-size:15px}
 .hym-auth-divider::before,.hym-auth-divider::after{content:"";flex:1;height:1px;background:var(--line)}
-.btn-zalo-login{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;font-size:17px;font-weight:750;background:#0068FF;border-color:#0068FF;color:#fff;text-decoration:none;white-space:normal}
-.btn-zalo-login:hover{background:#0057d6;border-color:#0057d6;color:#fff}
-.btn-zalo-login:focus-visible{outline:3px solid #0068FF;outline-offset:3px}
+.btn-zalo-login{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;font-size:17px;font-weight:750;background:#B32424;border-color:#B32424;color:#fff;text-decoration:none;white-space:normal}
+.btn-zalo-login:hover{background:#8F1D1D;border-color:#8F1D1D;color:#fff}
+.btn-zalo-login:focus-visible{outline:3px solid #B32424;outline-offset:3px}
 .btn-zalo-login svg{width:26px;height:26px;flex:0 0 26px}
 /* Sign-in and registration: one centered column. */
 .hym-page-auth{max-width:560px}

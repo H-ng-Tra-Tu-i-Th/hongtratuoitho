@@ -71,28 +71,28 @@
     color: #fff;
 }
 
-/* Nút giỏ hàng: tông dark blue #1e40af (cùng màu khối các bước đặt nhóm) */
+/* Nút giỏ hàng: tông đỏ #B32424 (cùng màu khối các bước đặt nhóm) */
 .front-body .topbar .cart-link {
-    border-color: #93c5fd;
-    color: #1e40af;
+    border-color: #E8A3A3;
+    color: #B32424;
 }
 
 .front-body .topbar .cart-link:hover {
-    border-color: #1e40af;
-    color: #1e40af;
+    border-color: #B32424;
+    color: #B32424;
 }
 
 .front-body .topbar .cart-link .cart-count,
 body.theme-deep-red .front-body .topbar .cart-link .cart-count,
 body.theme-deep-red.front-body .topbar .cart-link .cart-count {
-    background: #1e40af !important;
-    border-color: #1e40af !important;
+    background: #B32424 !important;
+    border-color: #B32424 !important;
     color: #fff !important;
 }
 
 .front-body .topbar .cart-link .cart-label {
-    background: #eff6ff;
-    color: #1e40af;
+    background: #FDF2F2;
+    color: #B32424;
 }
 
 /* Menu thành viên: nhấn để sổ xuống tên + đăng xuất */
