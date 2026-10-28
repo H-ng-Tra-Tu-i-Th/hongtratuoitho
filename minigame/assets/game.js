@@ -67,6 +67,19 @@
   const next = root.querySelector('[data-game-next]');
   const rewardElement = root.querySelector('[data-game-reward]');
   const shareBox = root.querySelector('[data-game-share-bonus]');
+  // Checkout dialog: the reward is shown in a popup; the standalone page keeps it inline.
+  const popup = root.querySelector('[data-game-reward-popup]');
+  const reopen = root.querySelector('[data-game-reward-reopen]');
+  const outsideNext = root.querySelector('[data-game-next-outside]');
+  const outsideShare = root.querySelector('[data-game-share-outside]');
+  const popupText = {
+    vi: { win: 'Chúc mừng bạn!', lose: 'Tiếc quá!', luck: 'Chúc bạn may mắn lần sau!', close: 'Đóng', view: 'Xem phần thưởng', next: 'Chơi tiếp' },
+    zh: { win: '恭喜你！', lose: '可惜！', luck: '祝你下次好運！', close: '關閉', view: '查看獎品', next: '繼續遊戲' },
+    en: { win: 'Congratulations!', lose: 'So close!', luck: 'Better luck next time!', close: 'Close', view: 'View prize', next: 'Play next' }
+  }[language];
+  // The popup opens once per prize; after "Đóng" the reopen button brings it back.
+  let popupShownFor = '';
+  const popupHost = popup?.parentElement?.closest('dialog') || null;
   let board = null, reward = null, busy = false, blocked = true, balance = 0, shareBonus = false;
   let appearance = { faces: [] }, appearanceKey = '';
   let elapsedAt = Date.now(), waitUntil = 0, retryAt = 0, hideTimer = null, finishTimer = null, freshTimer = null, rateTimer = null;
@@ -221,7 +234,40 @@
     if (next) { next.hidden = !reward || balance < 1; next.disabled = busy; }
     if (rewardElement) rewardElement.hidden = !reward;
     if (shareBox) { shareBox.hidden = !reward || !shareBonus; shareBox.querySelector('button').disabled = busy; }
+    syncPopup();
     root.querySelector('[data-game-cleared]')?.toggleAttribute('hidden', !board?.complete || freshMatches.length > 0);
+  }
+
+  function rewardKey() {
+    return reward ? String(reward.coupon_code || '') + '|' + String(board?.id || '') : '';
+  }
+
+  function syncPopup() {
+    if (!popup) {
+      return;
+    }
+    const key = rewardKey();
+    // A modal popup inside the closed minigame dialog is invisible but still blocks the whole page.
+    const hostOpen = !popupHost || popupHost.open;
+    if (!reward || !hostOpen) {
+      if (!reward) popupShownFor = '';
+      if (popup.open) popup.close();
+    } else if (key !== popupShownFor && !popup.open && typeof popup.showModal === 'function') {
+      popupShownFor = key;
+      popup.showModal();
+      popup.querySelector('[data-game-next]:not([hidden]), .kyuc-fb-btn, [data-game-reward-close]')?.focus({ preventScroll: true });
+    }
+    if (reopen) reopen.hidden = !reward || popup.open;
+    // Same actions outside the popup, so they stay reachable after "Đóng".
+    if (outsideNext) {
+      outsideNext.hidden = !reward || balance < 1;
+      outsideNext.disabled = busy;
+      outsideNext.textContent = '▶ ' + popupText.next + ' (' + ({ vi: 'còn ', zh: '剩 ', en: '' }[language] || '') + balance + ({ vi: ' lượt', zh: ' 次', en: ' left' }[language] || '') + ')';
+    }
+    if (outsideShare) {
+      outsideShare.hidden = !reward || !shareBonus;
+      outsideShare.disabled = busy;
+    }
   }
 
   function updateClock() {
@@ -241,8 +287,11 @@
     const expiry = root.querySelector('[data-game-reward-expiry]');
     // A 0đ prize wins nothing: show a better-luck message instead of "Giảm 0đ".
     const zero = reward.kind === 'discount' && !(Number(reward.amount) > 0);
+    rewardElement?.classList.toggle('is-zero', zero);
+    const head = root.querySelector('[data-game-reward-head]');
+    if (head && popup) head.textContent = zero ? popupText.lose : popupText.win;
     if (name) name.textContent = zero
-      ? { vi: 'Chúc bạn may mắn lần sau! Hãy chia sẻ để nhận thêm lượt chơi', zh: '祝你下次好運！分享即可獲得再玩一次的機會', en: 'Better luck next time! Share to get another play' }[language]
+      ? (popup ? popupText.luck : { vi: 'Chúc bạn may mắn lần sau! Hãy chia sẻ để nhận thêm lượt chơi', zh: '祝你下次好運！分享即可獲得再玩一次的機會', en: 'Better luck next time! Share to get another play' }[language])
       : reward.name?.[language] || reward.name?.vi || '';
     if (terms) { terms.textContent = zero ? '' : inCheckout ? appliedNow : reward.terms?.[language] || reward.terms?.vi || ''; terms.hidden = zero; }
     if (expiry) {
@@ -432,7 +481,8 @@
   });
   if (shareBox) {
     shareBox.querySelector('p').textContent = t.share_offer;
-    shareBox.querySelector('button').textContent = t.share_button;
+    const shareLabel = shareBox.querySelector('button span') || shareBox.querySelector('button');
+    shareLabel.textContent = t.share_button;
     shareBox.querySelector('button').addEventListener('click', () => {
       if (busy || !reward || !shareBonus || !board) return;
       // Open the Facebook share inside this click so the pop-up is allowed, then claim the guaranteed play.
@@ -441,6 +491,37 @@
       resetRound();
       run('share_bonus', false, { board_id: id });
     });
+  }
+  if (popup) {
+    root.querySelectorAll('[data-game-reward-close]').forEach(button => {
+      if (button.classList.contains('kyuc-reward-done')) button.textContent = popupText.close;
+      button.addEventListener('click', () => popup.close());
+    });
+    // Forward to the popup buttons so the claim logic (and the Facebook pop-up permission) stays in one place.
+    outsideNext?.addEventListener('click', () => next?.click());
+    if (outsideShare) {
+      outsideShare.querySelector('span').textContent = t.share_button;
+      outsideShare.addEventListener('click', () => shareBox?.querySelector('button')?.click());
+    }
+    if (reopen) {
+      reopen.textContent = '🎁 ' + popupText.view;
+      reopen.addEventListener('click', () => {
+        if (reward && !popup.open) popup.showModal();
+        syncPopup();
+      });
+    }
+    // Clicks inside the popup must not reach the outer minigame dialog, which closes on outside clicks.
+    popup.addEventListener('click', event => {
+      event.stopPropagation();
+      if (event.target === popup) popup.close();
+    });
+    popup.addEventListener('close', () => {
+      if (reopen) reopen.hidden = !reward;
+    });
+    // Show the pending prize once the minigame dialog is opened; close the popup with it.
+    if (popupHost) {
+      new MutationObserver(syncPopup).observe(popupHost, { attributes: true, attributeFilter: ['open'] });
+    }
   }
   root.querySelector('[data-game-reward-copy]')?.addEventListener('click', async () => {
     if (!reward?.coupon_code) return;

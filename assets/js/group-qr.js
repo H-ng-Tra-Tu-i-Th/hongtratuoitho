@@ -90,16 +90,117 @@
     if (seconds !== undefined) updateClock(seconds);
     document.querySelectorAll('[data-group-share]').forEach(render);
   }
-  async function copyLink(section, url) {
-    try {
-      if (!navigator.clipboard || !window.isSecureContext) throw new Error('clipboard_unavailable');
-      await navigator.clipboard.writeText(url);
-      feedback(section, config.copy || 'Copied');
-    } catch (_) {
-      const input = section.querySelector('#hyg-invite');
-      if (input) { input.focus(); input.select(); input.setSelectionRange(0, input.value.length); }
-      feedback(section, config.manual || 'Select the link to copy it.');
+  // Floating message so the result is visible even when the inline feedback line is off-screen.
+  function toast(text) {
+    document.querySelectorAll('.hyg-share-toast').forEach(node => node.remove());
+    const line = document.createElement('div');
+    line.className = 'cart-toast hyg-share-toast';
+    line.setAttribute('role', 'status');
+    line.textContent = text;
+    document.body.append(line);
+    setTimeout(() => line.remove(), 3500);
+  }
+
+  // Legacy copy for plain-HTTP pages and in-app browsers without the Clipboard API.
+  function legacyCopy(text) {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.top = '0';
+    area.style.left = '0';
+    area.style.opacity = '0';
+    document.body.append(area);
+    area.focus();
+    area.select();
+    area.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (_) {}
+    area.remove();
+    return ok;
+  }
+
+  async function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (_) {}
     }
+    return legacyCopy(text);
+  }
+
+  async function copyLink(section, url, focusTarget) {
+    if (await copyText(url)) {
+      feedback(section, config.copy || 'Copied');
+      toast(config.copy || 'Copied');
+      return;
+    }
+    const input = focusTarget || section.querySelector('#hyg-invite');
+    if (input) {
+      input.focus();
+      input.select();
+      input.setSelectionRange(0, input.value.length);
+    }
+    feedback(section, config.manual || 'Select the link to copy it.');
+    toast(config.manual || 'Select the link to copy it.');
+  }
+
+  // Fallback share panel for browsers without navigator.share (HTTP pages, Zalo/Facebook in-app browsers, Firefox desktop).
+  let sheet = null;
+  function closeSheet() {
+    if (!sheet) return;
+    sheet.remove();
+    sheet = null;
+    document.removeEventListener('keydown', onSheetKey);
+  }
+  function onSheetKey(event) {
+    if (event.key === 'Escape') closeSheet();
+  }
+  function openSheet(section, url, title) {
+    closeSheet();
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const encoded = encodeURIComponent(url);
+    sheet = document.createElement('div');
+    sheet.className = 'hyg-sheet';
+    sheet.innerHTML =
+      '<div class="hyg-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="hyg-sheet-title">' +
+        '<h3 id="hyg-sheet-title"></h3>' +
+        '<p class="hyg-sheet-hint"></p>' +
+        '<input class="hyg-sheet-link" readonly autocomplete="off" spellcheck="false">' +
+        '<div class="hyg-sheet-actions">' +
+          '<button class="btn primary" type="button" data-sheet-copy></button>' +
+          '<a class="btn" data-sheet-facebook target="_blank" rel="noopener"></a>' +
+          (mobile ? '<a class="btn" data-sheet-messenger></a>' : '') +
+        '</div>' +
+        '<button class="hyg-sheet-close" type="button" data-sheet-close></button>' +
+      '</div>';
+    sheet.querySelector('h3').textContent = config.sheetTitle || 'Share';
+    sheet.querySelector('.hyg-sheet-hint').textContent = config.sheetHint || '';
+    const input = sheet.querySelector('.hyg-sheet-link');
+    input.value = url;
+    input.setAttribute('aria-label', title || url);
+    sheet.querySelector('[data-sheet-copy]').textContent = config.copyLabel || 'Copy link';
+    const facebook = sheet.querySelector('[data-sheet-facebook]');
+    facebook.textContent = config.facebook || 'Facebook';
+    facebook.href = 'https://www.facebook.com/sharer/sharer.php?u=' + encoded;
+    const messenger = sheet.querySelector('[data-sheet-messenger]');
+    if (messenger) {
+      messenger.textContent = config.messenger || 'Messenger';
+      messenger.href = 'fb-messenger://share/?link=' + encoded;
+    }
+    sheet.querySelector('[data-sheet-close]').textContent = config.close || 'Close';
+    sheet.addEventListener('click', async event => {
+      if (event.target === sheet || event.target.closest('[data-sheet-close]')) {
+        closeSheet();
+        return;
+      }
+      if (event.target.closest('[data-sheet-copy]')) await copyLink(section, url, input);
+    });
+    document.addEventListener('keydown', onSheetKey);
+    document.body.append(sheet);
+    input.focus();
+    input.select();
   }
   document.addEventListener('click', async event => {
     const control = event.target.closest('[data-group-share-button], [data-qr-download], [data-group-share] [data-copy-url]');
@@ -114,18 +215,29 @@
     const url = section.querySelector('#hyg-invite')?.value || '';
     if (control.matches('[data-copy-url]')) { await copyLink(section, url); return; }
     const title = control.dataset.shareTitle || '';
+    if (!navigator.share) {
+      openSheet(section, url, title);
+      return;
+    }
     let payload = {title, text:title, url};
     const prepared = previews.get(section);
-    // Files are optional. Unsupported environments still share the same join URL.
+    // The QR image is optional; the link always travels with it because some apps drop the text when a file is attached.
     try {
-      if (prepared?.file && navigator.canShare && navigator.canShare({files:[prepared.file]})) {
-        payload = {title, text:title + '\n' + url, files:[prepared.file]};
-      }
+      const withFile = {title, text:title + '\n' + url, url, files:[prepared?.file]};
+      if (prepared?.file && navigator.canShare && navigator.canShare(withFile)) payload = withFile;
     } catch (_) {}
-    if (navigator.share) {
-      try { await navigator.share(payload); }
-      catch (error) { if (error.name !== 'AbortError') await copyLink(section, url); }
-    } else await copyLink(section, url);
+    try {
+      await navigator.share(payload);
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      // Retry once with the plain link (file sharing can be refused), then fall back to the panel.
+      try {
+        if (payload.files) await navigator.share({title, text:title, url});
+        else throw error;
+      } catch (retryError) {
+        if (retryError.name !== 'AbortError') openSheet(section, url, title);
+      }
+    }
   });
   function checkExpiry() { document.querySelectorAll('[data-group-share]').forEach(active); }
   function startTimer() { clearInterval(expiryTimer); expiryTimer = setInterval(checkExpiry, 1000); }

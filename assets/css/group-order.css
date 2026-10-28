@@ -450,3 +450,178 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
         animation: none;
     }
 }
+
+/* Nút Chia sẻ nhóm + Chọn đồ uống + Chốt món: tông đỏ #B32424 (cùng màu nút giỏ hàng). */
+.hyg-page .hyg-share-actions [data-group-share-button],
+.hyg-page .hyg-join-actions .btn.primary,
+.hyg-page .btn.primary[name="lock_after"] {
+    background: #B32424;
+    border-color: #B32424;
+    color: #fff;
+}
+.hyg-page .hyg-share-actions [data-group-share-button]:hover,
+.hyg-page .hyg-join-actions .btn.primary:hover,
+.hyg-page .btn.primary[name="lock_after"]:not(:disabled):hover {
+    background: #8F1D1D;
+    border-color: #8F1D1D;
+    color: #fff;
+}
+.hyg-page .hyg-share-actions [data-group-share-button]:focus-visible,
+.hyg-page .hyg-join-actions .btn.primary:focus-visible,
+.hyg-page .btn.primary[name="lock_after"]:focus-visible {
+    outline: 3px solid #B32424;
+    outline-offset: 3px;
+}
+
+/* Popup chia sẻ dự phòng khi trình duyệt không có navigator.share (group-qr.js). */
+.hyg-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(17, 24, 39, .55);
+}
+.hyg-sheet-panel {
+    width: 100%;
+    max-width: 440px;
+    padding: 20px 18px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(17, 24, 39, .28);
+}
+.hyg-sheet-panel h3 {
+    margin: 0 0 6px;
+    font-size: 18px;
+}
+.hyg-sheet-hint {
+    margin: 0 0 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #667085;
+}
+.hyg-sheet-link {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #e4e7ec;
+    border-radius: 10px;
+    font-size: 16px;
+}
+.hyg-sheet-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+.hyg-sheet-actions .btn {
+    min-height: 44px;
+    text-align: center;
+    text-decoration: none;
+}
+.hyg-sheet-actions [data-sheet-copy] {
+    grid-column: 1 / -1;
+    background: #B32424;
+    border-color: #B32424;
+    color: #fff;
+}
+.hyg-sheet-close {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 8px;
+    border: 0;
+    background: none;
+    color: #667085;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+@media (min-width: 721px) {
+    .hyg-sheet {
+        align-items: center;
+    }
+}
+
+/* Nút Chọn đồ uống: full ngang; khi danh sách thành viên dài đẩy nút khỏi màn hình thì dính ở đáy màn hình. */
+.hyg-page .hyg-join-actions {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 5;
+}
+/* Ghi đè grid 1 cột trên mobile (dòng 15) để nút mũi tên nằm cùng hàng. */
+.hyg-page .hyg-join-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+.hyg-page .hyg-join-actions .btn.primary {
+    min-width: 0;
+}
+.hyg-page .hyg-join-actions .btn.primary {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 50px;
+    font-size: 16px;
+    box-shadow: 0 8px 22px rgba(179, 36, 36, .28);
+}
+
+/* Nút tròn mũi tên cạnh Chọn đồ uống: cuộn xuống nút Chốt món. */
+.hyg-jump-lock {
+    flex: 0 0 50px;
+    width: 50px;
+    height: 50px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 2px solid #B32424;
+    border-radius: 999px;
+    background: #fff;
+    color: #B32424;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(179, 36, 36, .22);
+    transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+.hyg-jump-lock[hidden] {
+    display: none;
+}
+.hyg-jump-lock svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    animation: hygJumpBob 1.6s ease-in-out infinite;
+}
+.hyg-jump-lock:hover {
+    background: #FDF2F2;
+}
+.hyg-jump-lock:active {
+    transform: scale(.94);
+}
+.hyg-jump-lock:focus-visible {
+    outline: 3px solid #B32424;
+    outline-offset: 3px;
+}
+@keyframes hygJumpBob {
+    0%, 100% { transform: translateY(-2px); }
+    50% { transform: translateY(2px); }
+}
+/* Nháy nhẹ nút Chốt món sau khi cuộn tới. */
+.hyg-page .btn.primary[name="lock_after"].is-jump-target {
+    animation: hygLockPulse 1.2s ease-out 2;
+}
+@keyframes hygLockPulse {
+    0% { box-shadow: 0 0 0 0 rgba(179, 36, 36, .45); }
+    100% { box-shadow: 0 0 0 14px rgba(179, 36, 36, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .hyg-jump-lock svg,
+    .hyg-page .btn.primary[name="lock_after"].is-jump-target {
+        animation: none;
+    }
+}

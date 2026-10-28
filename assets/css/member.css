@@ -27,10 +27,19 @@
 .hym-note,.hym-updated,.hym-empty{font-size:15px;line-height:1.75;color:var(--muted);margin:12px 0 18px}
 .hym-form{display:grid;gap:16px;margin-top:20px}
 .hym-form label{display:grid;gap:8px;font-size:17px;font-weight:700;line-height:1.45}
-.hym-form input,.hym-form textarea{font-size:17px;min-width:0;width:100%;max-width:100%;line-height:1.5}
+.hym-form input,.hym-form textarea{font-size:17px;font-weight:400;min-width:0;width:100%;max-width:100%;line-height:1.5}
 .hym-form small{font-size:15px;line-height:1.65;color:var(--muted);margin-top:-8px}
 .hym-form .btn{justify-self:start;min-height:48px;font-size:17px;max-width:100%;white-space:normal}
 .hym-form .btn.block{justify-self:stretch}
+.hym-required{color:var(--danger,#b42318)}
+/* Ô mật khẩu có nút con mắt hiện/ẩn */
+.hym-pass{position:relative;display:block}
+.hym-form .hym-pass input{padding-right:52px}
+.hym-pass-toggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);display:grid;place-items:center;width:40px;height:40px;padding:0;border:0;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer}
+.hym-pass-toggle:hover,.hym-pass-toggle:focus-visible{color:var(--text,#222)}
+.hym-pass-toggle svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hym-pass-toggle .hym-pass-eye-off,.hym-pass-toggle[aria-pressed="true"] .hym-pass-eye{display:none}
+.hym-pass-toggle[aria-pressed="true"] .hym-pass-eye-off{display:block}
 .hym-optional{font-size:14px;font-weight:500;color:var(--muted)}
 .hym-facts{display:grid;gap:14px;margin:20px 0}
 .hym-facts>div{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:12px;align-items:baseline}
@@ -103,6 +112,21 @@
 .hym-page-auth{max-width:560px}
 .hym-page-auth .hym-page-head{justify-content:center;text-align:center}
 .hym-page-auth .hym-auth-single{margin-inline:auto}
+/* Nút Đăng ký: tông đỏ #B32424 (cùng màu nút giỏ hàng). */
+#member-register .btn.primary {
+  background: #B32424;
+  border-color: #B32424;
+  color: #fff;
+}
+#member-register .btn.primary:hover {
+  background: #8F1D1D;
+  border-color: #8F1D1D;
+  color: #fff;
+}
+#member-register .btn.primary:focus-visible {
+  outline: 3px solid #B32424;
+  outline-offset: 3px;
+}
 /* Group referral points strip on the member page. */
 .hym-points{display:flex;align-items:center;gap:16px;margin:18px 0 6px;padding:18px 20px;border-radius:18px;background:linear-gradient(135deg,#fff7e6 0%,#ffe9c7 55%,#ffd9a0 100%);border:1px solid #f3c77a;box-shadow:0 6px 18px rgba(214,140,30,.16);min-width:0}
 .hym-points-icon{flex:0 0 48px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d9480f);color:#fff;font-size:24px;box-shadow:0 4px 10px rgba(217,72,15,.3)}

@@ -1171,3 +1171,209 @@ body.front-body{font-size:17px;line-height:1.55}
 .multi-check-item input{width:18px;height:18px;flex:none;margin:0}
 .multi-check-item span{flex:1;min-width:0;overflow-wrap:anywhere}
 .multi-check-item b{flex:none;white-space:nowrap}
+
+/* Checkout: Chi tiết đơn hàng dạng dropdown (checkout.php). */
+.order-review-details {
+    margin: 0 0 4px;
+}
+.order-review-details > summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 10px 14px;
+    border: 1px solid #E8A3A3;
+    border-radius: 14px;
+    background: #FDF2F2;
+    color: #B32424;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+.order-review-details > summary::-webkit-details-marker {
+    display: none;
+}
+.order-review-details > summary h2 {
+    flex: 1;
+    margin: 0;
+    font-size: 18px;
+    color: inherit;
+}
+.order-review-count {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: #B32424;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 900;
+}
+.order-review-chevron {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform .2s ease;
+}
+.order-review-details[open] > summary {
+    margin-bottom: 4px;
+}
+.order-review-details[open] .order-review-chevron {
+    transform: rotate(180deg);
+}
+.order-review-details > summary:hover {
+    border-color: #B32424;
+}
+.order-review-details > summary:focus-visible {
+    outline: 3px solid #B32424;
+    outline-offset: 3px;
+}
+
+/* Checkout: khung phiên Mini Game — dòng số ly/lượt chơi to hơn, nút chơi tông đỏ #B32424. */
+.checkout-game-session > p:first-child strong {
+    font-size: 18px;
+    line-height: 1.5;
+}
+.checkout-game-session .btn.primary {
+    background: #B32424;
+    border-color: #B32424;
+    color: #fff;
+}
+.checkout-game-session .btn.primary:hover {
+    background: #8F1D1D;
+    border-color: #8F1D1D;
+}
+.checkout-game-session .btn.primary:focus-visible {
+    outline: 3px solid #B32424;
+    outline-offset: 3px;
+}
+
+/* Nút Chơi Mini Game: vệt sáng lướt qua + phồng nhẹ + icon 🎮 lắc lư. */
+.checkout-game-session .checkout-game-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    box-shadow: 0 8px 20px rgba(179, 36, 36, .3);
+    animation: gameBtnPulse 2.4s ease-in-out infinite;
+}
+.checkout-game-btn::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    z-index: -1;
+    width: 45%;
+    height: 100%;
+    background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, .45) 50%, transparent 100%);
+    transform: skewX(-20deg);
+    animation: gameBtnShine 2.4s ease-in-out infinite;
+    pointer-events: none;
+}
+/* Icon tay cầm SVG (thay emoji 🎮 vì emoji Windows màu đen, chìm trên nền đỏ). */
+.checkout-game-session .checkout-game-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.checkout-game-icon {
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    display: inline-block;
+    transform-origin: 50% 60%;
+    overflow: visible;
+}
+.checkout-game-icon .pad {
+    fill: #fff;
+}
+.checkout-game-icon .dpad {
+    fill: none;
+    stroke: #B32424;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+}
+.checkout-game-icon circle {
+    fill: #B32424;
+}
+.checkout-game-icon {
+    animation: gameIconWiggle 2.4s ease-in-out infinite;
+}
+.checkout-game-session .checkout-game-btn:hover {
+    animation-play-state: paused;
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 12px 26px rgba(179, 36, 36, .4);
+}
+@keyframes gameBtnPulse {
+    0%, 70%, 100% { transform: scale(1); }
+    80% { transform: scale(1.05); }
+    90% { transform: scale(.98); }
+}
+@keyframes gameBtnShine {
+    0%, 40% { left: -60%; }
+    75%, 100% { left: 130%; }
+}
+@keyframes gameIconWiggle {
+    0%, 60%, 100% { transform: rotate(0); }
+    66% { transform: rotate(-16deg) scale(1.15); }
+    74% { transform: rotate(14deg) scale(1.15); }
+    82% { transform: rotate(-8deg); }
+    90% { transform: rotate(4deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .checkout-game-session .checkout-game-btn,
+    .checkout-game-btn::after,
+    .checkout-game-icon {
+        animation: none;
+    }
+}
+
+/* Checkout: nút Gửi đơn hàng tông đỏ #B32424, nằm trên khối Lưu ý trước khi đặt hàng. */
+.checkout-submit.btn.primary {
+    background: #B32424;
+    border-color: #B32424;
+    color: #fff;
+}
+.checkout-submit.btn.primary:not(:disabled):hover {
+    background: #8F1D1D;
+    border-color: #8F1D1D;
+}
+.checkout-submit.btn.primary:focus-visible {
+    outline: 3px solid #B32424;
+    outline-offset: 3px;
+}
+.checkout-submit + .preorder-notice {
+    margin-top: 14px;
+}
+
+/* Nút "Chơi ngay" trong hộp xác nhận còn lượt (checkout.php #gameForfeitModal): cùng kiểu nút Chơi Mini Game. */
+.kyuc-confirm .btn.primary.checkout-game-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #B32424;
+    border-color: #B32424;
+    color: #fff;
+    box-shadow: 0 8px 20px rgba(179, 36, 36, .3);
+    animation: gameBtnPulse 2.4s ease-in-out infinite;
+}
+.kyuc-confirm .btn.primary.checkout-game-btn:hover {
+    background: #8F1D1D;
+    border-color: #8F1D1D;
+    animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+    .kyuc-confirm .btn.primary.checkout-game-btn {
+        animation: none;
+    }
+}

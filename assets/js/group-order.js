@@ -32,6 +32,7 @@
       } else await copy(share.dataset.shareUrl);
     }
     if (cp) await copy(cp.dataset.copyUrl);
+    if (event.target.closest('[data-jump-lock]')) jumpToLock();
     if (event.target.closest('[data-group-refresh]')) { if (document.activeElement) document.activeElement.blur(); await refresh(true); }
   });
   document.addEventListener('submit', (event) => {
@@ -96,6 +97,7 @@
           const same = picked && replacement.querySelector(`[data-promotion-selector] input[name="promotion_mode"][value="${picked.value}"]:not(:disabled)`);
           if (same) same.checked = true;
           live.replaceWith(replacement); lastSignature = data.signature;
+          syncJump();
         }
         const shareBox = document.querySelector('.hyg-share');
         if (shareBox && replacement && replacement.dataset.state !== 'open') shareBox.hidden = true;
@@ -104,6 +106,51 @@
     } catch (_) { notice(config.offline, true); }
     finally { busy = false; }
   }
+  // Arrow next to "Chọn đồ uống": shown to the host only while "Chốt món" is off-screen.
+  function syncJump() {
+    const jump = document.querySelector('[data-jump-lock]');
+    if (!jump) {
+      return;
+    }
+    const lock = document.getElementById('hyg-lock-btn');
+    let offScreen = false;
+    if (lock) {
+      const box = lock.getBoundingClientRect();
+      offScreen = box.top > window.innerHeight || box.bottom < 0;
+    }
+    jump.hidden = !offScreen;
+  }
+
+  function jumpToLock() {
+    const lock = document.getElementById('hyg-lock-btn');
+    if (!lock) {
+      return;
+    }
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    lock.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    lock.classList.remove('is-jump-target');
+    void lock.offsetWidth;
+    lock.classList.add('is-jump-target');
+    setTimeout(() => lock.classList.remove('is-jump-target'), 2600);
+    if (!lock.disabled) {
+      lock.focus({ preventScroll: true });
+    }
+  }
+
+  let jumpFrame = 0;
+  const queueJump = () => {
+    if (jumpFrame) {
+      return;
+    }
+    jumpFrame = requestAnimationFrame(() => {
+      jumpFrame = 0;
+      syncJump();
+    });
+  };
+  window.addEventListener('scroll', queueJump, { passive: true });
+  window.addEventListener('resize', queueJump);
+  syncJump();
+
   window.addEventListener('pageshow', () => document.querySelectorAll('form[data-submitting]').forEach(form => delete form.dataset.submitting));
   if (config.snapshot) {
     pollTimer = setInterval(() => refresh(), 5000);
