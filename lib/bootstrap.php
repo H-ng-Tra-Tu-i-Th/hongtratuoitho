@@ -12,6 +12,7 @@ require_once __DIR__ . '/v184.php';
 require_once __DIR__ . '/v185.php';
 require_once __DIR__ . '/v186.php';
 require_once __DIR__ . '/promotions.php';
+require_once __DIR__ . '/home_banners.php';
 init_language();
 ensure_i18n_schema();
 haa_schema();

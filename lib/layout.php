@@ -55,7 +55,7 @@ function front_header(string $title = ''): void
         <meta property="og:title" content="<?= e(['vi' => '🧋 Hồng Trà Tuổi Thơ – Mua 4 tặng 1 · Mua 10 ly chơi Mini Game trúng đến 145K', 'zh' => '🧋 回憶紅茶 – 買4送1 · 買10杯玩小遊戲最高抽145K', 'en' => '🧋 Hong Tra Tuoi Tho – Buy 4 get 1 · Buy 10 drinks, win up to 145K'][current_lang()] ?? $store) ?>">
         <meta property="og:description" content="<?= e($ogDesc) ?>"><?php
                                                                     // Share previews use the homepage banner (even while it is hidden on the page), otherwise the app icon.
-                                                                    $ogFile = basename(trim(setting('home_banner_image', '')));
+                                                                    $ogFile = basename(function_exists('hbn_preview_image') ? hbn_preview_image() : ''); // first home slider banner (lib/home_banners.php)
                                                                     $ogPath = $ogFile !== '' ? __DIR__ . '/../uploads/' . $ogFile : '';
                                                                     if ($ogPath === '' || !is_file($ogPath)) {
                                                                         $ogFile = '';
