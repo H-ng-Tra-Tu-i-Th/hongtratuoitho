@@ -23,7 +23,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 ?>
 
 <!-- File CSS của Minigame -->
-<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.4')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.8')) ?>">
 
 <style>
     /* Style tùy chỉnh cơ bản cho Dialog */
@@ -178,19 +178,61 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                         <button class="btn" type="button" data-game-retry hidden><?= e(hgr_text('retry')) ?></button>
                     </div>
 
-                    <!-- Màn hình nhận thưởng: mỗi lượt chơi = 1 mã quà riêng -->
-                    <section class="kyuc-reward" data-game-reward hidden>
-                        <span class="kyuc-eyebrow"><?= e(hgr_text('reward')) ?></span>
-                        <h3 data-game-reward-name></h3>
-                        <p data-game-reward-terms></p>
-                        <code data-game-reward-code></code>
-                        <span data-game-reward-amount hidden></span>
-                        <p data-game-reward-expiry></p>
-<div class="kyuc-share-bonus" data-game-share-bonus hidden><p></p><button class="btn primary" type="button"></button></div>
-                        <div class="kyuc-reward-actions">
-                            <button class="btn primary" type="button" data-game-next hidden><?= e(hgr_text('next')) ?> (còn <b data-game-balance>0</b> lượt)</button>
-                        </div>
-                    </section>
+                    <!-- Nút ngoài popup: chơi tiếp lượt còn lại + (khi 0đ) chia sẻ Facebook; game.js bấm hộ nút tương ứng trong popup. -->
+                    <div class="kyuc-outside-actions">
+                        <button class="btn primary kyuc-outside-next" type="button" data-game-next-outside hidden></button>
+                        <button class="btn kyuc-fb-btn" type="button" data-game-share-outside hidden>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z" /></svg>
+                            <span></span>
+                        </button>
+                    </div>
+
+                    <!-- Popup nhận thưởng: mỗi lượt chơi = 1 mã quà riêng; quà 0đ hiện "Chúc bạn may mắn lần sau" + chia sẻ Facebook nhận lượt chắc trúng. -->
+                    <dialog class="kyuc-reward-popup" data-game-reward-popup aria-labelledby="kyuc-reward-title">
+                        <section class="kyuc-reward" data-game-reward hidden>
+                            <button class="kyuc-reward-x" type="button" data-game-reward-close aria-label="Đóng">×</button>
+
+                            <!-- Pháo giấy: chỉ hiện khi trúng quà -->
+                            <div class="kyuc-confetti" aria-hidden="true">
+                                <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                            </div>
+
+                            <!-- Icon hộp quà (trúng) / cỏ bốn lá (0đ) -->
+                            <div class="kyuc-reward-icon" aria-hidden="true">
+                                <svg class="kyuc-icon-gift" viewBox="0 0 48 48">
+                                    <rect x="7" y="19" width="34" height="23" rx="3" />
+                                    <rect x="4" y="13" width="40" height="8" rx="2" />
+                                    <path d="M24 13v29" />
+                                    <path d="M24 13c-3-7-12-8-12-3s8 3 12 3zM24 13c3-7 12-8 12-3s-8 3-12 3z" />
+                                </svg>
+                                <svg class="kyuc-icon-clover" viewBox="0 0 48 48">
+                                    <path d="M24 24c-9-1-14-6-11-11s9-2 11 4c2-6 8-9 11-4s-2 10-11 11z" />
+                                    <path d="M24 24c-9 1-14 6-11 11s9 2 11-4c2 6 8 9 11 4s-2-10-11-11z" />
+                                    <path d="M24 24c4 6 6 12 4 19" />
+                                </svg>
+                            </div>
+
+                            <span class="kyuc-eyebrow" data-game-reward-head><?= e(hgr_text('reward')) ?></span>
+                            <h3 id="kyuc-reward-title" data-game-reward-name></h3>
+                            <p data-game-reward-terms></p>
+                            <code data-game-reward-code></code>
+                            <span data-game-reward-amount hidden></span>
+                            <p data-game-reward-expiry></p>
+
+                            <div class="kyuc-share-bonus" data-game-share-bonus hidden>
+                                <p></p>
+                                <button class="btn kyuc-fb-btn" type="button">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z" /></svg>
+                                    <span></span>
+                                </button>
+                            </div>
+
+                            <div class="kyuc-reward-actions">
+                                <button class="btn primary" type="button" data-game-next hidden><?= e(hgr_text('next')) ?> (còn <b data-game-balance>0</b> lượt)</button>
+                                <button class="btn kyuc-reward-done" type="button" data-game-reward-close></button>
+                            </div>
+                        </section>
+                    </dialog>
 
                     <!-- Danh sách tất cả mã quà đã trúng trong đơn này -->
                     <section class="kyuc-session-rewards" data-game-session-rewards hidden>
@@ -204,11 +246,15 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 
         <!-- Quy tắc game & Chi tiết phần thưởng -->
         <section class="kyuc-rules">
+            <?php /* TODO: Tạm ẩn chú thích quy tắc Mua 10 nhận lượt (dư UI).
             <p><?= e(hgr_text('rules')) ?></p>
+            */ ?>
             <p class="kyuc-odds" data-game-odds data-money-label="<?= e(hgr_text('odds_money')) ?>" <?= $prizes ? '' : 'hidden' ?>>
                 <?= hgr_odds_html($prizes) ?>
             </p>
+            <?php /* TODO: Tạm ẩn chú thích lượt/mã quà lưu trong tài khoản (dư UI).
             <p><?= e(pt(hym_current_member() ? 'member_saved' : 'guest_saved')) ?></p>
+            */ ?>
         </section>
 
         <!-- Nút chia sẻ trang đặt hàng lên Facebook kèm nội dung bài viết soạn sẵn -->
@@ -229,7 +275,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 </dialog>
 
 <!-- Chỉ nạp game.js một lần, nạp 2 lần sẽ gửi trùng mỗi lần lật thẻ -->
-<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.10')) ?>"></script>
+<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.13')) ?>"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

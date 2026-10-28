@@ -138,11 +138,19 @@ front_header(t('order_info'));
     <?php if ($gameSession): ?>
       <section class="alert success checkout-game-session" data-game-session data-remaining="<?= max(0, (int)$gameSession['remaining']) ?>">
         <p><strong><?= e(hcgs_text('opened', ['qty' => (int)$gameSession['drink_qty'], 'chances' => (int)$gameSession['granted_chances']])) ?></strong></p>
+        <?php /* TODO: Cụm chú thích phiên Mini Game bị dư UI ở checkout — tạm ẩn.
         <p><?= e(hcgs_text($groupCheckout ? 'group_locked' : 'locked')) ?></p>
         <p><?= e(hcgs_text('expires', ['minutes' => intdiv(HCGS_TTL, 60)])) ?></p>
         <p><?= e(hcgs_text('forfeit_note')) ?></p>
+        */ ?>
         <p><?= e(hcgs_text('remaining')) ?>: <b data-game-session-clock>--:--</b></p>
-        <button type="button" class="btn primary" onclick="openMinigameModal()">🎮 Chơi Mini Game nhận quà</button>
+        <button type="button" class="btn primary checkout-game-btn" onclick="openMinigameModal()"><svg class="checkout-game-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path class="pad" d="M7 7h10a5 5 0 0 1 4.9 6l-.7 3.5a2.6 2.6 0 0 1-4.6 1.1L14.8 15H9.2l-1.8 2.6a2.6 2.6 0 0 1-4.6-1.1L2.1 13A5 5 0 0 1 7 7z" />
+            <path class="dpad" d="M7.5 9.5v4M5.5 11.5h4" />
+            <circle cx="16" cy="10.4" r="1.15" />
+            <circle cx="18.2" cy="12.6" r="1.15" />
+          </svg>
+          Chơi Mini Game nhận quà</button>
       </section>
       <script>
         (function() {
@@ -243,20 +251,39 @@ front_header(t('order_info'));
 
       <label><?= e(t('order_note')) ?><textarea name="order_note" maxlength="1000" rows="4" placeholder="<?= e(t('order_note_placeholder')) ?>"><?= e($values['order_note']) ?></textarea></label>
 
+      <!-- Nút Gửi đơn hàng đặt trên khối Lưu ý trước khi đặt hàng. -->
+      <button class="btn primary block checkout-submit" type="submit" <?= $checkoutUnknown ? 'disabled' : '' ?>><?= e(t('submit_order')) ?></button>
+
       <div class="preorder-notice" role="note" aria-label="<?= e(t('preorder_notice')) ?>">
         <strong><?= e(t('preorder_notice')) ?></strong>
         <p><?= e(t('checkout_confirmation_notice')) ?></p>
         <p><?= e(t('checkout_data_usage_notice')) ?></p>
       </div>
-
-      <button class="btn primary block checkout-submit" type="submit" <?= $checkoutUnknown ? 'disabled' : '' ?>><?= e(t('submit_order')) ?></button>
     </form>
   </section>
 
   <aside class="order-review">
     <?= promotion_summary($promotion) ?>
+    <?php /* TODO: Chi tiết thanh toán nhóm bị dư UI ở checkout — tạm ẩn.
     <?php if ($groupPayment): ?><?= hyg_render_payment_overview($groupPayment) ?><?php endif; ?>
-    <h2><?= e(t('order_details')) ?></h2>
+    */ ?>
+    <?php
+    // Tổng số ly/phần để hiện trên nút dropdown Chi tiết đơn hàng.
+    $reviewQty = 0;
+    foreach ($cart as $r) {
+      $reviewQty += (int)$r['qty'];
+    }
+    foreach ($gameGifts as $gift) {
+      $reviewQty += (int)$gift['qty'];
+    }
+    ?>
+    <!-- Chi tiết đơn hàng: dropdown, mặc định thu gọn; tổng tiền bên dưới luôn hiện. -->
+    <details class="order-review-details">
+      <summary>
+        <h2><?= e(t('order_details')) ?></h2>
+        <span class="order-review-count"><?= $reviewQty ?></span>
+        <svg class="order-review-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+      </summary>
     <?php foreach ($cart as $r): ?>
       <div class="review-row">
         <div>
@@ -275,6 +302,7 @@ front_header(t('order_info'));
         <b><?= e(currency()) ?>0</b>
       </div>
     <?php endforeach; ?>
+    </details>
     <div class="review-totals">
       <div><span><?= e(t('subtotal')) ?></span><strong><?= e(currency()) ?><?= money($checkoutSubtotal) ?></strong></div><?php if ($coupon['discount'] > 0): ?><div class="discount-line"><span><?= e(t('coupon_discount')) ?> · <?= e($coupon['code']) ?></span><strong>-<?= e(currency()) ?><?= money($coupon['discount']) ?></strong></div><?php endif; ?><?php if ($gameCash['discount'] > 0): ?><div class="discount-line"><span>Quà Mini Game (<?= count($gameCash['codes']) ?> mã) · <?= e(implode(', ', $gameCash['codes'])) ?></span><strong>-<?= e(currency()) ?><?= money($gameCash['discount']) ?></strong></div><?php endif; ?><div class="review-total"><span><?= e(t('total')) ?></span><strong><?= e(currency()) ?><?= money($checkoutTotal) ?></strong></div>
     </div>
@@ -289,7 +317,15 @@ front_header(t('order_info'));
     <h3><?= str_replace('%N%', '<b data-forfeit-count>' . hcgs_remaining($gameSession) . '</b>', e(hcgs_text('forfeit_title', ['n' => '%N%']))) ?></h3>
     <p><?= e(hcgs_text('forfeit_body')) ?></p>
     <div class="kyuc-confirm-actions">
-      <button type="button" class="btn primary" data-forfeit-play>🎮 <?= e(hcgs_text('play_now')) ?></button>
+      <button type="button" class="btn primary checkout-game-btn" data-forfeit-play>
+        <svg class="checkout-game-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path class="pad" d="M7 7h10a5 5 0 0 1 4.9 6l-.7 3.5a2.6 2.6 0 0 1-4.6 1.1L14.8 15H9.2l-1.8 2.6a2.6 2.6 0 0 1-4.6-1.1L2.1 13A5 5 0 0 1 7 7z" />
+          <path class="dpad" d="M7.5 9.5v4M5.5 11.5h4" />
+          <circle cx="16" cy="10.4" r="1.15" />
+          <circle cx="18.2" cy="12.6" r="1.15" />
+        </svg>
+        <?= e(hcgs_text('play_now')) ?>
+      </button>
       <button type="button" class="btn" data-forfeit-submit><?= e(hcgs_text('forfeit_submit')) ?></button>
     </div>
   </dialog>

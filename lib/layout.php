@@ -8,7 +8,7 @@ function front_header(string $title = ''): void
     $frontMember = function_exists('hym_current_member') ? hym_current_member() : null;
     $memberName = trim((string)($frontMember['display_name'] ?? ''));
     $memberLabel = $memberName !== '' ? mt('member_entry_named', ['name' => $memberName]) : mt('member_entry');
-    $assetVersion = '19.15.2';
+    $assetVersion = '19.15.8';
     $gameBalance = minigame_enabled() ? game_wallet_balance() : 0;
     $groupContext = $GLOBALS['hyg_context'] ?? null;
     // Group checkout sets only hyg_header_room, so the header cart shows the group cart without full group mode.
@@ -44,10 +44,10 @@ function front_header(string $title = ''): void
         <link rel="apple-touch-icon" href="<?= e(base_url('assets/icons/apple-touch-icon.png?v=19')) ?>">
         <link rel="manifest" href="<?= e(base_url('manifest.webmanifest?v=19')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/app.css?v=' . $assetVersion)) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.14')) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/member.css?v=19.8.5')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.18')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/member.css?v=19.8.8')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/footer.css?v=1.0.4')) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/header.css?v=1.0.6')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/header.css?v=1.0.8')) ?>">
         <title><?= e($title ? $title . '｜' . $store : $store) ?></title><?php $ogDesc = ['vi' => '🎁 Mua 4 tặng 1 · 🎮 Mua 10 ly nhận 1 lượt Mini Game – cơ hội trúng giải đến 145K · 👥 Đặt đơn nhóm cùng bạn bè, giao tận nơi.', 'zh' => '🎁 買4送1 · 🎮 買10杯送1次小遊戲機會，最高抽中145K好禮 · 👥 揪團點單，外送到府。', 'en' => '🎁 Buy 4 get 1 free · 🎮 Buy 10 drinks for a Mini Game chance to win up to 145K · 👥 Group orders, delivered to your door.'][current_lang()] ?? ''; ?>
         <meta name="description" content="<?= e($ogDesc) ?>">
         <meta property="og:type" content="website">
@@ -75,7 +75,7 @@ function front_header(string $title = ''): void
     <body class="front-body <?= e(theme_body_class()) ?>">
         <header class="topbar">
             <div class="topbar-inner"><a class="brand" href="<?= e($brandUrl) ?>"><span class="brand-mark brand-mark-image" aria-hidden="true"><img src="<?= e(base_url('assets/icons/order-icon-192.png?v=19')) ?>" alt=""></span><span class="brand-text"><?= e($store) ?></span></a>
-                <div class="topbar-actions"><?= language_switcher() ?><?php if (minigame_enabled() && $gameBalance > 0): ?><a class="game-link" href="<?= e(base_url('minigame/')) ?>" aria-label="<?= e(t('game_center')) ?>"><span aria-hidden="true">🎮</span><span class="game-link-label"><?= e(t('game_center')) ?></span><?php if ($gameBalance > 0): ?><b><?= $gameBalance ?></b><?php endif; ?></a><?php endif; ?><?php if ($frontMember): ?><div class="member-menu"><button type="button" class="member-link member-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="<?= e($memberLabel) ?>"><svg viewBox="0 0 24 24" aria-hidden="true">
+                <div class="topbar-actions"><?= language_switcher() ?><?php if (minigame_enabled() && $gameBalance > 0): ?><a class="game-link" href="<?= e(base_url('minigame/')) ?>" aria-label="<?= e(t('game_center')) ?>"><svg class="game-link-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="pad" d="M7 7h10a5 5 0 0 1 4.9 6l-.7 3.5a2.6 2.6 0 0 1-4.6 1.1L14.8 15H9.2l-1.8 2.6a2.6 2.6 0 0 1-4.6-1.1L2.1 13A5 5 0 0 1 7 7z" /><path class="dpad" d="M7.5 9.5v4M5.5 11.5h4" /><circle cx="16" cy="10.4" r="1.15" /><circle cx="18.2" cy="12.6" r="1.15" /></svg><span class="game-link-label"><?= e(t('game_center')) ?></span><?php if ($gameBalance > 0): ?><b><?= $gameBalance ?></b><?php endif; ?></a><?php endif; ?><?php if ($frontMember): ?><div class="member-menu"><button type="button" class="member-link member-menu-toggle" aria-haspopup="true" aria-expanded="false" aria-label="<?= e($memberLabel) ?>"><svg viewBox="0 0 24 24" aria-hidden="true">
                         <circle cx="12" cy="8" r="4" />
                         <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
                     </svg><span><?= e($memberLabel) ?></span><svg class="member-menu-caret" viewBox="0 0 24 24" aria-hidden="true">
@@ -264,8 +264,8 @@ function front_header(string $title = ''): void
         </footer>
 
 
-        <script src="<?= e(base_url('assets/js/app.js?v=19.15.0')) ?>"></script><?php if (!empty($GLOBALS['hyg_qr_page'])): ?><script src="<?= e(base_url('assets/vendor/huiyi-qrcode.js?v=19.8.0')) ?>"></script>
-            <script src="<?= e(base_url('assets/js/group-qr.js?v=19.8.0')) ?>"></script><?php endif; ?><script src="<?= e(base_url('assets/js/group-order.js?v=19.8.6.1')) ?>"></script>
+        <script src="<?= e(base_url('assets/js/app.js?v=19.15.3')) ?>"></script><?php if (!empty($GLOBALS['hyg_qr_page'])): ?><script src="<?= e(base_url('assets/vendor/huiyi-qrcode.js?v=19.8.0')) ?>"></script>
+            <script src="<?= e(base_url('assets/js/group-qr.js?v=19.8.1')) ?>"></script><?php endif; ?><script src="<?= e(base_url('assets/js/group-order.js?v=19.8.6.2')) ?>"></script>
         <script src="<?= e(base_url('assets/js/promotion.js?v=19.9.2')) ?>"></script>
         <script src="<?= e(base_url('assets/js/game-entry.js?v=19.9.1')) ?>"></script>
     </body>
@@ -310,7 +310,7 @@ function front_header(string $title = ''): void
         <link rel="apple-touch-icon" href="<?= e(base_url('assets/icons/apple-touch-icon.png?v=19')) ?>">
         <link rel="manifest" href="<?= e(base_url('admin/manifest.webmanifest?v=19.1')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/app.css?v=19.15.2')) ?>">
-        <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.14')) ?>">
+        <link rel="stylesheet" href="<?= e(base_url('assets/css/group-order.css?v=19.8.18')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/dispatch.css?v=19.8.0')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/admin-shell.css?v=19.14.3')) ?>">
         <link rel="stylesheet" href="<?= e(base_url('assets/css/admin-ui.css?v=19.14.4')) ?>">

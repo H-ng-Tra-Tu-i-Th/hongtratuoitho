@@ -340,7 +340,14 @@ function hyg_render_room(array $r): string
             </div>
           </div><?php endforeach; ?>
 
-        <?php if ($open): ?><div class="hyg-join-actions"><a class="btn primary" href="<?= e(base_url('index.php?group=' . $r['public_id'])) ?>"><?= e(gt('choose')) ?></a></div>
+        <?php if ($open): ?><div class="hyg-join-actions"><a class="btn primary" href="<?= e(base_url('index.php?group=' . $r['public_id'])) ?>"><?= e(gt('choose')) ?></a>
+            <?php if ($host): ?>
+              <!-- Nhảy xuống nút Chốt món; group-order.js chỉ hiện khi nút đó nằm ngoài màn hình. -->
+              <button class="hyg-jump-lock" type="button" data-jump-lock hidden aria-label="<?= e(gt('jump_lock')) ?>" title="<?= e(gt('jump_lock')) ?>">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+              </button>
+            <?php endif; ?>
+          </div>
           <p class="hyg-muted"><?= e(gt('automatic_ready_hint')) ?></p><?php endif; ?>
       </div>
 
@@ -374,7 +381,7 @@ function hyg_render_room(array $r): string
           <?= promotion_selector($promotion, ['group_public' => $r['public_id'], 'revision' => $r['revision'], 'host_discount_available' => $payment['host_obligation'] > 0]) ?>
 
           <!-- Button chốt món -->
-          <button class="btn primary block" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>>
+          <button class="btn primary block" id="hyg-lock-btn" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>>
             <?= e(gt('lock')) ?>
           </button>
         <?php endif; ?>
