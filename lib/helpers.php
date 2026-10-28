@@ -19,6 +19,15 @@ function e($v): string
 {
     return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8');
 }
+
+/**
+ * Highest quantity of one cart / group line. There is no business limit any more (it used to be 20);
+ * this only guards against typos and keeps totals inside the DECIMAL(12,2) money columns.
+ */
+function order_qty_max(): int
+{
+    return 9999;
+}
 function money($v): string
 {
     return number_format((float)$v, 0);

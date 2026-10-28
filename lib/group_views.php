@@ -16,7 +16,7 @@ function hyg_render_share(array $r): string
   ob_start(); ?>
   <section class="hyg-share hyg-card" data-group-share data-expires="<?= $expires ?>">
     <div class="hyg-share-head">
-      <h2><?= e(gt('share_cart')) ?></h2>
+      <h2><?= e(gt('share_cart')) ?> - <?= e($r['title']) ?></h2>
       <p><?= e(gt('qr_hint')) ?></p>
     </div>
     <div class="hyg-share-layout">
@@ -81,6 +81,50 @@ function hyg_render_member_banks(array $accounts): string
   </div> -->
 <?php return ob_get_clean();
 }
+/**
+ * Group order guide: 1 Tạo nhóm → 2 Chia sẻ giỏ hàng → 3 Chọn đồ uống → 4 Chọn ưu đãi & chốt đơn → 5 Gửi đơn hàng.
+ * Steps before $current are marked done; $current is highlighted.
+ */
+function hyg_render_steps(int $current): string
+{
+  $steps = ['guide_step_create', 'guide_step_share', 'guide_step_drinks', 'guide_step_offer', 'guide_step_send'];
+  ob_start(); ?>
+  <ol class="hyg-steps" aria-label="<?= e(gt('guide_title')) ?>">
+    <?php foreach ($steps as $index => $key): ?>
+      <?php
+      $number = $index + 1;
+      $state = $number < $current ? ' is-done' : ($number === $current ? ' is-current' : '');
+      ?>
+      <li class="hyg-step<?= $state ?>"<?= $number === $current ? ' aria-current="step"' : '' ?>>
+        <span class="hyg-step-no"><?= $number ?></span>
+        <span class="hyg-step-label"><?= e(gt($key)) ?></span>
+      </li>
+    <?php endforeach; ?>
+  </ol>
+<?php
+  return (string) ob_get_clean();
+}
+
+/**
+ * Room page step: 2 (share the cart) until the group has at least one drink, then 3 (choose drinks);
+ * 5 (send the order) once the order has been submitted.
+ */
+function hyg_room_step(array $r): int
+{
+  if (($r['status'] ?? '') === 'submitted') {
+    return 5;
+  }
+
+  $drinks = 0;
+  foreach (hyg_cart($r, false) as $row) {
+    // Same count as the room summary: drink lines only, standalone toppings excluded.
+    if (!empty($row['product_id'])) {
+      $drinks += (int) $row['qty'];
+    }
+  }
+  return $drinks >= 1 ? 3 : 2;
+}
+
 function hyg_render_room(array $r): string
 {
   $m = hyg_member($r);
@@ -181,7 +225,7 @@ function hyg_render_room(array $r): string
                         <form method="post" action="<?= e(base_url('group/action.php')) ?>" data-confirm="<?= e(gt('remove_confirm')) ?>"><?= hyg_action_fields($r, 'remove') ?><input type="hidden" name="item_id" value="<?= $row['_item_id'] ?>"><input type="hidden" name="item_version" value="<?= $row['_item_version'] ?>"><button class="btn small danger" type="submit"><?= e(gt('remove')) ?></button></form>
                       </div><?php endif; ?>
                   </div>
-                  <?php if ($editable && !$invalid): ?><form method="post" action="<?= e(base_url('group/action.php')) ?>" class="hyg-qty-form"><?= hyg_action_fields($r, 'quantity') ?><input type="hidden" name="item_id" value="<?= $row['_item_id'] ?>"><input type="hidden" name="item_version" value="<?= $row['_item_version'] ?>"><label><?= e(t('quantity')) ?><input aria-label="<?= e(t('quantity')) ?> <?= e($row['name']) ?>" name="qty" type="number" inputmode="numeric" min="1" max="20" value="<?= (int)$row['qty'] ?>"></label><button class="btn small" type="submit"><?= e(gt('update_qty')) ?></button></form><?php endif; ?>
+                  <?php if ($editable && !$invalid): ?><form method="post" action="<?= e(base_url('group/action.php')) ?>" class="hyg-qty-form"><?= hyg_action_fields($r, 'quantity') ?><input type="hidden" name="item_id" value="<?= $row['_item_id'] ?>"><input type="hidden" name="item_version" value="<?= $row['_item_version'] ?>"><label><?= e(t('quantity')) ?><input aria-label="<?= e(t('quantity')) ?> <?= e($row['name']) ?>" name="qty" type="number" inputmode="numeric" min="1" max="<?= order_qty_max() ?>" value="<?= (int)$row['qty'] ?>"></label><button class="btn small" type="submit"><?= e(gt('update_qty')) ?></button></form><?php endif; ?>
                 </article>
               <?php endforeach; ?>
 
@@ -296,7 +340,14 @@ function hyg_render_room(array $r): string
             </div>
           </div><?php endforeach; ?>
 
-        <?php if ($open): ?><div class="hyg-join-actions"><a class="btn primary" href="<?= e(base_url('index.php?group=' . $r['public_id'])) ?>"><?= e(gt('choose')) ?></a></div>
+        <?php if ($open): ?><div class="hyg-join-actions"><a class="btn primary" href="<?= e(base_url('index.php?group=' . $r['public_id'])) ?>"><?= e(gt('choose')) ?></a>
+            <?php if ($host): ?>
+              <!-- Nhảy xuống nút Chốt món; group-order.js chỉ hiện khi nút đó nằm ngoài màn hình. -->
+              <button class="hyg-jump-lock" type="button" data-jump-lock hidden aria-label="<?= e(gt('jump_lock')) ?>" title="<?= e(gt('jump_lock')) ?>">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+              </button>
+            <?php endif; ?>
+          </div>
           <p class="hyg-muted"><?= e(gt('automatic_ready_hint')) ?></p><?php endif; ?>
       </div>
 
@@ -330,7 +381,7 @@ function hyg_render_room(array $r): string
           <?= promotion_selector($promotion, ['group_public' => $r['public_id'], 'revision' => $r['revision'], 'host_discount_available' => $payment['host_obligation'] > 0]) ?>
 
           <!-- Button chốt món -->
-          <button class="btn primary block" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>>
+          <button class="btn primary block" id="hyg-lock-btn" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>>
             <?= e(gt('lock')) ?>
           </button>
         <?php endif; ?>

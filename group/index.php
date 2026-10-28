@@ -54,19 +54,33 @@ unset($_SESSION['hyg_message']);
 <div class="hyg-page">
   <a class="back" href="<?= e(base_url('index.php')) ?>">← <?= e(t('back_menu')) ?></a>
   <?php if ($msg !== ''): ?><div class="alert info"><?= e($msg) ?></div><?php endif; ?>
+  <?php if (!$r && !$invited): ?>
+    <!-- Group order guide: create page = step 1. -->
+    <?= hyg_render_steps(1) ?>
+  <?php elseif ($r): ?>
+    <!-- Group order guide: room page = step 2, or 3 once the group has a drink. group-order.js refreshes this slot. -->
+    <div id="hyg-steps-slot"><?= hyg_render_steps(hyg_room_step($r)) ?></div>
+  <?php endif; ?>
   <?php if ($r): ?>
-    <header class="hyg-page-head">
-      <div><span class="hyg-eyebrow"><?= e(gt('title')) ?></span>
-        <h1><?= e($r['title']) ?></h1>
-      </div><?php /* TẠM ẨN nút "Nhóm của tôi" ở đầu phòng nhóm (danh sách nhóm đã có ở trang giỏ hàng cart.php)
-      <a class="btn" href="<?= e(base_url('group/')) ?>"><?= e(gt('my_groups')) ?></a>
-      */ ?>
-    </header>
-    <?php if (hyg_host($r)): ?><div id="hyg-share-slot"><?= hyg_render_share($r) ?></div><?php endif; ?>
+    <?php
+    // The host's share card is titled "Chia sẻ giỏ hàng - <group name>". Without it (members, or a closed/expired
+    // room) the group name stays as the page title. The "Đặt hàng nhóm" eyebrow is no longer shown.
+    $share = hyg_host($r) ? hyg_render_share($r) : '';
+    ?>
+    <?php if ($share === ''): ?>
+      <header class="hyg-page-head">
+        <div>
+          <h1><?= e($r['title']) ?></h1>
+        </div><?php /* TẠM ẨN nút "Nhóm của tôi" ở đầu phòng nhóm (danh sách nhóm đã có ở trang giỏ hàng cart.php)
+        <a class="btn" href="<?= e(base_url('group/')) ?>"><?= e(gt('my_groups')) ?></a>
+        */ ?>
+      </header>
+    <?php endif; ?>
+    <?php if (hyg_host($r)): ?><div id="hyg-share-slot"><?= $share ?></div><?php endif; ?>
     <div class="hyg-sync" role="status"><span data-sync-status><?= e(gt('sync')) ?></span><button type="button" class="hyg-text-btn" data-group-refresh><?= e(gt('refresh')) ?></button></div>
     <?= hyg_render_room($r) ?>
     <script id="hyg-config" type="application/json">
-      <?= json_encode(['snapshot' => base_url('group/state.php?id=' . $r['public_id']), 'copy' => gt('copied'), 'manual' => gt('manual_copy'), 'offline' => gt('offline'), 'changed' => gt('changed_notice'), 'sync' => gt('sync'), 'serverTime' => time(), 'qrError' => gt('qr_error'), 'roomExpired' => gt('room_expired')], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>
+      <?= json_encode(['snapshot' => base_url('group/state.php?id=' . $r['public_id']), 'copy' => gt('copied'), 'manual' => gt('manual_copy'), 'offline' => gt('offline'), 'changed' => gt('changed_notice'), 'sync' => gt('sync'), 'serverTime' => time(), 'qrError' => gt('qr_error'), 'copyLabel' => gt('copy'), 'sheetTitle' => gt('share_sheet_title'), 'sheetHint' => gt('share_sheet_hint'), 'facebook' => gt('share_facebook'), 'messenger' => gt('share_messenger'), 'close' => gt('share_close'),'roomExpired' => gt('room_expired')], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS | JSON_UNESCAPED_UNICODE) ?>
     </script>
     <script>
       // Browser Back from the group checkout lands here; send the customer to the home page instead.
@@ -94,7 +108,6 @@ unset($_SESSION['hyg_message']);
     <section class="hyg-welcome hyg-card"><span class="hyg-eyebrow"><?= e(gt('title')) ?></span>
       <h1><?= e(gt('entry_title')) ?></h1>
       <p><?= e(gt('entry_desc')) ?></p>
-      <div class="hyg-step-line"><span><?= e(gt('step_create')) ?></span><span><?= e(gt('step_share')) ?></span><span><?= e(gt('step_checkout')) ?></span></div>
       <form method="post" enctype="multipart/form-data" action="<?= e(base_url('group/action.php')) ?>" class="hyg-form">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="create">

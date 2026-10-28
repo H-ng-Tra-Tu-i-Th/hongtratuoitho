@@ -47,10 +47,28 @@ try {
 
         <!-- Chỉ hiện thị những đơn hàng đang chọn món và chờ gửi đơn -->
         <?php if (in_array($s, ['open', 'locked'], true)): ?>
-          <a href="<?= e(hyg_room_url($room['public_id'])) ?>">
-            <strong><?= e($room['title']) ?>
-            </strong>
-            <span class="hyg-status"><?= e(gt($s)) ?></span>
+          <?php
+          // A locked group that is ready to send (this device is the host, every payment confirmed) opens the
+          // "send order" form directly. checkout.php shows an error page for a group that is not ready, so any
+          // other group keeps the room page, which explains what is still missing.
+          $roomUrl = hyg_room_url($room['public_id']);
+          $readyToSend = false;
+          if ($s === 'locked') {
+            try {
+              hyg_checkout((string) $room['public_id']);
+              $roomUrl = base_url('checkout.php?group=' . rawurlencode((string) $room['public_id']));
+              $readyToSend = true;
+            } catch (Throwable $notReady) {
+              // Not the host, payments unconfirmed, empty room… (or any lookup error): keep the room page.
+            }
+          }
+          ?>
+          <a class="hyg-room-link<?= $readyToSend ? ' is-ready' : '' ?>" href="<?= e($roomUrl) ?>">
+            <strong><?= e($room['title']) ?></strong>
+            <span class="hyg-room-meta">
+              <span class="hyg-status is-<?= e($s) ?>"><?= e(gt($s)) ?></span>
+              <span class="hyg-room-cta"><?= e(gt($readyToSend ? 'room_cta_send' : 'room_cta_open')) ?> ›</span>
+            </span>
           </a>
         <?php endif; ?>
       <?php endforeach; ?>
@@ -76,7 +94,7 @@ try {
           </div>
           <div class="cart-side">
             <strong><?= e(currency()) ?><?= money($r['unit_price'] * $r['qty']) ?></strong>
-            <label class="cart-qty-field"><span><?= e(t('quantity')) ?></span><input aria-label="<?= e(t('quantity')) ?>" type="number" name="qty[<?= e($key) ?>]" min="0" max="20" value="<?= $r['qty'] ?>"></label>
+            <label class="cart-qty-field"><span><?= e(t('quantity')) ?></span><input aria-label="<?= e(t('quantity')) ?>" type="number" name="qty[<?= e($key) ?>]" min="0" max="<?= order_qty_max() ?>" value="<?= $r['qty'] ?>"></label>
             <button class="cart-remove-btn" type="submit" name="remove_key" value="<?= e($key) ?>" aria-label="<?= e(t('remove')) ?> <?= e($r['name']) ?>"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
               </svg><span><?= e(t('remove')) ?></span></button>

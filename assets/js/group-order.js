@@ -32,6 +32,7 @@
       } else await copy(share.dataset.shareUrl);
     }
     if (cp) await copy(cp.dataset.copyUrl);
+    if (event.target.closest('[data-jump-lock]')) jumpToLock();
     if (event.target.closest('[data-group-refresh]')) { if (document.activeElement) document.activeElement.blur(); await refresh(true); }
   });
   document.addEventListener('submit', (event) => {
@@ -41,6 +42,17 @@
     if (form.closest('.hyg-page') && form.dataset.submitting) { event.preventDefault(); return; }
     if (form.closest('.hyg-page')) form.dataset.submitting = '1';
   });
+  // Step guide (2 → 3 once the group has a drink); server-rendered and escaped like the share card.
+  function updateSteps(data) {
+    const slot = document.getElementById('hyg-steps-slot');
+    if (!slot || typeof data.steps_html !== 'string' || slot.innerHTML.trim() === data.steps_html.trim()) {
+      return;
+    }
+    const template = document.createElement('template');
+    template.innerHTML = data.steps_html;
+    slot.replaceChildren(template.content);
+  }
+
   function updateShare(data) {
     const slot = document.getElementById('hyg-share-slot');
     if (!slot || typeof data.share_html !== 'string') return;
@@ -70,6 +82,7 @@
       }
       // Do not defer revoked/rotated invitations even while the host is editing a quantity.
       updateShare(data);
+      updateSteps(data);
       const live = document.getElementById('hyg-room-live');
       if (data.signature !== lastSignature) {
         const template = document.createElement('template'); template.innerHTML = data.html;
@@ -84,6 +97,7 @@
           const same = picked && replacement.querySelector(`[data-promotion-selector] input[name="promotion_mode"][value="${picked.value}"]:not(:disabled)`);
           if (same) same.checked = true;
           live.replaceWith(replacement); lastSignature = data.signature;
+          syncJump();
         }
         const shareBox = document.querySelector('.hyg-share');
         if (shareBox && replacement && replacement.dataset.state !== 'open') shareBox.hidden = true;
@@ -92,6 +106,51 @@
     } catch (_) { notice(config.offline, true); }
     finally { busy = false; }
   }
+  // Arrow next to "Chọn đồ uống": shown to the host only while "Chốt món" is off-screen.
+  function syncJump() {
+    const jump = document.querySelector('[data-jump-lock]');
+    if (!jump) {
+      return;
+    }
+    const lock = document.getElementById('hyg-lock-btn');
+    let offScreen = false;
+    if (lock) {
+      const box = lock.getBoundingClientRect();
+      offScreen = box.top > window.innerHeight || box.bottom < 0;
+    }
+    jump.hidden = !offScreen;
+  }
+
+  function jumpToLock() {
+    const lock = document.getElementById('hyg-lock-btn');
+    if (!lock) {
+      return;
+    }
+    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    lock.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    lock.classList.remove('is-jump-target');
+    void lock.offsetWidth;
+    lock.classList.add('is-jump-target');
+    setTimeout(() => lock.classList.remove('is-jump-target'), 2600);
+    if (!lock.disabled) {
+      lock.focus({ preventScroll: true });
+    }
+  }
+
+  let jumpFrame = 0;
+  const queueJump = () => {
+    if (jumpFrame) {
+      return;
+    }
+    jumpFrame = requestAnimationFrame(() => {
+      jumpFrame = 0;
+      syncJump();
+    });
+  };
+  window.addEventListener('scroll', queueJump, { passive: true });
+  window.addEventListener('resize', queueJump);
+  syncJump();
+
   window.addEventListener('pageshow', () => document.querySelectorAll('form[data-submitting]').forEach(form => delete form.dataset.submitting));
   if (config.snapshot) {
     pollTimer = setInterval(() => refresh(), 5000);

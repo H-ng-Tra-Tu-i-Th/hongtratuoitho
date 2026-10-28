@@ -15,7 +15,7 @@ if($removeKey !== '' && isset($_SESSION['cart'][$removeKey])) {
 
 foreach(($_POST['qty']??[]) as $k=>$q){
     if(!isset($_SESSION['cart'][$k])) continue;
-    $q=max(0,min(20,(int)$q));
+    $q=max(0,min(order_qty_max(),(int)$q));
     if($q===0 || in_array($k,$remove,true)) unset($_SESSION['cart'][$k]);
     else $_SESSION['cart'][$k]['qty']=$q;
 }
