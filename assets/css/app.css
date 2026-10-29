@@ -1241,6 +1241,18 @@ body.front-body{font-size:17px;line-height:1.55}
     font-size: 18px;
     line-height: 1.5;
 }
+.checkout-game-session .checkout-game-upsell {
+    margin: 10px 0;
+    color: #B32424;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+@media (max-width: 600px) {
+    .checkout-game-session .checkout-game-upsell {
+        font-size: 17px;
+    }
+}
 .checkout-game-session .btn.primary {
     background: #B32424;
     border-color: #B32424;
@@ -1334,6 +1346,88 @@ body.front-body{font-size:17px;line-height:1.55}
     }
 }
 
+/* Nút phụ "Thêm nước vào đơn này": viền đỏ nền trắng + icon giỏ hàng, kém nổi hơn nút Chơi Mini Game. */
+/* Đồng hồ còn lại: luôn ghim góc phải trên, ngay dưới header (top do checkout.php tính theo chiều cao header). */
+.checkout-game-session .checkout-game-timer {
+    position: fixed;
+    top: 90px;
+    right: 0;
+    z-index: 60;
+    margin: 0;
+    padding: 4px 9px;
+    border: 1px solid #B32424;
+    border-top: 0;
+    border-right: 0;
+    border-radius: 0 0 0 8px;
+    background: #fff;
+    color: #B32424;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+    box-shadow: 0 3px 8px rgba(179, 36, 36, .2);
+}
+.checkout-game-session .checkout-game-timer b {
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Hai nút Chơi Mini Game + Thêm nước nằm cùng một hàng; hẹp thì tự xuống dòng. */
+.checkout-game-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+.checkout-game-add-form {
+    margin: 0;
+}
+.checkout-game-session .checkout-game-add-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 46px;
+    padding: 10px 22px;
+    border: 2px solid #B32424;
+    border-radius: 999px;
+    background: #fff;
+    color: #B32424;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(179, 36, 36, .14);
+    transition: background .2s, color .2s, transform .2s, box-shadow .2s;
+}
+.checkout-game-session .checkout-game-add-btn:hover {
+    background: #B32424;
+    border-color: #B32424;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(179, 36, 36, .3);
+}
+.checkout-game-session .checkout-game-add-btn:active {
+    transform: translateY(0);
+}
+.checkout-game-session .checkout-game-add-btn:focus-visible {
+    outline: 3px solid #B32424;
+    outline-offset: 3px;
+}
+.checkout-game-session .checkout-game-add-btn .checkout-game-add-icon {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.checkout-game-session .checkout-game-add-btn .checkout-game-add-icon circle {
+    fill: currentColor;
+    stroke: none;
+}
+
 /* Checkout: nút Gửi đơn hàng tông đỏ #B32424, nằm trên khối Lưu ý trước khi đặt hàng. */
 .checkout-submit.btn.primary {
     background: #B32424;
@@ -1376,4 +1470,32 @@ body.front-body{font-size:17px;line-height:1.55}
     .kyuc-confirm .btn.primary.checkout-game-btn {
         animation: none;
     }
+}
+
+/* Giỏ hàng: đang trong đơn nhóm thì khoá nút "Tạo đơn nhóm". */
+.hyg-entry.is-locked .btn.primary:disabled,
+.hyg-entry.is-locked .hyg-entry-cta:disabled {
+    background: #D9DCE2;
+    border-color: #D9DCE2;
+    color: #8A91A0;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+    animation: none;
+}
+.hyg-entry.is-locked {
+    background: #F4F5F7;
+    border-color: #E1E4EA;
+}
+.hyg-entry.is-locked strong {
+    color: #6B7280;
+}
+
+/* Phiên chỉ có đồng hồ (đơn nhóm không có lượt Mini Game): không hiện khung, chỉ còn nhãn "Giữ đơn". */
+.checkout-game-session.is-timer-only {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
 }

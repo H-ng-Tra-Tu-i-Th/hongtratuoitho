@@ -157,12 +157,13 @@ front_header(); ?>
   <div class="hero-orb" aria-hidden="true"></div>
 </section> -->
 
-<?php if (!$groupContext && !hyg_in_active_group()): ?>
-  <section class="hyg-entry hyg-entry-highlight">
+<?php if (!$groupContext): ?>
+  <?php $inGroupOrder = hyg_has_live_group(); ?>
+  <section class="hyg-entry hyg-entry-highlight<?= $inGroupOrder ? ' is-locked' : '' ?>">
     <div><strong><?= e(gt('entry_title')) ?></strong>
       <p><?= e(gt('entry_desc')) ?></p>
     </div>
-    <a class="btn primary hyg-entry-cta" href="<?= e(hym_login_gate_url('group')) ?>">
+    <?php if ($inGroupOrder): ?><button type="button" class="btn primary hyg-entry-cta" disabled aria-disabled="true"><?php else: ?><a class="btn primary hyg-entry-cta" href="<?= e(hym_login_gate_url('group')) ?>"><?php endif; ?>
       <!-- people icon -->
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="9" cy="8" r="3" />
@@ -170,7 +171,7 @@ front_header(); ?>
       </svg>
       <span><?= e(gt('entry_cta')) ?></span>
       <span class="hyg-entry-arrow" aria-hidden="true">→</span>
-    </a>
+    <?php if ($inGroupOrder): ?></button><?php else: ?></a><?php endif; ?>
   </section><?php endif; ?>
 <?php if ($firstKey !== ''): ?>
   <section class="catalog-shell" data-catalog>

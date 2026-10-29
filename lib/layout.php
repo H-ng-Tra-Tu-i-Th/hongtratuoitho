@@ -8,7 +8,7 @@ function front_header(string $title = ''): void
     $frontMember = function_exists('hym_current_member') ? hym_current_member() : null;
     $memberName = trim((string)($frontMember['display_name'] ?? ''));
     $memberLabel = $memberName !== '' ? mt('member_entry_named', ['name' => $memberName]) : mt('member_entry');
-    $assetVersion = '19.15.8';
+    $assetVersion = '19.15.19';
     $gameBalance = minigame_enabled() ? game_wallet_balance() : 0;
     $groupContext = $GLOBALS['hyg_context'] ?? null;
     // Group checkout sets only hyg_header_room, so the header cart shows the group cart without full group mode.
@@ -23,7 +23,8 @@ function front_header(string $title = ''): void
         }
     }
     $GLOBALS['front_cart_room'] = $cartRoom;
-    $frontCartUrl = $cartRoom ? hyg_room_url($cartRoom['public_id']) : base_url('cart.php');
+    // After "Thêm nước vào đơn này" the cart button goes straight back to checkout (Mini Game chances are recounted there).
+    $frontCartUrl = $cartRoom ? hyg_room_url($cartRoom['public_id']) : base_url(!empty($_SESSION['hcgs_adding']) ? 'actions/game_back_checkout.php' : 'cart.php');
     // The logo keeps an open group's menu (and its cart); a locked group goes back to the ordinary menu.
     $brandUrl = $cartRoom && ($cartRoom['status'] ?? '') === 'open' ? base_url('index.php?group=' . rawurlencode($cartRoom['public_id'])) : base_url('index.php');
     $frontCartCount = cart_count();
@@ -143,7 +144,7 @@ function front_header(string $title = ''): void
                                 $groupContext = $GLOBALS['hyg_context'] ?? null;
                                 // Same cart as the header: the group being browsed, or the host's unsent group checkout.
                                 $floatingRoom = $groupContext['room'] ?? ($GLOBALS['front_cart_room'] ?? null);
-                                $floatingUrl = $floatingRoom ? hyg_room_url($floatingRoom['public_id']) : base_url('cart.php');
+                                $floatingUrl = $floatingRoom ? hyg_room_url($floatingRoom['public_id']) : base_url(!empty($_SESSION['hcgs_adding']) ? 'actions/game_back_checkout.php' : 'cart.php');
                                 if ($floatingRoom) {
                                     $count = 0;
                                     foreach (hyg_cart($floatingRoom, false) as $row) $count += (int)$row['qty'];

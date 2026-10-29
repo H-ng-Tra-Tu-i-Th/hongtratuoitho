@@ -30,13 +30,20 @@ try {
     <h1><?= e(t('cart')) ?></h1>
   </div>
 </div>
-<?php if (!hyg_in_active_group()): ?>
-<section class="hyg-entry">
+<?php
+// Already inside a group order (still choosing drinks, or closed and waiting to be sent): starting another one is locked.
+$inGroupOrder = hyg_has_live_group();
+?>
+<section class="hyg-entry<?= $inGroupOrder ? ' is-locked' : '' ?>">
   <div><strong><?= e(gt('share_cart')) ?></strong>
     <p><?= e(gt('copy_hint')) ?></p>
-  </div><a class="btn primary" href="<?= e(hym_login_gate_url('group')) ?>"><?= e(gt('create')) ?></a>
+  </div>
+  <?php if ($inGroupOrder): ?>
+    <button type="button" class="btn primary" disabled aria-disabled="true"><?= e(gt('create')) ?></button>
+  <?php else: ?>
+    <a class="btn primary" href="<?= e(hym_login_gate_url('group')) ?>"><?= e(gt('create')) ?></a>
+  <?php endif; ?>
 </section>
-<?php endif; ?>
 <?php if ($myRooms): ?>
   <section class="hyg-card">
     <h2><?= e(gt('my_groups')) ?></h2>

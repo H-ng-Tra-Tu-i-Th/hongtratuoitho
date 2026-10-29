@@ -14,7 +14,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 if (!$canPlay && !$hasReward) http_response_code(403);
 front_header(hgr_text('title'));
 ?>
-<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.8')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.9')) ?>">
 <div class="kyuc-game" data-theme="<?= e($appearance['theme']) ?>" data-api="<?= e(base_url('actions/minigame.php')) ?>" data-csrf="<?= e(csrf_token()) ?>" data-lang="<?= e(current_lang()) ?>" data-currency="<?= e(currency()) ?>">
   <div class="kyuc-toolbar"><a class="back" href="<?= e(base_url('index.php')) ?>">← <?= e(t('back_menu')) ?></a>
     <div class="kyuc-balance"><span><?= e(t('game_chances')) ?></span><strong data-game-balance><?= (int)$state['balance'] ?></strong></div>
@@ -63,7 +63,7 @@ front_header(hgr_text('title'));
           <div class="kyuc-reward-actions"><a class="btn primary" href="<?= e(base_url('cart.php')) ?>"><?= e(t('cart')) ?></a><a class="btn" href="<?= e(base_url('member/index.php#member-rewards')) ?>"><?= e(pt('view_member_rewards')) ?></a></div>
         </section>
       </section>
-      <script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.13')) ?>"></script>
+      <script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.15')) ?>"></script>
     <?php endif; ?>
   </div>
   <section class="kyuc-rules">
