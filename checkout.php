@@ -181,6 +181,16 @@ front_header(t('order_info'));
             </button>
           </form>
         <?php endif; ?>
+        <?php if ($groupCheckout): ?>
+          <a class="btn checkout-game-add-btn" href="<?= e(base_url('index.php?group=' . rawurlencode($groupCheckout['room']['public_id']))) ?>">
+            <svg class="checkout-game-add-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 4h2l1.8 9.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L20 8H7" />
+              <circle cx="9" cy="19" r="1.5" />
+              <circle cx="17" cy="19" r="1.5" />
+            </svg>
+            Quay lại trang đặt nước
+          </a>
+        <?php endif; ?>
         </div>
         <?php endif; ?>
       </section>

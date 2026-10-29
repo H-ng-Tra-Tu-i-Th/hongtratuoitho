@@ -20,8 +20,9 @@ try {
         // dd('create', $r);
     } elseif ($action === 'join') {
         // dd('join', $r);
-        // Only signed-in members may join; guests sign in first and come back to this invite.
+        // Members join without signing in: guests can join straight from the invite link.
         $invite = (string)($_POST['invite'] ?? '');
+        /* TODO: Tạm bỏ yêu cầu đăng nhập khi tham gia nhóm (bỏ comment để yêu cầu lại).
         if (!hym_current_member()) {
             // Keep the name the guest typed so the invite form shows it again after sign-in.
             $typed = $_POST['nickname'] ?? '';
@@ -29,6 +30,7 @@ try {
             header('Location: ' . hym_login_gate_url(preg_match('/^[a-f0-9]{64}$/D', $invite) ? 'invite-' . $invite : 'group'), true, 303);
             exit;
         }
+        */
         $r = hyg_join((string)($_POST['invite'] ?? ''), $_POST['nickname'] ?? '');
     } else {
         // -- Khi nhấn btn chốt món thì sẽ chạy vô đây

@@ -218,6 +218,44 @@ function hcgs_record_play_locked(string $token, string $couponCode): void
         ->execute([json_encode($codes), json_encode($plays), $id]);
 }
 
+/** The host added drinks to the locked group: the open session of this browser grows to the new drink count, never shrinks. */
+function hcgs_grow_group_session(string $groupId, int $drinkQty, int $chances): void
+{
+    $id = hcgs_session_id();
+    if ($id === '') return;
+    $pdo = db();
+    if ($pdo->inTransaction()) return;
+    $st = $pdo->prepare('SELECT wallet_token FROM checkout_game_sessions WHERE id=?');
+    $st->execute([$id]);
+    $token = $st->fetchColumn();
+    if ($token === false) return;
+    $pdo->beginTransaction();
+    try {
+        // Same lock order as the Mini Game: wallet, then session.
+        $st = $pdo->prepare('SELECT available_chances FROM game_wallets WHERE wallet_token=? FOR UPDATE');
+        $st->execute([$token]);
+        $st = $pdo->prepare("SELECT * FROM checkout_game_sessions WHERE id=? AND status='open' FOR UPDATE");
+        $st->execute([$id]);
+        $row = $st->fetch();
+        $grantedBefore = $row ? (int)$row['granted_chances'] : 0;
+        if (!$row || hcgs_group_of($row) !== $groupId || $grantedBefore < 1 || $drinkQty <= (int)$row['drink_qty']) {
+            $pdo->commit();
+            return;
+        }
+        $extra = max(0, $chances - $grantedBefore);
+        if ($extra > 0) {
+            $pdo->prepare('UPDATE game_wallets SET available_chances=available_chances+?,total_earned=total_earned+? WHERE wallet_token=?')
+                ->execute([$extra, $extra, $token]);
+        }
+        $pdo->prepare('UPDATE checkout_game_sessions SET drink_qty=?,granted_chances=granted_chances+? WHERE id=?')
+            ->execute([$drinkQty, $extra, $id]);
+        $pdo->commit();
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('[checkout_game] grow failed');
+    }
+}
+
 /** Called inside the Mini Game transaction: a share bonus chance joins the open session. */
 function hcgs_add_chance_locked(string $token): void
 {
