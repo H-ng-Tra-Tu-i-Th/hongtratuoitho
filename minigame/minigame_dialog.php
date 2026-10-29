@@ -24,6 +24,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 
 <!-- File CSS của Minigame -->
 <link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.14')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.14')) ?>">
 
 <style>
     /* Style tùy chỉnh cơ bản cho Dialog */
@@ -116,7 +117,9 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                 <div class="kyuc-hero-copy">
                     <span class="kyuc-eyebrow">HỒNG TRÀ TUỔI THƠ · LITTLE MEMORIES</span>
                     <h1><?= e(hgr_text('title')) ?></h1>
+                    <?php /* TODO: Tạm ẩn câu giới thiệu "Lật thẻ ký ức, ghép đủ 6 cặp..." ở hộp Mini Game checkout.
                     <p class="kyuc-lead"><?= e(hgr_text('intro')) ?></p>
+                    */ ?>
                 </div>
                 <div class="kyuc-mascots" aria-hidden="true">
                     <img class="kyuc-boy" src="<?= e(base_url('minigame/assets/boy.webp')) ?>" alt="">
@@ -190,6 +193,9 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z" />
                             </svg>
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z" />
+                            </svg>
                             <span></span>
                         </button>
                     </div>
@@ -258,22 +264,47 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
         <?php if (false): ?>
             <section class="kyuc-rules">
                 <?php /* TODO: Tạm ẩn chú thích quy tắc Mua 10 nhận lượt (dư UI).
+        <?php /* TODO: Tạm ẩn khối "Giảm giá tiền trực tiếp trên đơn lên tới" ở hộp Mini Game checkout (bỏ if (false) để hiện lại). */ ?>
+                <?php if (false): ?>
+                    <section class="kyuc-rules">
+                        <?php /* TODO: Tạm ẩn chú thích quy tắc Mua 10 nhận lượt (dư UI).
             <p><?= e(hgr_text('rules')) ?></p>
             */ ?>
+                        <p class="kyuc-odds" data-game-odds data-money-label="<?= e(hgr_text('odds_money')) ?>" <?= $prizes ? '' : 'hidden' ?>>
+                            <?= hgr_odds_html($prizes) ?>
+                        </p>
+                        <?php /* TODO: Tạm ẩn chú thích lượt/mã quà lưu trong tài khoản (dư UI).
                 <p class="kyuc-odds" data-game-odds data-money-label="<?= e(hgr_text('odds_money')) ?>" <?= $prizes ? '' : 'hidden' ?>>
                     <?= hgr_odds_html($prizes) ?>
                 </p>
                 <?php /* TODO: Tạm ẩn chú thích lượt/mã quà lưu trong tài khoản (dư UI).
             <p><?= e(pt(hym_current_member() ? 'member_saved' : 'guest_saved')) ?></p>
             */ ?>
+                    </section>
+                <?php endif; ?>
             </section>
         <?php endif; ?>
 
-        <?php /* TODO: Tạm ẩn khối "Chia sẻ để bạn bè cùng nhận quà" ở hộp Mini Game checkout.
-        Nút chia sẻ trang đặt hàng lên Facebook kèm nội dung bài viết soạn sẵn.
-        <?php require __DIR__ . '/share_facebook.php'; ?>
-        */ ?>
+        <?php /* Khối "Chia sẻ để bạn bè cùng nhận quà" ẩn khỏi màn hình nhưng vẫn nằm trong trang:
+        nút "Chia sẻ & nhận lượt chơi" ở popup bấm hộ nút Facebook bên trong (game.js, [data-fb-share-open]). */ ?>
+        <div hidden>
+            <?php require __DIR__ . '/share_facebook.php'; ?>
+        </div>
 
+        <?php /* TODO: Tạm ẩn khối "Quà và điều kiện sử dụng" ở hộp Mini Game checkout (bỏ if (false) để hiện lại). */ ?>
+        <?php if (false): ?>
+            <details class="kyuc-prize-details" data-game-prize-details <?= array_filter($prizes, fn($prize) => !hgr_reward_is_zero($prize)) ? '' : 'hidden' ?>>
+                <summary><?= e($prizeHeading) ?></summary>
+                <ul data-game-prizes>
+                    <?php foreach ($prizes as $prize): if (hgr_reward_is_zero($prize)) continue; ?>
+                        <li>
+                            <strong><?= e(hgr_label($prize)) ?></strong>
+                            <span><?= e(hgr_label($prize, 'terms') . ' ' . sprintf($prizeDays, (int)($prize['valid_days'] ?? 0))) ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </details>
+        <?php endif; ?>
         <?php /* TODO: Tạm ẩn khối "Quà và điều kiện sử dụng" ở hộp Mini Game checkout (bỏ if (false) để hiện lại). */ ?>
         <?php if (false): ?>
             <details class="kyuc-prize-details" data-game-prize-details <?= array_filter($prizes, fn($prize) => !hgr_reward_is_zero($prize)) ? '' : 'hidden' ?>>
@@ -292,7 +323,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 </dialog>
 
 <!-- Chỉ nạp game.js một lần, nạp 2 lần sẽ gửi trùng mỗi lần lật thẻ -->
-<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.23')) ?>"></script>
+<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.25')) ?>"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

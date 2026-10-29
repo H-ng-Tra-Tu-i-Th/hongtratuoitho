@@ -243,12 +243,17 @@ front_header(t('order_info'));
       <label><?= e(t('phone')) ?><input name="phone" value="<?= e($values['phone']) ?>" required maxlength="50" inputmode="tel" autocomplete="tel" <?= hcq_field_attrs($fieldErrors, 'phone') ?>><?= hcq_field_error($fieldErrors, 'phone') ?></label>
       <label><?= e(t('delivery_address')) ?><textarea name="address" required maxlength="255" rows="3" autocomplete="street-address" <?= hcq_field_attrs($fieldErrors, 'address') ?>><?= e($values['address']) ?></textarea><?= hcq_field_error($fieldErrors, 'address') ?></label>
 
-      <!-- close-test-Hai Ẩn thông tin thanh toán của đơn nhóm (Thanh toán chung · Chuyển khoản); đơn lẻ vẫn chọn Chuyển khoản / Tiền mặt -->
-      <fieldset<?= $groupPayment ? ' style="display: none;"' : '' ?>>
+      <!-- Phương thức thanh toán nằm ngay dưới địa chỉ giao hàng: đơn nhóm (trừ chia tiền riêng) cũng chọn Chuyển khoản / Tiền mặt tại đây. -->
+      <?php $groupChoosesPay = $groupPayment && $groupPayCode !== 'split'; ?>
+      <?php $payChoice = $groupChoosesPay ? (in_array($values['payment_method'], ['transfer', 'cash'], true) && !empty($draft['values']['payment_method']) ? $values['payment_method'] : $groupPayCode) : $values['payment_method']; ?>
+      <fieldset<?= $groupPayment && !$groupChoosesPay ? ' style="display: none;"' : '' ?>>
         <legend><?= e(t('payment_method')) ?></legend>
-        <?php if ($groupPayment): ?>
+        <?php if ($groupPayment && !$groupChoosesPay): ?>
           <input type="hidden" name="payment_method" value="<?= e($groupPayCode) ?>">
           <p><?= e($hostCollect ? htp('merchant_host') : gt($groupPayment['mode'] === 'split' ? 'pay_split' : 'pay_together')) ?><?php if ($hostCollect || $groupPayment['mode'] === 'together'): ?> · <?= e(payment_label($groupPayCode)) ?><?php endif; ?></p>
+        <?php elseif ($groupChoosesPay): ?>
+          <label class="inline-radio"><input type="radio" name="payment_method" value="transfer" data-payment-toggle <?= $payChoice !== 'cash' ? 'checked' : '' ?>> <?= e(t('transfer')) ?></label>
+          <label class="inline-radio"><input type="radio" name="payment_method" value="cash" data-payment-toggle <?= $payChoice === 'cash' ? 'checked' : '' ?>> <?= e(t('cash')) ?></label>
         <?php else: ?>
           <label class="inline-radio"><input type="radio" name="payment_method" value="transfer" data-payment-toggle <?= $values['payment_method'] !== 'cash' ? 'checked' : '' ?>> <?= e(t('transfer')) ?></label>
           <label class="inline-radio"><input type="radio" name="payment_method" value="cash" data-payment-toggle <?= $values['payment_method'] === 'cash' ? 'checked' : '' ?>> <?= e(t('cash')) ?></label>

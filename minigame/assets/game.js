@@ -90,6 +90,8 @@
   function message(text, error = false) {
     if (!notice) return;
     notice.textContent = text;
+    // The "0đ" result notice is not shown at all (the reward popup already tells the customer).
+    notice.hidden = text === t.zero;
     errorNotice = error;
     notice.classList.toggle('kyuc-error', error);
   }

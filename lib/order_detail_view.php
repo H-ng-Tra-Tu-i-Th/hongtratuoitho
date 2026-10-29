@@ -28,6 +28,7 @@ function order_detail_render(array $order): string {
     <div class="order-detail-line"><span><?= e(t('subtotal')) ?></span><b><?= e(currency()) ?><?= money($order['subtotal_amount']) ?></b></div>
     <?php if ((float)$order['discount_amount'] > 0): ?><div class="order-detail-line discount"><span><?= e(t('coupon_discount')) ?><?php if (!empty($order['coupon_code'])): ?> · <?= e($order['coupon_code']) ?><?php endif; ?></span><b>−<?= e(currency()) ?><?= money($order['discount_amount']) ?></b></div><?php endif; ?>
     <div class="order-detail-line total"><span><?= e(t('total')) ?></span><b><?= e(currency()) ?><?= money($order['total_amount']) ?></b></div>
+    <?php if (!empty($order['payment_method'])): ?><div class="order-detail-line"><span><?= e(t('payment_method')) ?></span><b><?= e(payment_label((string)$order['payment_method'])) ?></b></div><?php endif; ?>
   </div>
   <style>
     .order-detail{margin:16px 0;text-align:left}

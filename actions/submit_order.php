@@ -72,7 +72,9 @@ try{
         $choice=promotion_room_choice($groupCheckout['room'],$cart);
         $groupPayment=hyg_payment_summary($groupCheckout['room'],$cart,$coupon);
         $expectedPay=htp_group_order_method($groupPayment);
-        if($pay!==$expectedPay)hyg_fail('checkout_change');
+        // The customer picks transfer or cash on the checkout page; only a split-payment group keeps the method fixed by its quote.
+        $payAllowed=$expectedPay==='split'?$pay===$expectedPay:in_array($pay,['transfer','cash'],true);
+        if(!$payAllowed)hyg_fail('checkout_change');
     }else{
         $choice=promotion_cart_choice($cart);
         promotion_validate_choice($choice['mode'],$choice['code']);$coupon=cart_coupon_summary($cart);
@@ -113,7 +115,7 @@ try{
     // One coupon may hold several gift items; it is spent once.
     foreach(array_keys($usedGifts??[]) as $giftCode)if(!mark_customer_coupon_used($giftCode,$oid))throw new RuntimeException('Coupon already used.');
     if($groupCheckout){
-        hyg_finish($groupCheckout,$oid);
+        hyg_finish($groupCheckout,$oid,$pay);
         // Members become children of the leader; the leader's parent earns points once the order is done (see member_referral.php).
         hym_group_referral_after_order((int)$groupCheckout['room']['id'],$oid);
     }

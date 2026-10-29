@@ -47,6 +47,12 @@ try {
             exit;
         }
         hyg_mutate($id, $action, $_POST);
+        if ($action === 'cancel') {
+            // A cancelled group is deleted right away and the host goes back to the menu.
+            hyg_delete_cancelled_room($id);
+            header('Location: ' . base_url('index.php'), true, 303);
+            exit;
+        }
         $r = hyg_room($id);
         if ($action === 'coupon' && ($_POST['lock_after'] ?? '') === '1') {
             // "Lock" submits the offer form: save the offer, then lock at the revision it produced.
