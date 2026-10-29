@@ -59,7 +59,9 @@ front_header(hgr_text('title'));
           <h3 data-game-reward-name></h3>
           <p data-game-reward-terms></p><code data-game-reward-code></code><span data-game-reward-amount hidden></span>
           <p data-game-reward-expiry></p>
-<div class="kyuc-share-bonus" data-game-share-bonus hidden><p></p><button class="btn primary" type="button"></button></div>
+          <div class="kyuc-share-bonus" data-game-share-bonus hidden>
+            <p></p><button class="btn primary" type="button"></button>
+          </div>
           <div class="kyuc-reward-actions"><a class="btn primary" href="<?= e(base_url('cart.php')) ?>"><?= e(t('cart')) ?></a><a class="btn" href="<?= e(base_url('member/index.php#member-rewards')) ?>"><?= e(pt('view_member_rewards')) ?></a></div>
         </section>
       </section>
