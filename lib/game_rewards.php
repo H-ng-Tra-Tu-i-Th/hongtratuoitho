@@ -16,7 +16,7 @@ function hgr_schema(): void {
 }
 function hgr_text(string $key): string {
     $copy=[
-        'title'=>['zh'=>'10 杯童年回憶','vi'=>'Ký Ức 10 Ly','en'=>'Ten Cups of Memories'],
+        'title'=>['zh'=>'10 杯童年回憶','vi'=>'Ký ức tuổi thơ','en'=>'Ten Cups of Memories'],
         'intro'=>['zh'=>'翻開童年回憶，配對 6 組圖案，領取下一次的驚喜。','vi'=>'Lật thẻ ký ức, ghép đủ 6 cặp và nhận một món quà cho lần gặp tới.','en'=>'Match six pairs of childhood memories and earn a gift for your next order.'],
         'rules'=>['zh'=>'選擇買10抽獎，單筆訂單每滿10杯飲品獲1次機會：10杯1次、20杯2次、30杯3次，完成後發放。杯數不跨單累計，不與其他優惠共用。','vi'=>'Chọn Mua 10 nhận lượt rút thưởng: mỗi 10 ly trong cùng một đơn nhận 1 lượt khi hoàn tất; 10 ly được 1 lượt, 20 ly được 2, 30 ly được 3. Không cộng ly giữa các đơn hoặc dùng cùng ưu đãi khác.','en'=>'Choose Buy 10 for a prize draw: every 10 drinks in one completed order earns 1 play; 10 drinks earn 1, 20 earn 2, 30 earn 3. Cups do not carry over between orders; offers cannot be combined.'],
         'odds_money'=>['zh'=>'訂單直接折抵最高：','vi'=>'Giảm giá tiền trực tiếp trên đơn lên tới:','en'=>'Money off your order, up to:'],

@@ -94,18 +94,21 @@
     top: 10px;
     right: 12px;
     z-index: 2;
-    width: 34px;
-    height: 34px;
-    border: 0;
+    width: 40px;
+    height: 40px;
+    border: 2px solid #fff;
     border-radius: 999px;
-    background: rgba(179, 36, 36, .08);
-    color: #8f1d1d;
-    font-size: 22px;
+    background: #B32424;
+    color: #fff;
+    font-size: 26px;
+    font-weight: 700;
     line-height: 1;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(179, 36, 36, .45);
 }
 .kyuc-reward-x:hover {
-    background: rgba(179, 36, 36, .16);
+    background: #8f1d1d;
+    transform: scale(1.08);
 }
 
 /* Icon tròn: hộp quà (trúng) / cỏ bốn lá (0đ) */
@@ -164,6 +167,44 @@
     line-height: 1.35;
     color: #392b27;
 }
+.kyuc-gift-intro {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #84756b;
+}
+.kyuc-gift-list {
+    display: grid;
+    gap: 8px;
+}
+.kyuc-gift-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #fffdf7;
+    border: 1px solid #f0d9b8;
+    text-align: left;
+}
+.kyuc-gift-name {
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.35;
+    color: #392b27;
+}
+.kyuc-gift-qty {
+    flex: none;
+    min-width: 42px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #B32424;
+    color: #fff;
+    font-size: 15px;
+    text-align: center;
+}
 .kyuc-reward-popup .kyuc-reward p {
     position: relative;
     z-index: 1;
@@ -171,6 +212,12 @@
     font-size: 14px;
     line-height: 1.6;
     color: #84756b;
+}
+.kyuc-reward-popup .kyuc-reward p[data-game-reward-terms] {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.5;
+    color: #392b27;
 }
 .kyuc-reward-popup [data-game-reward-code]:not([hidden]) {
     display: block;
@@ -258,9 +305,15 @@
     border-color: #8F1D1D;
 }
 .kyuc-reward-done {
-    background: transparent;
-    border: 1px solid #e4cdb7;
-    color: #84756b;
+    background: #B32424;
+    border: 2px solid #B32424;
+    color: #fff;
+    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(179, 36, 36, .35);
+}
+.kyuc-reward-done:hover {
+    background: #8f1d1d;
+    border-color: #8f1d1d;
 }
 .kyuc-reward-reopen {
     display: block;

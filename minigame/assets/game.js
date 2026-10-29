@@ -233,7 +233,8 @@
     if (retry) retry.disabled = busy || Date.now() < retryAt;
     if (next) { next.hidden = !reward || balance < 1; next.disabled = busy; }
     if (rewardElement) rewardElement.hidden = !reward;
-    if (shareBox) { shareBox.hidden = !reward || !shareBonus; shareBox.querySelector('button').disabled = busy; }
+    // At checkout the "share Facebook for a free play" offer is not shown.
+    if (shareBox) { shareBox.hidden = inCheckout || !reward || !shareBonus; shareBox.querySelector('button').disabled = busy; }
     syncPopup();
     root.querySelector('[data-game-cleared]')?.toggleAttribute('hidden', !board?.complete || freshMatches.length > 0);
   }
@@ -265,7 +266,7 @@
       outsideNext.textContent = '▶ ' + popupText.next + ' (' + ({ vi: 'còn ', zh: '剩 ', en: '' }[language] || '') + balance + ({ vi: ' lượt', zh: ' 次', en: ' left' }[language] || '') + ')';
     }
     if (outsideShare) {
-      outsideShare.hidden = !reward || !shareBonus;
+      outsideShare.hidden = inCheckout || !reward || !shareBonus;
       outsideShare.disabled = busy;
     }
   }
@@ -275,6 +276,34 @@
     if (!element) return;
     const additional = board?.started && !board.complete ? Math.floor((Date.now() - elapsedAt) / 1000) : 0;
     element.textContent = formatTime((board?.elapsed_seconds || 0) + Math.max(0, additional));
+  }
+
+  // Gift prizes are named "Tặng 1 ly mỗi món: A + B"; the popup lists each gifted item on its own row with its quantity.
+  function parseGift(text) {
+    const match = /^Tặng\s+(\d+)\s+(?:ly|topping)(?:\s+mỗi món)?:\s*(.+)$/u.exec(text);
+    if (!match) return null;
+    return { qty: match[1], items: match[2].split(' + ').map(item => item.trim()).filter(Boolean) };
+  }
+
+  function renderGift(target, gift) {
+    const intro = document.createElement('span');
+    intro.className = 'kyuc-gift-intro';
+    intro.textContent = 'Nhận được';
+    const list = document.createElement('span');
+    list.className = 'kyuc-gift-list';
+    gift.items.forEach(item => {
+      const row = document.createElement('span');
+      row.className = 'kyuc-gift-item';
+      const label = document.createElement('span');
+      label.className = 'kyuc-gift-name';
+      label.textContent = item;
+      const qty = document.createElement('b');
+      qty.className = 'kyuc-gift-qty';
+      qty.textContent = '×' + gift.qty;
+      row.append(label, qty);
+      list.append(row);
+    });
+    target.replaceChildren(intro, list);
   }
 
   function showReward() {
@@ -293,6 +322,8 @@
     if (name) name.textContent = zero
       ? (popup ? popupText.luck : { vi: 'Rất tiếc bạn đã không may mắn, xin hãy chia sẻ chúng tôi lên Facebook để nhận được một lượt chơi miễn phí với tỉ lệ trúng 100%.', zh: '很遺憾這次沒有中獎，請把我們分享到 Facebook，即可獲得 1 次免費遊戲機會，中獎率 100%。', en: 'Sorry, you were not lucky this time. Share us on Facebook to get 1 free play with a 100% chance to win.' }[language])
       : reward.name?.[language] || reward.name?.vi || '';
+    const gift = !zero && popup && language === 'vi' ? parseGift(reward.name?.vi || '') : null;
+    if (name && gift) renderGift(name, gift);
     if (terms) { terms.textContent = zero ? '' : inCheckout ? appliedNow : reward.terms?.[language] || reward.terms?.vi || ''; terms.hidden = zero; }
     if (expiry) {
       const date = new Date(reward.expires_at || '');
@@ -301,12 +332,13 @@
         timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
       }).format(date) + ' (UTC+7)';
     }
-    if (code) { code.textContent = reward.coupon_code || ''; code.hidden = !reward.coupon_code; }
+    // At checkout the prize is applied straight to the order, so its code and amount are not shown.
+    if (code) { code.textContent = reward.coupon_code || ''; code.hidden = inCheckout || !reward.coupon_code; }
     if (amount) {
       const locale = { vi: 'vi-VN', zh: 'zh-TW', en: 'en-US' }[language];
       const formatted = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(Number(reward.coupon_amount) || 0);
       amount.textContent = `${root.dataset.currency || ''}${formatted}`;
-      amount.hidden = !reward.coupon_code || reward.kind !== 'discount';
+      amount.hidden = inCheckout || !reward.coupon_code || reward.kind !== 'discount';
     }
     if (copy) { copy.hidden = !reward.coupon_code; copy.setAttribute('aria-label', t.copy); }
   }
@@ -499,7 +531,11 @@
   if (popup) {
     root.querySelectorAll('[data-game-reward-close]').forEach(button => {
       if (button.classList.contains('kyuc-reward-done')) button.textContent = popupText.close;
-      button.addEventListener('click', () => popup.close());
+      button.addEventListener('click', () => {
+        popup.close();
+        // Out of plays at checkout: close the game too, so the customer lands back on the checkout page.
+        if (inCheckout && balance < 1 && typeof window.closeMinigameModal === 'function') window.closeMinigameModal();
+      });
     });
     // Forward to the popup buttons so the claim logic (and the Facebook pop-up permission) stays in one place.
     outsideNext?.addEventListener('click', () => next?.click());

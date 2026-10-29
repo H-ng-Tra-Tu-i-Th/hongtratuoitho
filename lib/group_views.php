@@ -381,9 +381,10 @@ function hyg_render_room(array $r): string
           <?= promotion_selector($promotion, ['group_public' => $r['public_id'], 'revision' => $r['revision'], 'host_discount_available' => $payment['host_obligation'] > 0]) ?>
 
           <!-- Button chốt món -->
-          <button class="btn primary block" id="hyg-lock-btn" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid ? 'disabled' : '' ?>>
+          <button class="btn primary block" id="hyg-lock-btn" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid || $drinks < hyg_min_lock_cups() ? 'disabled' : '' ?>>
             <?= e(gt('lock')) ?>
           </button>
+          <?php if ($drinks < hyg_min_lock_cups()): ?><small class="hyg-muted"><?= e(gt('min_cups')) ?></small><?php endif; ?>
         <?php endif; ?>
 
         <?php if ($status === 'locked' && $host): ?><?php if (!$payment['legacy']): ?>

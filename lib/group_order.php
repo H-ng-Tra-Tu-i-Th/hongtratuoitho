@@ -290,11 +290,61 @@ function hyg_join(string $invite,string $nickname): array {
 function hyg_insert_item(int $rid,int $mid,array $selection,array $row,string $request): void {
     hyg_exec('INSERT INTO group_items(room_id,member_id,request_key,selection_json,snapshot_json) VALUES(?,?,?,?,?)',[$rid,$mid,$request,json_encode($selection,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR),json_encode($row,JSON_UNESCAPED_UNICODE|JSON_THROW_ON_ERROR)]);
 }
+/** The host may keep adding new drinks to a locked room (checkout Mini Game); editing or removing stays blocked. */
+function hyg_host_may_append(array $r): bool {
+    if($r['status']!=='locked'||!empty($r['order_id'])||!hyg_host($r))return false;
+    $members=hyg_all('SELECT * FROM group_members WHERE room_id=?',[$r['id']]);
+    return hyg_room_payment_active($r,$members);
+}
+/** A drink was added to a locked room: reprice the frozen quote and make payers whose amount changed confirm again. */
+function hyg_reprice_after_append(array $r,array $host,array $quote): void {
+    $cart=hyg_cart($r,false);
+    $members=$quote['members'];
+    $record=hyg_frozen_coupon_record($r,$quote['settlement']);
+    $coupon=hyg_calculate_group_coupon($cart,$record,$r,$members);
+    $payment=hyg_build_payment_summary($r,$members,$cart,$coupon);
+    $payment['frozen']=true;
+    $summary=$quote['payment'];
+    foreach($members as $member){
+        $id=(int)$member['id'];
+        $before=$summary['members'][$id];
+        $after=$payment['members'][$id];
+        if(!hyg_payment_amount_changed($before,$after))continue;
+        if(in_array($member['payment_status'],['requested','paid'],true))hyg_exec("UPDATE group_members SET payment_status='requested',payment_requested_at=COALESCE(payment_requested_at,payment_completed_at),payment_requested_amount=COALESCE(payment_requested_amount,?),payment_invalidated_at=UTC_TIMESTAMP(),payment_invalidation_reason='amount_changed' WHERE id=?",[$before['due'],$id]);
+        hyg_payment_event($r,$member,(int)$host['id'],'amount_changed',(float)$after['due']-(float)$before['due'],'item_added',['due'=>$before['due'],'receipt'=>hyg_member_ledger_amounts($member)],['due'=>$after['due'],'receipt'=>hyg_member_ledger_amounts($member)]);
+    }
+    $settlement=['version'=>2,'payment'=>$payment,'coupon'=>$coupon,'coupon_record'=>$record,'coupon_rule'=>'group_min_base_per_5_v1'];
+    $promotion=$quote['settlement']['promotion']??null;
+    if($promotion!==null){
+        $promotion['eligible_qty']=promotion_drink_qty($cart);
+        if($promotion['mode']==='draw'&&minigame_enabled())$promotion['expected_chances']=max((int)$promotion['expected_chances'],game_chances_for_drink_qty($promotion['eligible_qty']));
+        $settlement['promotion']=$promotion;
+    }
+    hyg_exec('UPDATE group_rooms SET lock_signature=?,settlement_json=? WHERE id=?',[hyg_fingerprint($cart,$coupon,$payment,$promotion),json_encode($settlement,JSON_UNESCAPED_UNICODE|JSON_PRESERVE_ZERO_FRACTION|JSON_THROW_ON_ERROR),$r['id']]);
+}
+/** After the host adds drinks, the host's own share needs no review: confirm it again, like the Chốt món button does. */
+function hyg_reconfirm_host_share(string $public): void {
+    $r=hyg_room($public);
+    $quote=hyg_locked_quote($r);
+    $hostId=(int)($quote['payment']['host_member_id']??0);
+    $hostPay=hyg_member_payment($quote['payment'],$hostId);
+    if(!$hostPay||empty($hostPay['can_confirm'])||(float)$hostPay['outstanding']<=0)return;
+    hyg_mutate($public,'payment_confirm',[
+        'revision'=>(int)$r['revision'],
+        'quote_signature'=>$r['lock_signature']??'',
+        'member_id'=>$hostId,
+        'payment_amount'=>(string)hyg_money((float)$hostPay['outstanding']),
+    ]);
+}
 function hyg_save_item(string $public,array $row,int $edit,int $version,string $request): void {
     if(!preg_match('/^[a-f0-9]{32}$/D',$request))hyg_fail('expired_form');
-    hyg_tx(function()use($public,$row,$edit,$version,$request){
-        $r=hyg_room($public,true);$m=hyg_member($r);hyg_open($r);
+    $appended=false;
+    hyg_tx(function()use($public,$row,$edit,$version,$request,&$appended){
+        $r=hyg_room($public,true);$m=hyg_member($r);
+        $append=!$edit&&hyg_host_may_append($r);
+        if(!$append)hyg_open($r);
         if(!$edit&&hyg_one('SELECT id FROM group_items WHERE room_id=? AND member_id=? AND request_key=?',[$r['id'],$m['id'],$request]))return;
+        $quote=$append?hyg_locked_quote($r):null;
         $selection=hyg_selection($row);$resolved=hyg_resolve($selection);
         if($edit){
             $i=hyg_one('SELECT * FROM group_items WHERE id=? AND room_id=?',[$edit,$r['id']]);
@@ -304,9 +354,17 @@ function hyg_save_item(string $public,array $row,int $edit,int $version,string $
         }else{
             $n=hyg_one('SELECT COUNT(*) n FROM group_items WHERE room_id=?',[$r['id']]);if((int)$n['n']>=200)hyg_fail('room_full');
             hyg_insert_item((int)$r['id'],(int)$m['id'],$selection,$resolved,$request);
+            if($quote){
+                hyg_reprice_after_append($r,$m,$quote);
+                $appended=true;
+            }
         }
         hyg_touch((int)$r['id']);
     });
+    if(!$appended)return;
+    hyg_reconfirm_host_share($public);
+    $promotion=hyg_settlement(hyg_room($public))['promotion']??null;
+    if($promotion&&$promotion['mode']==='draw')hcgs_grow_group_session($public,(int)$promotion['eligible_qty'],(int)$promotion['expected_chances']);
 }
 /** Validate the immutable quote without requiring payment yet; callers serialize on the room row. */
 function hyg_locked_quote(array $r,bool $allowExpiredResolution=false): array {
@@ -351,6 +409,8 @@ function hyg_remove_member(array $r,array $host,array $data): void {
     if($promotion!==null){$promotion['eligible_qty']=promotion_drink_qty($cart);$promotion['expected_chances']=$promotion['mode']==='draw'?min(max(0,(int)$promotion['expected_chances']),game_chances_for_drink_qty($promotion['eligible_qty'])):0;$settlement['promotion']=$promotion;}
     hyg_exec('UPDATE group_rooms SET lock_signature=?,settlement_json=? WHERE id=?',[hyg_fingerprint($cart,$coupon,$payment,$promotion),json_encode($settlement,JSON_UNESCAPED_UNICODE|JSON_PRESERVE_ZERO_FRACTION|JSON_THROW_ON_ERROR),$r['id']]);
 }
+/** A group order needs at least this many drinks in total before the host can press "Chốt món". */
+function hyg_min_lock_cups(): int {return 2;}
 function hyg_mutate(string $public,string $action,array $data): void {
     hyg_tx(function()use($public,$action,$data){
         $r=hyg_room($public,true);$m=hyg_member($r);$rid=(int)$r['id'];
@@ -369,7 +429,9 @@ function hyg_mutate(string $public,string $action,array $data): void {
             hyg_exec("UPDATE group_rooms SET status='open',lock_signature=NULL,settlement_json=NULL WHERE id=?",[$rid]);
         }elseif($action==='lock'){
             hyg_open($r);if((int)($data['revision']??-1)!==(int)$r['revision'])hyg_fail('changed_reload');
-            $cart=hyg_cart($r);if(!$cart)hyg_fail('empty_room');$record=promotion_group_record($r);
+            $cart=hyg_cart($r);if(!$cart)hyg_fail('empty_room');
+            if(promotion_drink_qty($cart)<hyg_min_lock_cups())hyg_fail('min_cups');
+            $record=promotion_group_record($r);
             $members=hyg_all('SELECT * FROM group_members WHERE room_id=? ORDER BY id',[$rid]);$coupon=hyg_calculate_group_coupon($cart,$record,$r,$members);$payment=hyg_build_payment_summary($r,$members,$cart,$coupon);$payment['frozen']=true;
             $promotion=promotion_room_choice($r,$cart);
             $settlement=['version'=>2,'payment'=>$payment,'coupon'=>$coupon,'coupon_record'=>$record,'coupon_rule'=>'group_min_base_per_5_v1','promotion'=>$promotion];
@@ -463,7 +525,9 @@ function hyg_finish(array $ctx,int $orderId): void {
 function hyg_room_url(string $public): string {return base_url('group/?id='.hyg_code($public));}
 function hyg_context(): ?array {
     if(empty($_GET['group']))return null;
-    hyg_schema();$r=hyg_room(hyg_code($_GET['group']));$m=hyg_member($r);hyg_open($r);hyg_headers();
+    hyg_schema();$r=hyg_room(hyg_code($_GET['group']));$m=hyg_member($r);
+    if(!hyg_host_may_append($r))hyg_open($r);
+    hyg_headers();
     return $GLOBALS['hyg_context']=['room'=>$r,'member'=>$m];
 }
 /** True while this device is in a group still taking orders, or the host has an unsent group checkout (header shows "Giỏ nhóm"). */
@@ -474,12 +538,11 @@ function hyg_in_active_group(): bool {
         return (bool)hyg_one("SELECT 1 FROM group_rooms r JOIN group_members m ON m.room_id=r.id WHERE m.device_hash=? AND r.status='open' AND r.expires_at>UTC_TIMESTAMP() LIMIT 1",[$device]);
     }catch(Throwable $e){return false;}
 }
-/** True while this device has a group order not yet sent or cancelled (still choosing drinks, or closed and awaiting checkout): starting another one is locked. */
+/** True while this device is the host of a group order not yet sent or cancelled (still choosing drinks, or closed and awaiting checkout): starting another one is locked. Members of someone else's group are not locked. */
 function hyg_has_live_group(): bool {
-    if(hyg_in_active_group())return true;
     try{
         $device=hyg_device();if($device==='')return false;
-        return (bool)hyg_one("SELECT 1 FROM group_rooms r JOIN group_members m ON m.room_id=r.id WHERE m.device_hash=? AND r.status IN ('open','locked') AND r.order_id IS NULL AND r.expires_at>UTC_TIMESTAMP() LIMIT 1",[$device]);
+        return (bool)hyg_one("SELECT 1 FROM group_rooms r WHERE r.owner_hash=? AND r.status IN ('open','locked') AND r.order_id IS NULL AND r.expires_at>UTC_TIMESTAMP() LIMIT 1",[$device]);
     }catch(Throwable $e){return false;}
 }
 function hyg_url(string $path): string {
