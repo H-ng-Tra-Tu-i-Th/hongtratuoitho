@@ -63,7 +63,7 @@ front_header(hgr_text('title'));
           <div class="kyuc-reward-actions"><a class="btn primary" href="<?= e(base_url('cart.php')) ?>"><?= e(t('cart')) ?></a><a class="btn" href="<?= e(base_url('member/index.php#member-rewards')) ?>"><?= e(pt('view_member_rewards')) ?></a></div>
         </section>
       </section>
-      <script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.15')) ?>"></script>
+      <script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.17')) ?>"></script>
     <?php endif; ?>
   </div>
   <section class="kyuc-rules">

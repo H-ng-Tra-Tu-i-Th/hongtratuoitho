@@ -47,9 +47,9 @@
   const appliedNow = { vi: 'Quà đã được áp dụng trực tiếp vào đơn hàng hiện tại.', zh: '獎品已直接套用於目前這筆訂單。', en: 'This prize has been applied to your current order.' }[language];
   // A 0đ prize offers one replay for sharing the website on Facebook; that replay always wins 52.000đ.
   Object.assign(t, {
-    vi: { zero: 'Tiếc quá, lượt này trúng 0đ!', share_offer: 'Chia sẻ website lên Facebook để nhận thêm 1 lượt chơi — lượt này chắc chắn trúng 52.000đ, trừ thẳng vào đơn này.', share_button: 'Chia sẻ & nhận lượt chơi', share_bonus: 'Cảm ơn bạn đã chia sẻ! Lượt chơi mới này chắc chắn trúng 52.000đ.' },
-    zh: { zero: '可惜，這次抽到 0đ！', share_offer: '把網站分享到 Facebook，即可再獲得 1 次遊戲機會，這次保證抽中 52.000đ，直接扣除本訂單金額。', share_button: '分享並領取機會', share_bonus: '感謝分享！這次新的遊戲機會保證抽中 52.000đ。' },
-    en: { zero: 'So close — this play won 0đ!', share_offer: 'Share the website on Facebook to get 1 more play — that play is guaranteed to win 52.000đ off this order.', share_button: 'Share & get a play', share_bonus: 'Thanks for sharing! This new play is guaranteed to win 52.000đ.' }
+    vi: { zero: 'Tiếc quá, lượt này trúng 0đ!', share_offer: 'Rất tiếc bạn đã không may mắn, xin hãy chia sẻ chúng tôi lên Facebook để nhận được một lượt chơi miễn phí với tỉ lệ trúng 100%.', share_button: 'Chia sẻ & nhận lượt chơi', share_bonus: 'Cảm ơn bạn đã chia sẻ! Bạn nhận được 1 lượt chơi miễn phí, lượt này chắc chắn trúng quà.' },
+    zh: { zero: '可惜，這次抽到 0đ！', share_offer: '很遺憾這次沒有中獎，請把我們分享到 Facebook，即可獲得 1 次免費遊戲機會，中獎率 100%。', share_button: '分享並領取機會', share_bonus: '感謝分享！您獲得 1 次免費遊戲機會，這次保證中獎。' },
+    en: { zero: 'So close — this play won 0đ!', share_offer: 'Sorry, you were not lucky this time. Share us on Facebook to get 1 free play with a 100% chance to win.', share_button: 'Share & get a play', share_bonus: 'Thanks for sharing! You got 1 free play, and it is guaranteed to win a prize.' }
   }[language]);
   if (inCheckout) t.saved = { vi: 'Hoàn thành! Quà đã được áp dụng vào đơn hàng này.', zh: '配對完成！獎品已套用於這筆訂單。', en: 'Complete! Your prize has been applied to this order.' }[language];
   const paths = [
@@ -291,7 +291,7 @@
     const head = root.querySelector('[data-game-reward-head]');
     if (head && popup) head.textContent = zero ? popupText.lose : popupText.win;
     if (name) name.textContent = zero
-      ? (popup ? popupText.luck : { vi: 'Chúc bạn may mắn lần sau! Hãy chia sẻ để nhận thêm 1 lượt chắc chắn trúng 52.000đ', zh: '祝你下次好運！分享即可再玩一次，保證抽中 52.000đ', en: 'Better luck next time! Share to get another play that wins 52.000đ' }[language])
+      ? (popup ? popupText.luck : { vi: 'Rất tiếc bạn đã không may mắn, xin hãy chia sẻ chúng tôi lên Facebook để nhận được một lượt chơi miễn phí với tỉ lệ trúng 100%.', zh: '很遺憾這次沒有中獎，請把我們分享到 Facebook，即可獲得 1 次免費遊戲機會，中獎率 100%。', en: 'Sorry, you were not lucky this time. Share us on Facebook to get 1 free play with a 100% chance to win.' }[language])
       : reward.name?.[language] || reward.name?.vi || '';
     if (terms) { terms.textContent = zero ? '' : inCheckout ? appliedNow : reward.terms?.[language] || reward.terms?.vi || ''; terms.hidden = zero; }
     if (expiry) {
