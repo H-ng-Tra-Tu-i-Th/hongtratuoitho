@@ -90,6 +90,8 @@
   function message(text, error = false) {
     if (!notice) return;
     notice.textContent = text;
+    // The "0đ" result notice is not shown at all (the reward popup already tells the customer).
+    notice.hidden = text === t.zero;
     errorNotice = error;
     notice.classList.toggle('kyuc-error', error);
   }
@@ -233,8 +235,7 @@
     if (retry) retry.disabled = busy || Date.now() < retryAt;
     if (next) { next.hidden = !reward || balance < 1; next.disabled = busy; }
     if (rewardElement) rewardElement.hidden = !reward;
-    // At checkout the "share Facebook for a free play" offer is not shown.
-    if (shareBox) { shareBox.hidden = inCheckout || !reward || !shareBonus; shareBox.querySelector('button').disabled = busy; }
+    if (shareBox) { shareBox.hidden = !reward || !shareBonus; shareBox.querySelector('button').disabled = busy; }
     syncPopup();
     root.querySelector('[data-game-cleared]')?.toggleAttribute('hidden', !board?.complete || freshMatches.length > 0);
   }
@@ -266,7 +267,7 @@
       outsideNext.textContent = '▶ ' + popupText.next + ' (' + ({ vi: 'còn ', zh: '剩 ', en: '' }[language] || '') + balance + ({ vi: ' lượt', zh: ' 次', en: ' left' }[language] || '') + ')';
     }
     if (outsideShare) {
-      outsideShare.hidden = inCheckout || !reward || !shareBonus;
+      outsideShare.hidden = !reward || !shareBonus;
       outsideShare.disabled = busy;
     }
   }

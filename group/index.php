@@ -138,9 +138,11 @@ unset($_SESSION['hyg_message']);
     </section>
 */ ?>
   <?php endif; ?>
+  <?php /* TODO: Tạm ẩn hai dòng ghi chú cuối trang nhóm ("Trưởng nhóm chọn thanh toán chung hoặc riêng..." và "Cần đăng nhập thành viên để tham gia nhóm...").
   <div class="hyg-privacy">
     <p><?= e(gt('rules')) ?></p>
     <p><?= e(gt('device_note')) ?></p>
   </div>
+  */ ?>
 </div>
 <?php front_footer(); ?>

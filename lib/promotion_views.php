@@ -44,7 +44,7 @@ function pt(string $key, array $vars = []): string
       'buy4get1' => 'Mua 4 tặng 1',
       'buy4get1_hint' => 'Cứ đủ 5 ly đồ uống, giảm giá 1 ly đồ uống, không gồm topping.',
       'draw' => 'Mua 10 nhận lượt rút thưởng',
-      'draw_hint' => 'Mỗi 10 ly trong cùng một đơn nhận 1 lượt rút thưởng: 10 ly được 1 lượt, 20 ly được 2 lượt. Cấp khi hoàn tất đơn; không cộng ly giữa các đơn, không giảm giá đơn này.',
+      'draw_hint' => 'Mỗi 10 ly trong cùng một đơn nhận 1 lượt rút thưởng: 10 ly được 1 lượt, 20 ly được 2 lượt. Áp dụng trực tiếp cho đơn hiện tại.',
       'reward' => 'Mã phần thưởng',
       'reward_hint' => 'Dùng mã phần thưởng theo điều kiện trên phiếu; không tích lượt rút thưởng cho đơn này.',
       'reward_no_discount' => 'Đơn chưa đủ món, số ly hoặc tiền theo điều kiện phiếu. Hãy điều chỉnh giỏ hàng; mã phần thưởng vẫn được giữ.',
@@ -158,7 +158,9 @@ function promotion_selector(array $choice, array $options = []): string
 
   <section class="promotion-panel">
     <h2><?= e(pt('title')) ?></h2>
+    <?php /* TODO: Tạm ẩn câu "Mỗi đơn chỉ chọn một ưu đãi. Dùng mã ưu đãi sẽ không nhận lượt rút thưởng cho đơn này."
     <p class="promotion-help"><?= e(pt('choose_one')) ?></p>
+    */ ?>
     <form id="<?= e($prefix) ?>-selector" class="promotion-selector" data-promotion-selector<?= $group !== '' ? ' data-promotion-group' : '' ?> method="post" action="<?= e(base_url($group !== '' ? 'group/action.php' : 'actions/apply_coupon.php')) ?>">
       <?= csrf_field() ?><input type="hidden" name="action" value="<?= $group !== '' ? 'coupon' : 'apply' ?>">
       <?php if ($group !== ''): ?><input type="hidden" name="room_id" value="<?= e($group) ?>"><input type="hidden" name="revision" value="<?= (int)($options['revision'] ?? 0) ?>"><?php endif; ?>
@@ -190,7 +192,8 @@ function promotion_selector(array $choice, array $options = []): string
               <strong><?= e(pt($value)) ?></strong>
 
               <small>
-                <?= e($value === 'buy4get1' && $group !== '' ? gt('coupon_hint') : pt($value . '_hint')) ?>
+                <?php /* Đơn nhóm dùng chung câu mô tả ngắn với đơn lẻ (câu dài riêng của nhóm: gt('coupon_hint')). */ ?>
+                <?= e(pt($value . '_hint')) ?>
               </small>
 
               <?php if ($value === 'buy4get1' && !$buy4Offered): ?>

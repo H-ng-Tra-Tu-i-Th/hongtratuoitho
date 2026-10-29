@@ -239,6 +239,7 @@ function hyg_render_room(array $r): string
                   <?php else: ?><div class="hyg-person-total"><strong><?= e(gt('member_due')) ?></strong><b><?= e(currency()) ?><?= money($payable) ?></b></div><?php endif; ?>
                   <?php if ($own && $open && ($split || $isHost)): ?>
 
+                    <?php /* TODO: Tạm ẩn ô chọn "Phương thức thanh toán" (Chuyển khoản / Tiền mặt / Trưởng nhóm ứng trước) ở phần của mỗi người.
                     <form class="hyg-payment-form" method="post" action="<?= e(base_url('group/action.php')) ?>">
                       <?= hyg_action_fields($r, 'payment_method') ?>
 
@@ -252,6 +253,7 @@ function hyg_render_room(array $r): string
                         </select>
                       </label>
                     </form>
+                    */ ?>
 
                   <?php else: ?><p class="hyg-payment-method"><?= e(gt('payment_method')) ?>：<strong><?= e(gt(['bank_transfer' => 'payment_transfer', 'cash' => 'payment_cash', 'host_advance' => 'payment_host_advance'][$memberPayment['method']] ?? 'payment_transfer')) ?></strong></p><?php endif; ?>
                   <?php if ($changed && $approval && $hasPayment): ?><p class="hyg-payment-amount-changed" role="status"><?= e(gt($coveredPayer ? 'payment_covered_amount_changed_hint' : ($isHost ? 'payment_host_amount_changed_hint' : 'payment_amount_changed_hint'), ['amount' => currency() . money($payable)])) ?></p><?php endif; ?>
@@ -348,7 +350,10 @@ function hyg_render_room(array $r): string
               </button>
             <?php endif; ?>
           </div>
-          <p class="hyg-muted"><?= e(gt('automatic_ready_hint')) ?></p><?php endif; ?>
+          <?php /* TODO: Tạm ẩn câu "Thêm món sẽ hiển thị “Đã chọn xong”; xóa hết món sẽ hiển thị “Chưa chọn món”."
+          <p class="hyg-muted"><?= e(gt('automatic_ready_hint')) ?></p>
+          */ ?>
+        <?php endif; ?>
       </div>
 
       <!-- Group right -->

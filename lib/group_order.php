@@ -508,19 +508,35 @@ function hyg_checkout(string $public,bool $lock=false): array {
     if(!hyg_payments_confirmed($quote['payment']))hyg_fail('payments_unconfirmed');
     return ['room'=>$r,'already'=>false,'cart'=>$quote['cart'],'coupon'=>$quote['coupon'],'payment'=>$quote['payment']];
 }
-function hyg_store_order_payment_summary(array $r,int $orderId): void {
+function hyg_store_order_payment_summary(array $r,int $orderId,?string $payChoice=null): void {
     if(!db()->inTransaction())throw new RuntimeException('group_payment_snapshot_requires_transaction');
     $payment=hyg_payment_summary($r);
+    // The host picked transfer or cash on the checkout page: the saved snapshot shows that choice, not the one stored when the room was quoted.
+    $hostId=(int)($payment['host_member_id']??0);
+    if(in_array($payChoice,['transfer','cash'],true)&&isset($payment['members'][$hostId]))$payment['members'][$hostId]['method']=$payChoice==='cash'?'cash':'bank_transfer';
     hyg_exec('UPDATE orders SET group_checkout_mode=?,group_payment_summary=? WHERE id=? AND group_room_id=?',[$payment['mode'],json_encode($payment,JSON_UNESCAPED_UNICODE|JSON_PRESERVE_ZERO_FRACTION|JSON_THROW_ON_ERROR),$orderId,$r['id']]);
 }
-function hyg_finish(array $ctx,int $orderId): void {
+function hyg_finish(array $ctx,int $orderId,?string $payChoice=null): void {
     if(!db()->inTransaction())throw new RuntimeException('group_finish_requires_transaction');
     $r=hyg_room((string)$ctx['room']['public_id'],true);hyg_require_host($r);
     if(!hyg_payment_quote_signature_valid($r,$ctx['room']['lock_signature']??null))hyg_fail('changed_reload');
     $quote=hyg_locked_quote($r);if(!$quote['cart'])hyg_fail('empty_room');
     if(!hyg_payments_confirmed($quote['payment']))hyg_fail('payments_unconfirmed');
-    hyg_store_order_payment_summary($r,$orderId);
+    hyg_store_order_payment_summary($r,$orderId,$payChoice);
     hyg_exec("UPDATE group_rooms SET status='submitted',order_id=?,submitted_at=NOW(),invite_token=NULL,revision=revision+1 WHERE id=? AND status='locked'",[$orderId,$r['id']]);
+}
+/** A group the host cancelled is removed completely: members, drinks and payment events go with it. */
+function hyg_delete_cancelled_room(string $public): void {
+    hyg_tx(function()use($public){
+        $r=hyg_room($public,true);
+        hyg_require_host($r);
+        if($r['status']!=='cancelled'||!empty($r['order_id']))hyg_fail('not_open');
+        $rid=(int)$r['id'];
+        hyg_exec('DELETE FROM group_payment_events WHERE room_id=?',[$rid]);
+        try{hyg_exec('DELETE FROM transfer_group_accounts WHERE room_id=?',[$rid]);}catch(Throwable $e){}
+        // Members, removed-member marks and items follow through ON DELETE CASCADE.
+        hyg_exec('DELETE FROM group_rooms WHERE id=?',[$rid]);
+    });
 }
 function hyg_room_url(string $public): string {return base_url('group/?id='.hyg_code($public));}
 function hyg_context(): ?array {

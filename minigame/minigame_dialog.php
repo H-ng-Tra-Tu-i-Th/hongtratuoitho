@@ -116,7 +116,9 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                 <div class="kyuc-hero-copy">
                     <span class="kyuc-eyebrow">HỒNG TRÀ TUỔI THƠ · LITTLE MEMORIES</span>
                     <h1><?= e(hgr_text('title')) ?></h1>
+                    <?php /* TODO: Tạm ẩn câu giới thiệu "Lật thẻ ký ức, ghép đủ 6 cặp..." ở hộp Mini Game checkout.
                     <p class="kyuc-lead"><?= e(hgr_text('intro')) ?></p>
+                    */ ?>
                 </div>
                 <div class="kyuc-mascots" aria-hidden="true">
                     <img class="kyuc-boy" src="<?= e(base_url('minigame/assets/boy.webp')) ?>" alt="">
@@ -269,10 +271,11 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
             </section>
         <?php endif; ?>
 
-        <?php /* TODO: Tạm ẩn khối "Chia sẻ để bạn bè cùng nhận quà" ở hộp Mini Game checkout.
-        Nút chia sẻ trang đặt hàng lên Facebook kèm nội dung bài viết soạn sẵn.
-        <?php require __DIR__ . '/share_facebook.php'; ?>
-        */ ?>
+        <?php /* Khối "Chia sẻ để bạn bè cùng nhận quà" ẩn khỏi màn hình nhưng vẫn nằm trong trang:
+        nút "Chia sẻ & nhận lượt chơi" ở popup bấm hộ nút Facebook bên trong (game.js, [data-fb-share-open]). */ ?>
+        <div hidden>
+            <?php require __DIR__ . '/share_facebook.php'; ?>
+        </div>
 
         <?php /* TODO: Tạm ẩn khối "Quà và điều kiện sử dụng" ở hộp Mini Game checkout (bỏ if (false) để hiện lại). */ ?>
         <?php if (false): ?>
@@ -292,7 +295,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 </dialog>
 
 <!-- Chỉ nạp game.js một lần, nạp 2 lần sẽ gửi trùng mỗi lần lật thẻ -->
-<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.23')) ?>"></script>
+<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.25')) ?>"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
