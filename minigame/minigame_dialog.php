@@ -23,7 +23,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 ?>
 
 <!-- File CSS của Minigame -->
-<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.8')) ?>">
+<link rel="stylesheet" href="<?= e(base_url('minigame/assets/style.css?v=19.9.9')) ?>">
 
 <style>
     /* Style tùy chỉnh cơ bản cho Dialog */
@@ -90,6 +90,11 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
         justify-content: space-between;
         gap: 4px 12px;
         padding: 4px 0;
+    }
+
+    .kyuc-session-prize {
+        color: #c62828;
+        font-weight: bold;
     }
 
     .kyuc-session-rewards code {
@@ -187,7 +192,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                         </button>
                     </div>
 
-                    <!-- Popup nhận thưởng: mỗi lượt chơi = 1 mã quà riêng; quà 0đ hiện "Chúc bạn may mắn lần sau" + chia sẻ Facebook nhận lượt chắc trúng. -->
+                    <!-- Popup nhận thưởng: mỗi lượt chơi = 1 mã quà riêng; quà 0đ hiện "Chúc bạn may mắn lần sau" + chia sẻ Facebook nhận 1 lượt chắc trúng 52.000đ. -->
                     <dialog class="kyuc-reward-popup" data-game-reward-popup aria-labelledby="kyuc-reward-title">
                         <section class="kyuc-reward" data-game-reward hidden>
                             <button class="kyuc-reward-x" type="button" data-game-reward-close aria-label="Đóng">×</button>
@@ -275,7 +280,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 </dialog>
 
 <!-- Chỉ nạp game.js một lần, nạp 2 lần sẽ gửi trùng mỗi lần lật thẻ -->
-<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.13')) ?>"></script>
+<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.15')) ?>"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

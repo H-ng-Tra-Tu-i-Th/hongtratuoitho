@@ -105,6 +105,10 @@ if (!$checkoutUnknown) {
   } catch (Throwable $ignored) {
   }
 }
+// The Mini Game time ran out while this page was open: the cart was deleted, so there is nothing left to check out.
+if (!$groupCheckout && empty($_SESSION['cart'])) redirect(base_url('cart.php'));
+// Same for a group checkout: the room was cancelled and its drinks deleted.
+if ($groupCheckout && !empty($GLOBALS['hcgs_group_dropped'])) redirect(base_url('cart.php'));
 // Money prizes won in this session are summed and taken off the bill straight away.
 // An expired session keeps applying the prizes it already won.
 $gamePrizeSession = $gameSession ?: hcgs_prize_row((string)($groupCheckout['room']['public_id'] ?? ''));
@@ -136,14 +140,27 @@ front_header(t('order_info'));
       </div><?php elseif ($checkoutError || $fieldErrors): ?><div class="alert danger checkout-error-summary" role="alert" tabindex="-1" data-checkout-errors><?= e($checkoutError ?: htp_ux('draft_error')) ?></div><?php endif; ?>
     <?php if ($gameFlash): ?><div class="alert danger" role="alert"><?= e($gameFlash) ?></div><?php endif; ?>
     <?php if ($gameSession): ?>
-      <section class="alert success checkout-game-session" data-game-session data-remaining="<?= max(0, (int)$gameSession['remaining']) ?>">
+      <section class="alert success checkout-game-session<?= (int)$gameSession['granted_chances'] > 0 ? '' : ' is-timer-only' ?>" data-game-session data-remaining="<?= max(0, (int)$gameSession['remaining']) ?>">
+        <?php $gameHasChances = (int)$gameSession['granted_chances'] > 0; ?>
+        <?php if ($gameHasChances): ?>
         <p><strong><?= e(hcgs_text('opened', ['qty' => (int)$gameSession['drink_qty'], 'chances' => (int)$gameSession['granted_chances']])) ?></strong></p>
+        <?php
+        // Gợi ý mua thêm cho đủ bội số 10 ly kế tiếp (VD: 35 => 40, 32 => 40).
+        $gameDrinkQty = (int)$gameSession['drink_qty'];
+        $gameMoreQty = (10 - $gameDrinkQty % 10) % 10;
+        ?>
+        <?php if ($gameMoreQty > 0): ?>
+          <p class="checkout-game-upsell"><?= e(hcgs_text('upsell', ['more' => $gameMoreQty])) ?></p>
+        <?php endif; ?>
         <?php /* TODO: Cụm chú thích phiên Mini Game bị dư UI ở checkout — tạm ẩn.
         <p><?= e(hcgs_text($groupCheckout ? 'group_locked' : 'locked')) ?></p>
         <p><?= e(hcgs_text('expires', ['minutes' => intdiv(HCGS_TTL, 60)])) ?></p>
         <p><?= e(hcgs_text('forfeit_note')) ?></p>
         */ ?>
-        <p><?= e(hcgs_text('remaining')) ?>: <b data-game-session-clock>--:--</b></p>
+        <?php endif; ?>
+        <p class="checkout-game-timer"><?= str_replace('{time}', '<b data-game-session-clock>--:--</b>', e(hcgs_text('hold'))) ?></p>
+        <?php if ($gameHasChances): ?>
+        <div class="checkout-game-actions">
         <button type="button" class="btn primary checkout-game-btn" onclick="openMinigameModal()"><svg class="checkout-game-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path class="pad" d="M7 7h10a5 5 0 0 1 4.9 6l-.7 3.5a2.6 2.6 0 0 1-4.6 1.1L14.8 15H9.2l-1.8 2.6a2.6 2.6 0 0 1-4.6-1.1L2.1 13A5 5 0 0 1 7 7z" />
             <path class="dpad" d="M7.5 9.5v4M5.5 11.5h4" />
@@ -151,6 +168,21 @@ front_header(t('order_info'));
             <circle cx="18.2" cy="12.6" r="1.15" />
           </svg>
           Chơi Mini Game nhận quà</button>
+        <?php if (!$groupCheckout && (int)$gameSession['played_chances'] === 0): ?>
+          <form class="checkout-game-add-form" method="post" action="<?= e(base_url('actions/game_add_drinks.php')) ?>">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn checkout-game-add-btn">
+              <svg class="checkout-game-add-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 4h2l1.8 9.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L20 8H7" />
+                <circle cx="9" cy="19" r="1.5" />
+                <circle cx="17" cy="19" r="1.5" />
+              </svg>
+              <?= e(hcgs_text('add_drinks')) ?>
+            </button>
+          </form>
+        <?php endif; ?>
+        </div>
+        <?php endif; ?>
       </section>
       <script>
         (function() {
@@ -175,6 +207,17 @@ front_header(t('order_info'));
           };
           const timer = setInterval(tick, 1000);
           tick();
+          // The countdown badge stays at the top right, flush against the header's bottom edge, whatever the scroll position.
+          const badge = box.querySelector('.checkout-game-timer');
+          const header = document.querySelector('.topbar');
+          const place = function() {
+            if (!badge) return;
+            const bottom = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+            badge.style.top = bottom + 'px';
+          };
+          place();
+          window.addEventListener('scroll', place, { passive: true });
+          window.addEventListener('resize', place);
         })();
       </script>
     <?php endif; ?>

@@ -45,11 +45,11 @@
   // Checkout dialog: prizes apply to the order being placed, not to a later one.
   const inCheckout = root.dataset.checkout === '1';
   const appliedNow = { vi: 'Quà đã được áp dụng trực tiếp vào đơn hàng hiện tại.', zh: '獎品已直接套用於目前這筆訂單。', en: 'This prize has been applied to your current order.' }[language];
-  // A 0đ prize offers one guaranteed replay for sharing the website on Facebook.
+  // A 0đ prize offers one replay for sharing the website on Facebook; that replay always wins 52.000đ.
   Object.assign(t, {
-    vi: { zero: 'Tiếc quá, lượt này trúng 0đ!', share_offer: 'Chia sẻ website lên Facebook để nhận thêm 1 lượt chơi — lượt này chắc chắn trúng quà.', share_button: 'Chia sẻ & nhận lượt chơi', share_bonus: 'Cảm ơn bạn đã chia sẻ! Lượt chơi mới này chắc chắn trúng quà.' },
-    zh: { zero: '可惜，這次抽到 0đ！', share_offer: '把網站分享到 Facebook，即可再獲得 1 次遊戲機會，這次保證中獎。', share_button: '分享並領取機會', share_bonus: '感謝分享！這次新的遊戲機會保證中獎。' },
-    en: { zero: 'So close — this play won 0đ!', share_offer: 'Share the website on Facebook to get 1 more play — that play is guaranteed to win a prize.', share_button: 'Share & get a play', share_bonus: 'Thanks for sharing! This new play is guaranteed to win a prize.' }
+    vi: { zero: 'Tiếc quá, lượt này trúng 0đ!', share_offer: 'Chia sẻ website lên Facebook để nhận thêm 1 lượt chơi — lượt này chắc chắn trúng 52.000đ, trừ thẳng vào đơn này.', share_button: 'Chia sẻ & nhận lượt chơi', share_bonus: 'Cảm ơn bạn đã chia sẻ! Lượt chơi mới này chắc chắn trúng 52.000đ.' },
+    zh: { zero: '可惜，這次抽到 0đ！', share_offer: '把網站分享到 Facebook，即可再獲得 1 次遊戲機會，這次保證抽中 52.000đ，直接扣除本訂單金額。', share_button: '分享並領取機會', share_bonus: '感謝分享！這次新的遊戲機會保證抽中 52.000đ。' },
+    en: { zero: 'So close — this play won 0đ!', share_offer: 'Share the website on Facebook to get 1 more play — that play is guaranteed to win 52.000đ off this order.', share_button: 'Share & get a play', share_bonus: 'Thanks for sharing! This new play is guaranteed to win 52.000đ.' }
   }[language]);
   if (inCheckout) t.saved = { vi: 'Hoàn thành! Quà đã được áp dụng vào đơn hàng này.', zh: '配對完成！獎品已套用於這筆訂單。', en: 'Complete! Your prize has been applied to this order.' }[language];
   const paths = [
@@ -291,7 +291,7 @@
     const head = root.querySelector('[data-game-reward-head]');
     if (head && popup) head.textContent = zero ? popupText.lose : popupText.win;
     if (name) name.textContent = zero
-      ? (popup ? popupText.luck : { vi: 'Chúc bạn may mắn lần sau! Hãy chia sẻ để nhận thêm lượt chơi', zh: '祝你下次好運！分享即可獲得再玩一次的機會', en: 'Better luck next time! Share to get another play' }[language])
+      ? (popup ? popupText.luck : { vi: 'Chúc bạn may mắn lần sau! Hãy chia sẻ để nhận thêm 1 lượt chắc chắn trúng 52.000đ', zh: '祝你下次好運！分享即可再玩一次，保證抽中 52.000đ', en: 'Better luck next time! Share to get another play that wins 52.000đ' }[language])
       : reward.name?.[language] || reward.name?.vi || '';
     if (terms) { terms.textContent = zero ? '' : inCheckout ? appliedNow : reward.terms?.[language] || reward.terms?.vi || ''; terms.hidden = zero; }
     if (expiry) {
@@ -332,7 +332,11 @@
     list.replaceChildren(...rewards.map((item, index) => {
       const li = document.createElement('li');
       const label = document.createElement('span');
-      label.textContent = `${({ vi: 'Lượt', zh: '第', en: 'Play' }[language])} ${index + 1}: ${item.name?.[language] || item.name?.vi || ''}`;
+      label.textContent = `${({ vi: 'Lượt', zh: '第', en: 'Play' }[language])} ${index + 1}: `;
+      const prize = document.createElement('strong');
+      prize.className = 'kyuc-session-prize';
+      prize.textContent = item.name?.[language] || item.name?.vi || '';
+      label.append(prize);
       const code = document.createElement('code');
       code.textContent = item.coupon_code || '';
       li.append(label, code);
@@ -485,7 +489,7 @@
     shareLabel.textContent = t.share_button;
     shareBox.querySelector('button').addEventListener('click', () => {
       if (busy || !reward || !shareBonus || !board) return;
-      // Open the Facebook share inside this click so the pop-up is allowed, then claim the guaranteed play.
+      // Open the Facebook share inside this click so the pop-up is allowed, then claim the 52.000đ replay.
       document.querySelector('[data-fb-share-open]')?.click();
       const id = board.id;
       resetRound();
