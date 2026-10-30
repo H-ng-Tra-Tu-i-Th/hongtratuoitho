@@ -235,8 +235,8 @@
     if (retry) retry.disabled = busy || Date.now() < retryAt;
     if (next) { next.hidden = !reward || balance < 1; next.disabled = busy; }
     if (rewardElement) rewardElement.hidden = !reward;
-    // At checkout the "share Facebook for a free play" offer is not shown.
-    if (shareBox) { shareBox.hidden = inCheckout || !reward || !shareBonus; shareBox.querySelector('button').disabled = busy; }
+    // A 0đ prize offers a free replay for sharing on Facebook, even while chances remain.
+    if (shareBox) { shareBox.hidden = !reward || !shareBonus; shareBox.querySelector('button').disabled = busy; }
     syncPopup();
     root.querySelector('[data-game-cleared]')?.toggleAttribute('hidden', !board?.complete || freshMatches.length > 0);
   }
@@ -268,7 +268,7 @@
       outsideNext.textContent = '▶ ' + popupText.next + ' (' + ({ vi: 'còn ', zh: '剩 ', en: '' }[language] || '') + balance + ({ vi: ' lượt', zh: ' 次', en: ' left' }[language] || '') + ')';
     }
     if (outsideShare) {
-      outsideShare.hidden = inCheckout || !reward || !shareBonus;
+      outsideShare.hidden = !reward || !shareBonus;
       outsideShare.disabled = busy;
     }
   }
@@ -536,7 +536,10 @@
       button.addEventListener('click', () => {
         popup.close();
         // Out of plays at checkout: close the game too, so the customer lands back on the checkout page.
-        if (inCheckout && balance < 1 && typeof window.closeMinigameModal === 'function') window.closeMinigameModal();
+        if (inCheckout && balance < 1) {
+          if (typeof window.closeMinigameModal === 'function') window.closeMinigameModal();
+          else if (root.dataset.exitUrl) location.href = root.dataset.exitUrl;
+        }
       });
     });
     // Forward to the popup buttons so the claim logic (and the Facebook pop-up permission) stays in one place.

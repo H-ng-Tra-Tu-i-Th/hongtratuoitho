@@ -9,5 +9,11 @@ if(hcgs_release_for_edit()){
     $_SESSION['hcgs_adding']=true;
     redirect(base_url('index.php'));
 }
+// A chance was already played: the session stays, and the customer may only add drinks (never remove or change them).
+if(hcgs_locked()){
+    $_SESSION['hcgs_adding']=true;
+    $_SESSION['hcgs_appending']=true;
+    redirect(base_url('index.php'));
+}
 $_SESSION['hcgs_flash']=hcgs_text('add_blocked');
 redirect(base_url('checkout.php'));

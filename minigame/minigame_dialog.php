@@ -139,7 +139,9 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                 <section class="kyuc-board">
                     <div class="kyuc-board-heading">
                         <h2><?= e(t('game_center')) ?></h2>
+                        <?php /* TODO: Tạm ẩn câu "Không giới hạn thời gian; ghép sai không ảnh hưởng quà."
                         <p><?= e(hgr_text('no_limit')) ?></p>
+                        */ ?>
                     </div>
 
                     <div class="kyuc-stats">
@@ -323,7 +325,7 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
 </dialog>
 
 <!-- Chỉ nạp game.js một lần, nạp 2 lần sẽ gửi trùng mỗi lần lật thẻ -->
-<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.25')) ?>"></script>
+<script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.27')) ?>"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
