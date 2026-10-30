@@ -98,6 +98,8 @@ if ($checkoutUnknown) {
 $gameSession = null;
 if (!$checkoutUnknown) {
   $gameChances = $promotion['mode'] === 'draw' && (float)$coupon['discount'] <= 0 ? (int)$promotion['expected_chances'] : 0;
+  // Drinks added after a play: the running session grows to the new drink count (a Facebook-share bonus chance is kept).
+  if (!$groupCheckout && $gameChances > 0) hcgs_grow_group_session('', (int)$promotion['eligible_qty'], $gameChances);
   $gameSession = hcgs_open((int)$promotion['eligible_qty'], $gameChances, (string)($groupCheckout['room']['public_id'] ?? ''));
   // A prize from an earlier, already paid order must not show up in this session's game.
   try {
@@ -168,7 +170,7 @@ front_header(t('order_info'));
             <circle cx="18.2" cy="12.6" r="1.15" />
           </svg>
           Chơi Mini Game nhận quà</button>
-        <?php if (!$groupCheckout && (int)$gameSession['played_chances'] === 0): ?>
+        <?php if (!$groupCheckout): ?>
           <form class="checkout-game-add-form" method="post" action="<?= e(base_url('actions/game_add_drinks.php')) ?>">
             <?= csrf_field() ?>
             <button type="submit" class="btn checkout-game-add-btn">
@@ -369,6 +371,16 @@ front_header(t('order_info'));
 
 <!-- Dialog Mua 10ly nước được chơi game: chỉ khi khách chọn "Mua 10 nhận lượt rút thưởng" và đủ 10 ly -->
 <?php if ($gameSession) require_once __DIR__ . '/minigame/minigame_dialog.php'; ?>
+<?php if ($gameSession && (int)$gameSession['granted_chances'] > 0): ?>
+  <script>
+    // The header "Mini Game" button sends the customer here with #play: open the game popup right away.
+    window.addEventListener('DOMContentLoaded', function() {
+      if (location.hash !== '#play' || typeof window.openMinigameModal !== 'function') return;
+      history.replaceState(null, '', location.pathname + location.search);
+      window.openMinigameModal();
+    });
+  </script>
+<?php endif; ?>
 <?php if ($gameSession): ?>
   <!-- Submitting with unplayed chances asks first: they are forfeited, not kept for later. -->
   <dialog id="gameForfeitModal" class="kyuc-confirm">

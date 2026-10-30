@@ -155,6 +155,12 @@ function hcgs_guard_cart(): void
     $_SESSION['hcgs_flash'] = hcgs_text(hcgs_group_of($row) !== '' ? 'group_busy' : 'cart_locked');
     redirect(hcgs_checkout_url($row));
 }
+/** Adding drinks stays possible while a played session is open (add-only); every other cart edit is still refused. */
+function hcgs_guard_cart_add(): void
+{
+    if (!empty($_SESSION['hcgs_appending']) && hcgs_locked()) return;
+    hcgs_guard_cart();
+}
 /** Group room changes by the host are refused while that room's session is open. */
 function hcgs_guard_group(string $groupId): void
 {
@@ -242,7 +248,9 @@ function hcgs_grow_group_session(string $groupId, int $drinkQty, int $chances): 
             $pdo->commit();
             return;
         }
-        $extra = max(0, $chances - $grantedBefore);
+        // Facebook-share bonus chances sit inside granted_chances: only the part earned by drinks is compared with the new drink count.
+        $drinkChancesBefore = min($grantedBefore, game_chances_for_drink_qty((int)$row['drink_qty']));
+        $extra = max(0, $chances - $drinkChancesBefore);
         if ($extra > 0) {
             $pdo->prepare('UPDATE game_wallets SET available_chances=available_chances+?,total_earned=total_earned+? WHERE wallet_token=?')
                 ->execute([$extra, $extra, $token]);

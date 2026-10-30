@@ -5,6 +5,8 @@ require_once __DIR__ . '/../lib/promotion_views.php';
 require_once __DIR__ . '/../lib/minigame.php';
 header('Cache-Control: no-store, private');
 header('X-Content-Type-Options: nosniff');
+// A customer with an open checkout Mini Game session plays it inside that checkout (hold timer, chances and prizes belong to the order).
+if ($pendingGame = hcgs_locked()) redirect(hcgs_checkout_url($pendingGame) . '#play');
 $state = hymg_request('state');
 $hasReward = is_array($state['reward']);
 $canPlay = minigame_enabled() && (int)$state['balance'] > 0 && ($state['board'] ? count($state['prizes']) > 0 : hgr_ready());
@@ -23,7 +25,7 @@ front_header(hgr_text('title'));
     justify-content: center;
   }
 </style>
-<div class="kyuc-game" data-theme="<?= e($appearance['theme']) ?>" data-api="<?= e(base_url('actions/minigame.php')) ?>" data-csrf="<?= e(csrf_token()) ?>" data-lang="<?= e(current_lang()) ?>" data-currency="<?= e(currency()) ?>">
+<div class="kyuc-game" data-checkout="1" data-exit-url="<?= e(base_url('index.php')) ?>" data-theme="<?= e($appearance['theme']) ?>" data-api="<?= e(base_url('actions/minigame.php')) ?>" data-csrf="<?= e(csrf_token()) ?>" data-lang="<?= e(current_lang()) ?>" data-currency="<?= e(currency()) ?>">
   <div class="kyuc-toolbar"><a class="back" href="<?= e(base_url('index.php')) ?>">← <?= e(t('back_menu')) ?></a>
     <div class="kyuc-balance"><span><?= e(t('game_chances')) ?></span><strong data-game-balance><?= (int)$state['balance'] ?></strong></div>
   </div>
@@ -46,7 +48,9 @@ front_header(hgr_text('title'));
       <section class="kyuc-board">
         <div class="kyuc-board-heading">
           <h2><?= e(t('game_center')) ?></h2>
+          <?php /* TODO: Tạm ẩn câu "Không giới hạn thời gian; ghép sai không ảnh hưởng quà." (giống hộp Mini Game checkout).
           <p><?= e(hgr_text('no_limit')) ?></p>
+          */ ?>
         </div>
         <div class="kyuc-stats">
           <div class="kyuc-stat"><span><?= e(hgr_text('pairs')) ?></span><strong><b data-game-pairs>0</b> / 6</strong></div>
@@ -119,14 +123,12 @@ front_header(hgr_text('title'));
 
             <div class="kyuc-reward-actions">
               <button class="btn primary" type="button" data-game-next hidden><?= e(hgr_text('next')) ?> (còn <b data-game-balance>0</b> lượt)</button>
-              <a class="btn" href="<?= e(base_url('cart.php')) ?>"><?= e(t('cart')) ?></a>
-              <a class="btn" href="<?= e(base_url('member/index.php#member-rewards')) ?>"><?= e(pt('view_member_rewards')) ?></a>
               <button class="btn kyuc-reward-done" type="button" data-game-reward-close></button>
             </div>
           </section>
         </dialog>
       </section>
-      <script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.25')) ?>"></script>
+      <script defer src="<?= e(base_url('minigame/assets/game.js?v=19.9.27')) ?>"></script>
     <?php endif; ?>
   </div>
   <?php /* TODO: Tạm ẩn khối quy tắc / tỉ lệ quà (giống hộp Mini Game checkout; bỏ if (false) để hiện lại). */ ?>
