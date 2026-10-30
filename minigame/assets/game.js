@@ -385,6 +385,12 @@
     const checkout = document.querySelector('[data-checkout-form]');
     const session = response.checkout_session;
     if (checkout && session) checkout.dataset.gameRemaining = String(Math.max(0, (Number(session.granted) || 0) - (Number(session.played) || 0)));
+    // Keep the "you still have X plays" line on the checkout page current after every play or bonus chance.
+    const remainingLine = document.querySelector('[data-game-remaining-text]');
+    if (remainingLine && session) {
+      const left = Math.max(0, (Number(session.granted) || 0) - (Number(session.played) || 0));
+      remainingLine.querySelector('strong').textContent = remainingLine.dataset.gameRemainingText.replace('{n}', String(left));
+    }
     if (session && typeof window.hcgsSetClock === 'function') window.hcgsSetClock(session.remaining);
     if (response.event === 'awarded') root.dataset.awarded = '1';
     const oldMatched = board?.matched || [];
