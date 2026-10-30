@@ -146,6 +146,7 @@ front_header(t('order_info'));
         <?php $gameHasChances = (int)$gameSession['granted_chances'] > 0; ?>
         <?php if ($gameHasChances): ?>
         <p><strong><?= e(hcgs_text('opened', ['qty' => (int)$gameSession['drink_qty'], 'chances' => (int)$gameSession['granted_chances']])) ?></strong></p>
+        <p class="checkout-game-remaining" data-game-remaining-text="<?= e(hcgs_text('plays_left')) ?>"><strong><?= e(hcgs_text('plays_left', ['n' => hcgs_remaining($gameSession)])) ?></strong></p>
         <?php
         // Gợi ý mua thêm cho đủ bội số 10 ly kế tiếp (VD: 35 => 40, 32 => 40).
         $gameDrinkQty = (int)$gameSession['drink_qty'];
