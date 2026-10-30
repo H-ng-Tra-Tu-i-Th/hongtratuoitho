@@ -140,7 +140,9 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                     <div class="kyuc-board-heading">
                         <h2><?= e(t('game_center')) ?></h2>
                         <?php /* TODO: Tạm ẩn câu "Không giới hạn thời gian; ghép sai không ảnh hưởng quà."
+                        <?php /* TODO: Tạm ẩn câu "Không giới hạn thời gian; ghép sai không ảnh hưởng quà."
                         <p><?= e(hgr_text('no_limit')) ?></p>
+                        */ ?>
                         */ ?>
                     </div>
 
