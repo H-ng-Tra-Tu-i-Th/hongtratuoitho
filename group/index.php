@@ -100,27 +100,7 @@ unset($_SESSION['hyg_order_success']);
         window.addEventListener('pageshow', event => { if (event.persisted && leftCheckout()) location.replace(home); });
       })();
     </script>
-    <?php if ($orderSuccess): ?>
-      <dialog class="group-order-success-dialog" id="groupOrderSuccessDialog">
-        <div class="group-order-success-icon" aria-hidden="true">✓</div>
-        <h2>Bạn đã đặt nước thành công</h2>
-        <p>Xin chờ ít phút, tôi sẽ mang nước đến bạn.</p>
-        <button class="btn primary" type="button" id="groupOrderSuccessClose">Đã hiểu</button>
-      </dialog>
-      <script>
-        (function() {
-          const dialog = document.getElementById('groupOrderSuccessDialog');
-          const close = document.getElementById('groupOrderSuccessClose');
-          if (!dialog) return;
-          if (typeof dialog.showModal === 'function') dialog.showModal();
-          else dialog.setAttribute('open', '');
-          close?.addEventListener('click', () => dialog.close());
-          dialog.addEventListener('click', (event) => {
-            if (event.target === dialog) dialog.close();
-          });
-        })();
-      </script>
-    <?php endif; ?>
+    <?php if ($orderSuccess) require __DIR__ . '/../lib/order_success_popup.php'; ?>
   <?php elseif ($invited): ?>
     <section class="hyg-welcome hyg-card"><span class="hyg-eyebrow"><?= e(gt('join_title')) ?></span>
       <h1><?= e($invited['title']) ?></h1>

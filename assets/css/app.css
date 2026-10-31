@@ -6318,46 +6318,6 @@ body.front-body {
   margin: 8px 0;
   user-select: text;
 }
-.group-order-success-dialog {
-  width: min(420px, calc(100vw - 32px));
-  border: 0;
-  border-radius: 24px;
-  padding: 28px 24px;
-  text-align: center;
-  background: #fff;
-  box-shadow: 0 24px 80px rgba(17, 24, 39, 0.28);
-}
-.group-order-success-dialog::backdrop {
-  background: rgba(17, 24, 39, 0.58);
-  backdrop-filter: blur(3px);
-}
-.group-order-success-icon {
-  display: grid;
-  place-items: center;
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 18px;
-  border-radius: 50%;
-  background: #dff5e8;
-  color: #16803a;
-  font-size: 38px;
-  font-weight: 800;
-}
-.group-order-success-dialog h2 {
-  margin: 0;
-  color: #111827;
-  font-size: 24px;
-  line-height: 1.25;
-}
-.group-order-success-dialog p {
-  margin: 12px 0 22px;
-  color: #667085;
-  font-size: 16px;
-  line-height: 1.55;
-}
-.group-order-success-dialog .btn {
-  width: 100%;
-}
 .checkout-field-error {
   color: var(--danger);
   font-weight: 600;
@@ -6846,7 +6806,7 @@ body.front-body {
   box-shadow: none;
 }
 
-/* Popup chúc mừng đặt đơn thành công (success.php). */
+/* Popup chúc mừng đặt đơn thành công (lib/order_success_popup.php). */
 .order-success-popup {
   position: fixed;
   inset: 0;
