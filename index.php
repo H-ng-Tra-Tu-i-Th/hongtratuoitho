@@ -28,6 +28,8 @@ if ($groupContext) {
 }
 $firstKey = $hotProducts ? 'hot' : ($cats ? 'cat-' . (int) $cats[0]['id'] : ($standaloneToppings ? 'standalone' : ''));
 front_header(); ?>
+
+<!-- banner causer slider -->
 <?php if ($banners): ?>
   <link rel="stylesheet" href="<?= e(base_url('assets/css/home-slider.css?v=2')) ?>">
   <!-- Auto-playing banner slider: assets/js/home-slider.js. A single banner shows as a still image. -->
@@ -52,7 +54,7 @@ front_header(); ?>
       <button class="home-slider-arrow is-next" type="button" data-slider-next aria-label="<?= e(hbn_t('next')) ?>">›</button>
       <div class="home-slider-dots">
         <?php foreach ($banners as $index => $slide): ?>
-          <button type="button" data-slider-dot="<?= $index ?>" aria-label="<?= e(hbn_t('go_to', ['n' => $index + 1])) ?>"<?= $index === 0 ? ' aria-current="true"' : '' ?>></button>
+          <button type="button" data-slider-dot="<?= $index ?>" aria-label="<?= e(hbn_t('go_to', ['n' => $index + 1])) ?>" <?= $index === 0 ? ' aria-current="true"' : '' ?>></button>
         <?php endforeach; ?>
       </div>
       <script src="<?= e(base_url('assets/js/home-slider.js?v=2')) ?>" defer></script>
@@ -60,43 +62,24 @@ front_header(); ?>
   </section>
 <?php endif; ?>
 
-<!-- close-test-Hai | đóng thẻ liên kế dời xuống footer -->
-
-<!-- <section class="social-media-section" aria-labelledby="social-media-title">
-  <div class="social-media-heading">
-    <span class="eyebrow"><?= e(t('follow_us')) ?></span>
-    <h2 id="social-media-title"><?= e(t('social_media')) ?></h2>
-  </div>
-
-
-  <div class="social-media-links">
-    <a class="social-media-link" href="https://www.facebook.com/huiyitea.vn" target="_blank" rel="noopener noreferrer"
-      aria-label="Facebook"><span class="social-media-icon social-facebook"
-        aria-hidden="true">f</span><span>Facebook</span></a>
-    <a class="social-media-link" href="https://www.instagram.com/huiyitea/" target="_blank" rel="noopener noreferrer"
-      aria-label="Instagram"><span class="social-media-icon social-instagram" aria-hidden="true"><svg
-          viewBox="0 0 24 24" focusable="false">
-          <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-          <circle cx="12" cy="12" r="4" />
-          <circle cx="17.5" cy="6.7" r="1" class="fill-dot" />
-        </svg></span><span>Instagram</span></a>
-    <a class="social-media-link" href="https://www.threads.com/@huiyitea" target="_blank" rel="noopener noreferrer"
-      aria-label="Threads"><span class="social-media-icon social-threads"
-        aria-hidden="true">@</span><span>Threads</span></a>
-    <a class="social-media-link" href="https://www.tiktok.com/@huiyitea" target="_blank" rel="noopener noreferrer"
-      aria-label="TikTok"><span class="social-media-icon social-tiktok" aria-hidden="true"><svg viewBox="0 0 24 24"
-          focusable="false">
-          <path
-            d="M14.2 4.2v9.1a4.45 4.45 0 1 1-3.7-4.38v3.02a1.65 1.65 0 1 0 .9 1.47V4.2h2.8Zm0 0c.55 2.1 1.85 3.42 4.1 3.8v2.77a7.3 7.3 0 0 1-4.1-1.42" />
-        </svg></span><span>TikTok</span></a>
-    <a class="social-media-link" href="https://www.youtube.com/@huiyitea" target="_blank" rel="noopener noreferrer"
-      aria-label="YouTube"><span class="social-media-icon social-youtube" aria-hidden="true"><svg viewBox="0 0 24 24"
-          focusable="false">
-          <rect x="2.7" y="5.4" width="18.6" height="13.2" rx="4" />
-          <path class="social-youtube-play" d="m10.1 9 5.1 3-5.1 3Z" />
-        </svg></span><span>YouTube</span></a>
-  </div>
-</section> -->
+<!-- Form đặt đơn nhóm -->
+<?php if (!$groupContext): ?>
+  <?php $inGroupOrder = hyg_has_live_group(); ?>
+  <section class="hyg-entry hyg-entry-highlight<?= $inGroupOrder ? ' is-locked' : '' ?>">
+    <div><strong><?= e(gt('entry_title')) ?></strong>
+      <p><?= e(gt('entry_desc')) ?></p>
+    </div>
+    <?php if ($inGroupOrder): ?><button type="button" class="btn primary hyg-entry-cta" disabled aria-disabled="true"><?php else: ?><a class="btn primary hyg-entry-cta" href="<?= e(hym_login_gate_url('group')) ?>"><?php endif; ?>
+        <!-- people icon -->
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="9" cy="8" r="3" />
+          <path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6M21 20v-1a6 6 0 0 0-4-5.6" />
+        </svg>
+        <span><?= e(gt('entry_cta')) ?></span>
+        <span class="hyg-entry-arrow" aria-hidden="true">→</span>
+        <?php if ($inGroupOrder): ?></button><?php else: ?></a><?php endif; ?>
+  </section>
+<?php endif; ?>
 
 <?php if ($featuredProducts || $featuredToppings): ?>
   <section class="featured-section" id="featured">
@@ -148,31 +131,6 @@ front_header(); ?>
   </section>
 <?php endif; ?>
 
-<!-- close-test-Hai | Đóng banner làm tối giản màn hình -->
-<!-- <section class="hero">
-  <div class="hero-content"><span class="eyebrow"><?= e(t('mobile_order')) ?></span>
-    <h1><?= e(t('hero_title')) ?></h1>
-    <p><?= e(t('hero_desc')) ?></p>
-  </div>
-  <div class="hero-orb" aria-hidden="true"></div>
-</section> -->
-
-<?php if (!$groupContext): ?>
-  <?php $inGroupOrder = hyg_has_live_group(); ?>
-  <section class="hyg-entry hyg-entry-highlight<?= $inGroupOrder ? ' is-locked' : '' ?>">
-    <div><strong><?= e(gt('entry_title')) ?></strong>
-      <p><?= e(gt('entry_desc')) ?></p>
-    </div>
-    <?php if ($inGroupOrder): ?><button type="button" class="btn primary hyg-entry-cta" disabled aria-disabled="true"><?php else: ?><a class="btn primary hyg-entry-cta" href="<?= e(hym_login_gate_url('group')) ?>"><?php endif; ?>
-      <!-- people icon -->
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="9" cy="8" r="3" />
-        <path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6M21 20v-1a6 6 0 0 0-4-5.6" />
-      </svg>
-      <span><?= e(gt('entry_cta')) ?></span>
-      <span class="hyg-entry-arrow" aria-hidden="true">→</span>
-    <?php if ($inGroupOrder): ?></button><?php else: ?></a><?php endif; ?>
-  </section><?php endif; ?>
 <?php if ($firstKey !== ''): ?>
   <section class="catalog-shell" data-catalog>
     <aside class="catalog-sidebar">

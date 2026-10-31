@@ -50,6 +50,8 @@ if (is_array($pendingNickname) && $invited && ($pendingNickname['invite'] ?? '')
 front_header(gt('title'));
 $msg = (string)($_SESSION['hyg_message'] ?? '');
 unset($_SESSION['hyg_message']);
+$orderSuccess = !empty($_SESSION['hyg_order_success']);
+unset($_SESSION['hyg_order_success']);
 ?>
 <div class="hyg-page">
   <a class="back" href="<?= e(base_url('index.php')) ?>">← <?= e(t('back_menu')) ?></a>
@@ -59,7 +61,7 @@ unset($_SESSION['hyg_message']);
     <?= hyg_render_steps(1) ?>
   <?php elseif ($r): ?>
     <!-- Group order guide: room page = step 2, or 3 once the group has a drink. group-order.js refreshes this slot. -->
-    <div id="hyg-steps-slot"><?= hyg_render_steps(hyg_room_step($r)) ?></div>
+    <div id="hyg-steps-slot"><?= $r['status'] === 'submitted' ? '' : hyg_render_steps(hyg_room_step($r)) ?></div>
   <?php endif; ?>
   <?php if ($r): ?>
     <?php
@@ -98,6 +100,27 @@ unset($_SESSION['hyg_message']);
         window.addEventListener('pageshow', event => { if (event.persisted && leftCheckout()) location.replace(home); });
       })();
     </script>
+    <?php if ($orderSuccess): ?>
+      <dialog class="group-order-success-dialog" id="groupOrderSuccessDialog">
+        <div class="group-order-success-icon" aria-hidden="true">✓</div>
+        <h2>Bạn đã đặt nước thành công</h2>
+        <p>Xin chờ ít phút, tôi sẽ mang nước đến bạn.</p>
+        <button class="btn primary" type="button" id="groupOrderSuccessClose">Đã hiểu</button>
+      </dialog>
+      <script>
+        (function() {
+          const dialog = document.getElementById('groupOrderSuccessDialog');
+          const close = document.getElementById('groupOrderSuccessClose');
+          if (!dialog) return;
+          if (typeof dialog.showModal === 'function') dialog.showModal();
+          else dialog.setAttribute('open', '');
+          close?.addEventListener('click', () => dialog.close());
+          dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) dialog.close();
+          });
+        })();
+      </script>
+    <?php endif; ?>
   <?php elseif ($invited): ?>
     <section class="hyg-welcome hyg-card"><span class="hyg-eyebrow"><?= e(gt('join_title')) ?></span>
       <h1><?= e($invited['title']) ?></h1>

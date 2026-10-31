@@ -95,7 +95,7 @@ function hyg_render_steps(int $current): string
       $number = $index + 1;
       $state = $number < $current ? ' is-done' : ($number === $current ? ' is-current' : '');
       ?>
-      <li class="hyg-step<?= $state ?>"<?= $number === $current ? ' aria-current="step"' : '' ?>>
+      <li class="hyg-step<?= $state ?>" <?= $number === $current ? ' aria-current="step"' : '' ?>>
         <span class="hyg-step-no"><?= $number ?></span>
         <span class="hyg-step-label"><?= e(gt($key)) ?></span>
       </li>
@@ -158,7 +158,9 @@ function hyg_render_room(array $r): string
   $order = $r['order_id'] ? hyg_one('SELECT * FROM orders WHERE id=?', [$r['order_id']]) : null;
   ob_start(); ?>
   <div id="hyg-room-live" data-revision="<?= e($r['revision']) ?>" data-state="<?= e($status) ?>">
-    <div class="hyg-room-state"><span class="hyg-status hyg-<?= e($status) ?>"><?= e(gt($status)) ?></span><?php if ($open): ?><span><?= e(gt('ready_count', ['ready' => $ready, 'total' => count($members)])) ?></span><?php endif; ?><?php if (in_array($r['status'], ['open', 'locked'], true)): ?><small><?= e(gt($r['status'] === 'locked' ? 'payment_deadline' : 'expires')) ?> <?= e(date('m/d H:i T', strtotime(($r['status'] === 'locked' ? ($r['payment_expires_at'] ?? $r['expires_at']) : $r['expires_at']) . ' UTC'))) ?></small><?php endif; ?></div>
+    <!-- <div class="hyg-room-state">
+      <span class="hyg-status hyg-<?= e($status) ?>"><?= e(gt($status)) ?></span><?php if ($open): ?><span><?= e(gt('ready_count', ['ready' => $ready, 'total' => count($members)])) ?></span><?php endif; ?><?php if (in_array($r['status'], ['open', 'locked'], true)): ?><small><?= e(gt($r['status'] === 'locked' ? 'payment_deadline' : 'expires')) ?> <?= e(date('m/d H:i T', strtotime(($r['status'] === 'locked' ? ($r['payment_expires_at'] ?? $r['expires_at']) : $r['expires_at']) . ' UTC'))) ?></small><?php endif; ?>
+    </div> -->
     <?php if ($order): ?><section class="hyg-card hyg-sent">
         <h2><?= e(gt('submitted')) ?></h2><strong><?= e($order['order_no']) ?></strong>
         <p><?= e(t(status_label_key($order['status']))) ?></p>
@@ -344,9 +346,9 @@ function hyg_render_room(array $r): string
 
         <?php if ($open): ?><div class="hyg-join-actions"><a class="btn primary" href="<?= e(base_url('index.php?group=' . $r['public_id'])) ?>"><?= e(gt('choose')) ?></a>
             <?php if ($host): ?>
-              <!-- Nhảy xuống nút Chốt món; group-order.js chỉ hiện khi nút đó nằm ngoài màn hình. -->
-              <button class="hyg-jump-lock" type="button" data-jump-lock hidden aria-label="<?= e(gt('jump_lock')) ?>" title="<?= e(gt('jump_lock')) ?>">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+              <!-- Button chốt món: gửi form ưu đãi ở cột tổng tiền qua thuộc tính form -->
+              <button class="btn primary block" id="hyg-lock-btn" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid || $drinks < hyg_min_lock_cups() ? 'disabled' : '' ?>>
+                <?= e(gt('lock')) ?>
               </button>
             <?php endif; ?>
           </div>
@@ -385,10 +387,6 @@ function hyg_render_room(array $r): string
 
           <?= promotion_selector($promotion, ['group_public' => $r['public_id'], 'revision' => $r['revision'], 'host_discount_available' => $payment['host_obligation'] > 0]) ?>
 
-          <!-- Button chốt món -->
-          <button class="btn primary block" id="hyg-lock-btn" type="submit" form="group-promotion-selector" name="lock_after" value="1" data-confirm=" <?= e(gt('lock_confirm')) ?>" <?= !$cart || $hasInvalid || $drinks < hyg_min_lock_cups() ? 'disabled' : '' ?>>
-            <?= e(gt('lock')) ?>
-          </button>
           <?php if ($drinks < hyg_min_lock_cups()): ?><small class="hyg-muted"><?= e(gt('min_cups')) ?></small><?php endif; ?>
         <?php endif; ?>
 

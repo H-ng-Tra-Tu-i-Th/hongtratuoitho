@@ -145,6 +145,7 @@ $_SESSION['last_order_no']=$no;
 $_SESSION['last_order_expected_game_chances']=$expectedGameChances;
 $_SESSION['last_order_eligible_drinks']=$eligibleDrinkQty;
 $_SESSION['last_order_promotion']=$choice;
+if($groupId !== '') $_SESSION['hyg_order_success']=true;
 try{$pushResult=send_new_order_push_notifications($oid,false);}catch(Throwable $e){error_log('[checkout] Notification enqueue unavailable for committed order '.$oid);}
 header('Location: '.($groupId!==''?hyg_room_url($groupId):base_url('success.php')),true,303);
 if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
