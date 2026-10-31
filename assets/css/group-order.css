@@ -545,83 +545,29 @@ body.theme-deep-red .hyg-page,body.theme-deep-red .hyg-mode,body.theme-deep-red 
     }
 }
 
-/* Nút Chọn đồ uống: full ngang; khi danh sách thành viên dài đẩy nút khỏi màn hình thì dính ở đáy màn hình. */
+/* Nút Chọn đồ uống + Chốt món: full ngang, xếp chồng; khi danh sách thành viên dài đẩy nút khỏi màn hình thì dính ở đáy màn hình. */
 .hyg-page .hyg-join-actions {
     position: sticky;
     bottom: calc(12px + env(safe-area-inset-bottom));
     z-index: 5;
 }
-/* Ghi đè grid 1 cột trên mobile (dòng 15) để nút mũi tên nằm cùng hàng. */
+/* Ghi đè grid 1 cột trên mobile (dòng 15) để 2 màn hình dùng chung một bố cục. */
 .hyg-page .hyg-join-actions {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     flex-wrap: nowrap;
 }
 .hyg-page .hyg-join-actions .btn.primary {
     min-width: 0;
-}
-.hyg-page .hyg-join-actions .btn.primary {
-    flex: 1 1 auto;
     width: 100%;
     min-height: 50px;
     font-size: 16px;
     box-shadow: 0 8px 22px rgba(179, 36, 36, .28);
 }
-
-/* Nút tròn mũi tên cạnh Chọn đồ uống: cuộn xuống nút Chốt món. */
-.hyg-jump-lock {
-    flex: 0 0 50px;
-    width: 50px;
-    height: 50px;
-    display: grid;
-    place-items: center;
-    padding: 0;
-    border: 2px solid #B32424;
-    border-radius: 999px;
-    background: #fff;
-    color: #B32424;
-    cursor: pointer;
-    box-shadow: 0 8px 22px rgba(179, 36, 36, .22);
-    transition: background .15s ease, color .15s ease, transform .15s ease;
-}
-.hyg-jump-lock[hidden] {
-    display: none;
-}
-.hyg-jump-lock svg {
-    width: 22px;
-    height: 22px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.4;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    animation: hygJumpBob 1.6s ease-in-out infinite;
-}
-.hyg-jump-lock:hover {
-    background: #FDF2F2;
-}
-.hyg-jump-lock:active {
-    transform: scale(.94);
-}
-.hyg-jump-lock:focus-visible {
-    outline: 3px solid #B32424;
-    outline-offset: 3px;
-}
-@keyframes hygJumpBob {
-    0%, 100% { transform: translateY(-2px); }
-    50% { transform: translateY(2px); }
-}
-/* Nháy nhẹ nút Chốt món sau khi cuộn tới. */
-.hyg-page .btn.primary[name="lock_after"].is-jump-target {
-    animation: hygLockPulse 1.2s ease-out 2;
-}
-@keyframes hygLockPulse {
-    0% { box-shadow: 0 0 0 0 rgba(179, 36, 36, .45); }
-    100% { box-shadow: 0 0 0 14px rgba(179, 36, 36, 0); }
-}
-@media (prefers-reduced-motion: reduce) {
-    .hyg-jump-lock svg,
-    .hyg-page .btn.primary[name="lock_after"].is-jump-target {
-        animation: none;
-    }
+/* Nút đang dính nổi trên nội dung nên khi khóa dùng màu đặc, không để chữ phía sau xuyên qua. */
+.hyg-page .hyg-join-actions .btn.primary:disabled {
+    background: #E3B5B5;
+    border-color: #E3B5B5;
+    opacity: 1;
 }

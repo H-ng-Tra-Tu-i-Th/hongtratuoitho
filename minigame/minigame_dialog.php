@@ -139,11 +139,6 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                 <section class="kyuc-board">
                     <div class="kyuc-board-heading">
                         <h2><?= e(t('game_center')) ?></h2>
-                        <?php /* TODO: Tạm ẩn câu "Không giới hạn thời gian; ghép sai không ảnh hưởng quà."
-                        <?php /* TODO: Tạm ẩn câu "Không giới hạn thời gian; ghép sai không ảnh hưởng quà."
-                        <p><?= e(hgr_text('no_limit')) ?></p>
-                        */ ?>
-                        */ ?>
                     </div>
 
                     <div class="kyuc-stats">
@@ -194,9 +189,6 @@ $prizeHeading = ['zh' => '獎項與使用條件', 'vi' => 'Quà và điều ki�
                     <div class="kyuc-outside-actions">
                         <button class="btn primary kyuc-outside-next" type="button" data-game-next-outside hidden></button>
                         <button class="btn kyuc-fb-btn" type="button" data-game-share-outside hidden>
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z" />
-                            </svg>
                             <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M14 8h3V4h-3c-2.8 0-4.5 1.8-4.5 4.6V11H7v4h2.5v9h4v-9h3l.5-4h-3.5V9c0-.6.4-1 1-1z" />
                             </svg>
