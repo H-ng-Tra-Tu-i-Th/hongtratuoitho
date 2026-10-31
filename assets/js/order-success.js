@@ -1,4 +1,4 @@
-// Popup chúc mừng đặt đơn thành công (success.php): mở popup và bắn pháo hoa phía sau thẻ.
+// Popup chúc mừng đặt đơn thành công (lib/order_success_popup.php): mở popup và bắn pháo hoa phía sau thẻ.
 (function() {
   const popup = document.getElementById('orderSuccessPopup');
   if (!popup) return;
